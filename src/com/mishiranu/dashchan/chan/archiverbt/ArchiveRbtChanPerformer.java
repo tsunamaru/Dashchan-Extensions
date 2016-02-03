@@ -1,0 +1,159 @@
+package com.mishiranu.dashchan.chan.archiverbt;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import android.net.Uri;
+
+import chan.content.ChanLocator;
+import chan.content.ChanPerformer;
+import chan.content.InvalidResponseException;
+import chan.content.ThreadRedirectException;
+import chan.content.model.Board;
+import chan.content.model.BoardCategory;
+import chan.content.model.Post;
+import chan.content.model.Posts;
+import chan.content.model.Threads;
+import chan.http.HttpException;
+import chan.http.HttpHolder;
+import chan.http.HttpRequest;
+import chan.text.ParseException;
+
+public class ArchiveRbtChanPerformer extends ChanPerformer
+{
+	@Override
+	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
+	{
+		ArchiveRbtChanLocator locator = ChanLocator.get(this);
+		Uri uri = locator.createBoardUri(data.boardName, data.pageNumber);
+		String responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator).read().getString();
+		try
+		{
+			Threads threads = new ArchiveRbtPostsParser(responseText, this).convertThreads();
+			checkResponseAsNotFound(threads, responseText);
+			return new ReadThreadsResult(threads);
+		}
+		catch (ParseException e)
+		{
+			throw new InvalidResponseException(e);
+		}
+	}
+	
+	@Override
+	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, ThreadRedirectException,
+			InvalidResponseException
+	{
+		final ArchiveRbtChanLocator locator = ChanLocator.get(this);
+		// Check post->thread redirect if thread opened first time
+		Uri uri = data.cachedPosts != null ? locator.createThreadUri(data.boardName, data.threadNumber)
+				: locator.buildPath(data.boardName, "post", data.threadNumber);
+		String responseText;
+		try
+		{
+			final String[] realThreadNumber = new String[] {null, null};
+			new HttpRequest(uri, data.holder, data).setValidator(data.validator)
+					.setRedirectHandler(new HttpRequest.RedirectHandler()
+			{
+				@Override
+				public Action onRedirectReached(int responseCode, Uri requestedUri, Uri redirectedUri,
+						HttpHolder holder) throws HttpException
+				{
+					if (locator.isThreadUri(redirectedUri))
+					{
+						realThreadNumber[0] = locator.getThreadNumber(redirectedUri);
+						realThreadNumber[1] = locator.getPostNumber(redirectedUri);
+					}
+					return HttpRequest.RedirectHandler.BROWSER.onRedirectReached(responseCode, requestedUri,
+							redirectedUri, holder);
+				}
+			}).execute();
+			if (realThreadNumber[0] != null && !data.threadNumber.equals(realThreadNumber[0]))
+			{
+				throw new ThreadRedirectException(realThreadNumber[0], realThreadNumber[1]);
+			}
+			data.holder.checkResponseCode();
+			responseText = data.holder.read().getString();
+		}
+		finally
+		{
+			data.holder.disconnect();
+		}
+		try
+		{
+			Uri threadUri = locator.buildPathWithHost("boards.4chan.org", data.boardName, "thread", data.threadNumber);
+			Posts posts = new ArchiveRbtPostsParser(responseText, this).convertPosts(threadUri);
+			checkResponseAsNotFound(posts, responseText);
+			return new ReadPostsResult(posts);
+		}
+		catch (ParseException e)
+		{
+			throw new InvalidResponseException(e);
+		}
+	}
+	
+	private void checkResponseAsNotFound(Object model, String responseText) throws HttpException
+	{
+		if (model == null && responseText != null && responseText.length() > 1)
+		{
+			throw HttpException.createNotFoundException();
+		}
+	}
+	
+	@Override
+	public ReadSearchPostsResult onReadSearchPosts(ReadSearchPostsData data) throws HttpException,
+			InvalidResponseException
+	{
+		ArchiveRbtChanLocator locator = ChanLocator.get(this);
+		ArrayList<Post> posts = new ArrayList<>();
+		for (int i = 0; i < 5; i++)
+		{
+			Uri uri = locator.buildQuery(data.boardName + "/", "task", "search", "search_text", data.searchQuery,
+					"offset", Integer.toString(24 * i));
+			String responseText = new HttpRequest(uri, data.holder, data).read().getString();
+			try
+			{
+				ArrayList<Post> result = new ArchiveRbtPostsParser(responseText, this).convertSearch();
+				if (result == null) break;
+				posts.addAll(result);
+			}
+			catch (ParseException e)
+			{
+				throw new InvalidResponseException(e);
+			}
+		}
+		return posts.size() > 0 ? new ReadSearchPostsResult(posts) : null;
+	}
+	
+	private static final HashMap<String, String> DEFAULT_BOARD_TITLES;
+	
+	static
+	{
+		DEFAULT_BOARD_TITLES = new HashMap<>();
+		DEFAULT_BOARD_TITLES.put("cgl", "Cosplay & EGL");
+		DEFAULT_BOARD_TITLES.put("con", "Conventions");
+		DEFAULT_BOARD_TITLES.put("g", "Technology");
+		DEFAULT_BOARD_TITLES.put("mu", "Music");
+		DEFAULT_BOARD_TITLES.put("qa", "Question & Answer");
+		DEFAULT_BOARD_TITLES.put("w", "Anime/Wallpapers");
+	}
+	
+	private static final Pattern PATTERN_BOARD = Pattern.compile("<a href=\"/(.*?)/\"");
+	
+	@Override
+	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException
+	{
+		ArchiveRbtChanLocator locator = ChanLocator.get(this);
+		String responseText = new HttpRequest(locator.buildPath(), data.holder, data).read().getString();
+		ArrayList<Board> boards = new ArrayList<>();
+		Matcher matcher = PATTERN_BOARD.matcher(responseText);
+		while (matcher.find())
+		{
+			String boardName = matcher.group(1);
+			String title = DEFAULT_BOARD_TITLES.get(boardName);
+			boards.add(new Board(boardName, title != null ? title : "Untitled"));
+		}
+		return boards.size() > 0 ? new ReadBoardsResult(new BoardCategory("Archives", boards)) : null;
+	}
+}
