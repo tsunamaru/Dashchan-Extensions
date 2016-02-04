@@ -1,0 +1,6 @@
+<resources>
+	
+	<string name="pref_always_load_captcha">Всегда загружать капчу</string>
+	<string name="pref_always_load_captcha_summary">Загружать и отображать капчу даже когда её ввод не требуется</string>
+	
+</resources>
