@@ -1,0 +1,9 @@
+<resources>
+	
+	<string name="text_app_name">Dashchan for localhost</string>
+	<string name="text_activity_name">Dashchan</string>
+	
+	<string name="text_local_archive">Local Archive</string>
+	<string name="text_save_thumbnails">Save thumbnails</string>
+	
+</resources>
