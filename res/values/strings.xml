@@ -1,0 +1,10 @@
+<resources>
+	
+	<string name="text_app_name">Dashchan for krautchan.net</string>
+	<string name="text_activity_name">Dashchan</string>
+	
+	<string name="text_spam">Spam</string>
+	<string name="text_illegal">Illegal content</string>
+	<string name="text_other">Other</string>
+	
+</resources>

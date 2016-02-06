@@ -1,0 +1,7 @@
+<resources>
+	
+	<string name="text_spam">Спам</string>
+	<string name="text_illegal">Нелегальный контент</string>
+	<string name="text_other">Другое</string>
+	
+</resources>
