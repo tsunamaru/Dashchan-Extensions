@@ -143,6 +143,11 @@ public class LocalPostsParser implements GroupParser.Callback
 			{
 				mAttachment.setThumbnailUri(mLocator, createFileUriLocal(thumbnail));
 			}
+			String originalName = parser.getAttr(attrs, "data-original-name");
+			if (originalName != null)
+			{
+				mAttachment.setOriginalName(StringUtils.clearHtml(originalName));
+			}
 			String size = parser.getAttr(attrs, "data-size");
 			if (size != null)
 			{
