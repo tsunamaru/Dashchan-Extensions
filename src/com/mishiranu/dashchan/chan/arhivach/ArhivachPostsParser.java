@@ -90,6 +90,7 @@ public class ArhivachPostsParser implements GroupParser.Callback
 			else if ("span3".equals(cssClass))
 			{
 				mExpect = EXPECT_THREAD_URI;
+				return true;
 			}
 		}
 		else if ("h1".equals(tagName))
@@ -169,42 +170,34 @@ public class ArhivachPostsParser implements GroupParser.Callback
 		}
 		else if ("a".equals(tagName))
 		{
-			if (mExpect == EXPECT_THREAD_URI)
+			String cssClass = parser.getAttr(attrs, "class");
+			if ("expand_image".equals(cssClass))
 			{
-				mThreadUri = Uri.parse(parser.getAttr(attrs, "href"));
-				mExpect = EXPECT_NONE;
-			}
-			else
-			{
-				String cssClass = parser.getAttr(attrs, "class");
-				if ("expand_image".equals(cssClass))
+				String onclick = parser.getAttr(attrs, "onclick");
+				if (onclick != null)
 				{
-					String onclick = parser.getAttr(attrs, "onclick");
-					if (onclick != null)
+					int start = onclick.indexOf("http");
+					if (start >= 0)
 					{
-						int start = onclick.indexOf("http");
-						if (start >= 0)
+						int end = onclick.indexOf("'", start);
+						if (end >= 0)
 						{
-							int end = onclick.indexOf("'", start);
-							if (end >= 0)
-							{
-								FileAttachment attachment = new FileAttachment();
-								mAttachments.add(attachment);
-								String uriString = onclick.substring(start, end);
-								if (uriString != null) attachment.setFileUri(mLocator, Uri.parse(uriString));
-								mExpect = EXPECT_THUMBNAIL;
-							}
+							FileAttachment attachment = new FileAttachment();
+							mAttachments.add(attachment);
+							String uriString = onclick.substring(start, end);
+							if (uriString != null) attachment.setFileUri(mLocator, Uri.parse(uriString));
+							mExpect = EXPECT_THUMBNAIL;
 						}
 					}
 				}
-				else if ("post_mail".equals(cssClass))
+			}
+			else if ("post_mail".equals(cssClass))
+			{
+				String email = StringUtils.nullIfEmpty(StringUtils.clearHtml(parser.getAttr(attrs, "href")));
+				if (email != null)
 				{
-					String email = StringUtils.nullIfEmpty(StringUtils.clearHtml(parser.getAttr(attrs, "href")));
-					if (email != null)
-					{
-						if (email.equals("mailto:sage")) mPost.setSage(true);
-						else mPost.setEmail(email);
-					}
+					if (email.equals("mailto:sage")) mPost.setSage(true);
+					else mPost.setEmail(email);
 				}
 			}
 		}
@@ -231,6 +224,11 @@ public class ArhivachPostsParser implements GroupParser.Callback
 	{
 		switch (mExpect)
 		{
+			case EXPECT_THREAD_URI:
+			{
+				mThreadUri = Uri.parse(StringUtils.clearHtml(text).trim());
+				break;
+			}
 			case EXPECT_SUBJECT:
 			{
 				mPost.setSubject(StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim()));
