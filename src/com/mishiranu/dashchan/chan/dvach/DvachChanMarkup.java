@@ -17,8 +17,8 @@ public class DvachChanMarkup extends ChanMarkup
 	{
 		addTag("strong", TAG_BOLD);
 		addTag("em", TAG_ITALIC);
-		addTag("sup", TAG_SUPERSCRIPT);
 		addTag("sub", TAG_SUBSCRIPT);
+		addTag("sup", TAG_SUPERSCRIPT);
 		addTag("fakecode", TAG_CODE);
 		addTag("span", "unkfunc", TAG_QUOTE);
 		addTag("span", "spoiler", TAG_SPOILER);

@@ -805,6 +805,8 @@ public class DvachChanPerformer extends ChanPerformer
 				}
 				else if ("Истекает".equals(name))
 				{
+					int index = value.indexOf(' ');
+					if (index >= 0) value = value.substring(index + 1);
 					try
 					{
 						long date = DATE_FORMAT_BAN.parse(value).getTime();
