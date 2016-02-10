@@ -137,9 +137,9 @@ public class CirnoChanPerformer extends ChanPerformer
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
 		CirnoChanLocator locator = ChanLocator.get(this);
-		String captchaChallenge = data.threadNumber == null ? "mainpage" : "res" + data.threadNumber;
 		String script = "a".equals(data.boardName) || "b".equals(data.boardName) ? "captcha1.pl" : "captcha.pl";
-		Uri uri = locator.buildQuery("cgi-bin/" + script + "/" + data.boardName + "/", "key", captchaChallenge);
+		Uri uri = locator.buildQuery("cgi-bin/" + script + "/" + data.boardName + "/", "key",
+				data.threadNumber == null ? "mainpage" : "res" + data.threadNumber);
 		Bitmap image = new HttpRequest(uri, data.holder, data).read().getBitmap();
 		if (image != null)
 		{
@@ -150,8 +150,6 @@ public class CirnoChanPerformer extends ChanPerformer
 			paint.setColorFilter(CAPTCHA_FILTER);
 			canvas.drawBitmap(image, 0f, (newImage.getHeight() - image.getHeight()) / 2, paint);
 			image.recycle();
-			CaptchaData captchaData = new CaptchaData();
-			captchaData.put(CaptchaData.CHALLENGE, captchaChallenge);
 			return new ReadCaptchaResult(CaptchaState.CAPTCHA, new CaptchaData(), newImage);
 		}
 		throw new InvalidResponseException();
@@ -234,6 +232,10 @@ public class CirnoChanPerformer extends ChanPerformer
 				{
 					errorType = ApiException.SEND_ERROR_FIELD_TOO_LONG;
 					flags |= ApiException.FLAG_KEEP_CAPTCHA;
+				}
+				else if (errorMessage.contains("Этот файл уже был запощен"))
+				{
+					errorType = ApiException.SEND_ERROR_FILE_EXISTS;
 				}
 				else if (errorMessage.contains("Тред не существует"))
 				{
