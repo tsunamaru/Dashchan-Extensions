@@ -271,6 +271,7 @@ public class ArhivachPostsParser implements GroupParser.Callback
 							name = name.substring(0, index);
 							mPost.setIdentifier(identifier);
 						}
+						else if (name.endsWith(" ID:")) name = name.substring(0, name.length() - 4);
 					}
 					mPost.setName(name);
 				}
@@ -283,7 +284,8 @@ public class ArhivachPostsParser implements GroupParser.Callback
 				{
 					if ("## Abu ##".equals(tripcode)) mPost.setCapcode("Abu");
 					else if ("## Mod ##".equals(tripcode)) mPost.setCapcode("Mod");
-					else mPost.setTripcode(tripcode);
+					else if (tripcode.startsWith("!")) mPost.setTripcode(tripcode);
+					else if (mPost.getIdentifier() == null) mPost.setIdentifier(tripcode);
 				}
 				break;
 			}
