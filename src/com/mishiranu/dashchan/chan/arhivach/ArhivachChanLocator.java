@@ -76,4 +76,17 @@ public class ArhivachChanLocator extends ChanLocator
 	{
 		return createThreadUri(boardName, threadNumber).buildUpon().fragment(postNumber).build();
 	}
+	
+	@Override
+	public String createAttachmentForcedName(Uri fileUri)
+	{
+		if (isChanHostOrRelative(fileUri) && "a_cimg".equals(fileUri.getLastPathSegment()))
+		{
+			String query = fileUri.getQuery();
+			if (query.startsWith("h=")) query = query.substring(2);
+			query = query.replace("&", "");
+			return query;
+		}
+		return null;
+	}
 }
