@@ -29,6 +29,8 @@
 				<data android:host="iichan.hk" />
 				<data android:host="n.iichan.hk" />
 				<data android:host="on.iichan.hk" />
+				<data android:host="iichan.moe" />
+				<data android:host="closed.iichan.hk" />
 			</intent-filter>
 			
 		</activity>

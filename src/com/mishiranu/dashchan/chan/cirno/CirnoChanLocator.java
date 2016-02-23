@@ -18,7 +18,8 @@ public class CirnoChanLocator extends ChanLocator
 		addChanHost("iichan.hk");
 		addChanHost("n.iichan.hk");
 		addChanHost("on.iichan.hk");
-		addSpecialChanHost("closed.iichan.hk");
+		addConvertableChanHost("iichan.moe");
+		addConvertableChanHost("closed.iichan.hk");
 	}
 	
 	@Override
