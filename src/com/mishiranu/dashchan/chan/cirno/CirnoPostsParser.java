@@ -62,7 +62,7 @@ public class CirnoPostsParser implements GroupParser.Callback
 		symbols.setShortWeekdays(new String[] {"", "Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"});
 		symbols.setMonths(new String[] {"января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа",
 				"сентября", "октября", "ноября", "декабря"});
-		DATE_FORMAT = new SimpleDateFormat("cc dd MMMM yy HH:mm:ss", symbols);
+		DATE_FORMAT = new SimpleDateFormat("EE dd MMMM yy HH:mm:ss", symbols);
 		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT+3"));
 	}
 	
