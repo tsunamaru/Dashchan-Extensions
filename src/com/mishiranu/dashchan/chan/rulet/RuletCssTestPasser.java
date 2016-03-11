@@ -15,6 +15,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import chan.content.ChanConfiguration;
 import chan.content.ChanLocator;
+import chan.content.ChanPerformer;
 import chan.http.HttpException;
 import chan.http.HttpHolder;
 import chan.http.HttpRequest;
@@ -100,12 +101,14 @@ public class RuletCssTestPasser implements Handler.Callback
 					String path = uri.getPath();
 					if (("/" + testRequest.boardName + "/csstest.foo").equals(path))
 					{
+						RuletChanPerformer performer = ChanPerformer.get(mLocator);
 						String code = uri.getQueryParameter("code");
 						if (code == null)
 						{
 							try
 							{
-								String responseText = new HttpRequest(uri, testRequest.holder, null)
+								String responseText = performer.modifyHttpRequst(new HttpRequest
+										(uri, testRequest.holder, null), testRequest.boardName)
 										.addCookie("sid", testRequest.sidCookie).read().getString();
 								byte[] data = responseText.getBytes();
 								return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(data));
@@ -125,7 +128,8 @@ public class RuletCssTestPasser implements Handler.Callback
 							boolean success = false;
 							try
 							{
-								String responseText = new HttpRequest(uri, testRequest.holder, null)
+								String responseText = performer.modifyHttpRequst(new HttpRequest
+										(uri, testRequest.holder, null), testRequest.boardName)
 										.addCookie("sid", testRequest.sidCookie).read().getString();
 								success = StringUtils.isEmpty(responseText);
 							}

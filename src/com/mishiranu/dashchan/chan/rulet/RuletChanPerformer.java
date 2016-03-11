@@ -32,13 +32,19 @@ public class RuletChanPerformer extends ChanPerformer
 {
 	private static final String COOKIE_SID = "sid";
 	
+	public HttpRequest modifyHttpRequst(HttpRequest httpRequest, String boardName)
+	{
+		if ("shi".equals(boardName)) httpRequest.addHeader("Authorization", "Basic YW5vbnltb3VzOnBvZHphYm9ybmlr");
+		return httpRequest;
+	}
+	
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
 		RuletChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createBoardUri(data.boardName, data.pageNumber);
-		String responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
-				.read().getString();
+		String responseText = modifyHttpRequst(new HttpRequest(uri, data.holder, data), data.boardName)
+				.setValidator(data.validator).read().getString();
 		try
 		{
 			return new ReadThreadsResult(new RuletPostsParser(responseText, this, data.boardName).convertThreads());
@@ -54,8 +60,8 @@ public class RuletChanPerformer extends ChanPerformer
 	{
 		RuletChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createThreadUri(data.boardName, data.threadNumber);
-		String responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator).setSuccessOnly(false)
-				.read().getString();
+		String responseText = modifyHttpRequst(new HttpRequest(uri, data.holder, data), data.boardName)
+				.setValidator(data.validator).setSuccessOnly(false).read().getString();
 		if (data.holder.getResponseCode() == HttpURLConnection.HTTP_GONE) throw HttpException.createNotFoundException();
 		data.holder.checkResponseCode();
 		try
@@ -89,8 +95,8 @@ public class RuletChanPerformer extends ChanPerformer
 	{
 		RuletChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createThreadUri(data.boardName, data.threadNumber);
-		String responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator).setSuccessOnly(false)
-				.read().getString();
+		String responseText = modifyHttpRequst(new HttpRequest(uri, data.holder, data), data.boardName)
+				.setValidator(data.validator).setSuccessOnly(false).read().getString();
 		if (data.holder.getResponseCode() == HttpURLConnection.HTTP_GONE) throw HttpException.createNotFoundException();
 		data.holder.checkResponseCode();
 		int count = 0;
@@ -104,14 +110,21 @@ public class RuletChanPerformer extends ChanPerformer
 	}
 	
 	@Override
+	public ReadContentResult onReadContent(ReadContentData data) throws HttpException, InvalidResponseException
+	{
+		String boardName = ChanLocator.get(this).getBoardName(data.uri);
+		return new ReadContentResult(modifyHttpRequst(new HttpRequest(data.uri, data.holder, data), boardName).read());
+	}
+	
+	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
 		RuletChanLocator locator = ChanLocator.get(this);
 		RuletChanConfiguration configuration = ChanConfiguration.get(this);
 		Uri uri = locator.buildPath(data.boardName, "api", "requires-captcha");
 		String sidCookie = configuration.getCookie(COOKIE_SID);
-		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).addCookie(COOKIE_SID, sidCookie)
-				.read().getJsonObject();
+		JSONObject jsonObject = modifyHttpRequst(new HttpRequest(uri, data.holder, data), data.boardName)
+				.addCookie(COOKIE_SID, sidCookie).read().getJsonObject();
 		if (jsonObject == null) throw new InvalidResponseException();
 		String newSidCookie = data.holder.getCookieValue(COOKIE_SID);
 		if (newSidCookie != null)
@@ -136,8 +149,8 @@ public class RuletChanPerformer extends ChanPerformer
 			uri = locator.buildPath(data.boardName, "captcha");
 			String captchaLang = RuletChanConfiguration.CAPTCHA_TYPE_CYRILLIC.equals(data.captchaType)
 					? "russian" : "english";
-			Bitmap image = new HttpRequest(uri, data.holder, data).addCookie(COOKIE_SID, sidCookie)
-					.addCookie("tinaib-captcha", captchaLang).read().getBitmap();
+			Bitmap image = modifyHttpRequst(new HttpRequest(uri, data.holder, data), data.boardName)
+					.addCookie(COOKIE_SID, sidCookie).addCookie("tinaib-captcha", captchaLang).read().getBitmap();
 			if (image == null) throw new InvalidResponseException();
 			SparseIntArray colorsCount = new SparseIntArray();
 			int[] pixels = new int[image.getWidth()];
@@ -276,9 +289,9 @@ public class RuletChanPerformer extends ChanPerformer
 		if (!result) throw new InvalidResponseException();
 		RuletChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "post");
-		String responseText = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
-				.addCookie(COOKIE_SID, sidCookie).setRedirectHandler(HttpRequest.RedirectHandler.STRICT)
-				.read().getString();
+		String responseText = modifyHttpRequst(new HttpRequest(uri, data.holder, data), data.boardName)
+				.setPostMethod(entity).addCookie(COOKIE_SID, sidCookie)
+				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getString();
 		
 		Matcher matcher = PATTERN_POST_MESSAGE.matcher(responseText);
 		if (matcher.find())
@@ -378,7 +391,8 @@ public class RuletChanPerformer extends ChanPerformer
 		UrlEncodedEntity entity = new UrlEncodedEntity("password", data.password);
 		for (String postNumber : data.postNumbers) entity.add("posts[]", postNumber);
 		Uri uri = locator.buildPath(data.boardName, "delete");
-		String responseText = new HttpRequest(uri, data.holder, data).setPostMethod(entity).read().getString();
+		String responseText = modifyHttpRequst(new HttpRequest(uri, data.holder, data), data.boardName)
+				.setPostMethod(entity).read().getString();
 		Matcher matcher = PATTERN_POST_MESSAGE.matcher(responseText);
 		if (matcher.find())
 		{
