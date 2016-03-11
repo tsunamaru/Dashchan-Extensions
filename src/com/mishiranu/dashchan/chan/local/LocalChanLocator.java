@@ -1,5 +1,6 @@
 package com.mishiranu.dashchan.chan.local;
 
+import java.util.List;
 import java.util.regex.Pattern;
 
 import android.net.Uri;
@@ -30,6 +31,12 @@ public class LocalChanLocator extends ChanLocator
 	@Override
 	public boolean isAttachmentUri(Uri uri)
 	{
+		List<String> segments = uri.getPathSegments();
+		if (segments.size() > 1)
+		{
+			String segment = segments.get(segments.size() - 2);
+			return "src".equals(segment);
+		}
 		return false;
 	}
 	
