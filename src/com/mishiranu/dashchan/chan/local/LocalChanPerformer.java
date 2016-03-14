@@ -13,6 +13,7 @@ import chan.content.ApiException;
 import chan.content.ChanConfiguration;
 import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
+import chan.content.model.Post;
 import chan.content.model.Posts;
 import chan.http.HttpException;
 import chan.http.HttpResponse;
@@ -124,33 +125,46 @@ public class LocalChanPerformer extends ChanPerformer
 	public SendDeletePostsResult onSendDeletePosts(SendDeletePostsData data) throws HttpException, ApiException,
 			InvalidResponseException
 	{
-		boolean deleteThread = false;
-		for (String postNumber : data.postNumbers)
+		LocalChanConfiguration configuration = ChanConfiguration.get(this);
+		File localDownloadDirectory = configuration.getLocalDownloadDirectory();
+		File file = new File(localDownloadDirectory, data.threadNumber + ".html");
+		byte[] fileData = readFile(file, null, null);
+		Posts thread = null;
+		if (fileData != null && fileData.length > 0)
 		{
-			if (data.threadNumber.endsWith("-" + postNumber))
+			try
 			{
-				deleteThread = true;
+				thread = new LocalPostsParser(new String(fileData), this, data.threadNumber,
+						localDownloadDirectory).convertThread();
+			}
+			catch (ParseException e)
+			{
+				
 			}
 		}
-		if (!deleteThread) throw new ApiException(ApiException.DELETE_ERROR_NO_ACCESS);
-		LocalChanConfiguration configuration = ChanConfiguration.get(this);
-		File file = configuration.getLocalDownloadDirectory();
-		Thread thread = Thread.currentThread();
-		removeDirectory(thread, new File(file, data.threadNumber));
-		if (!thread.isInterrupted()) new File(file, data.threadNumber + ".html").delete();
-		return null;
+		if (thread != null)
+		{
+			Post[] posts = thread.getPosts();
+			if (posts.length > 0 && data.postNumbers.get(0).equals(posts[0].getPostNumber()))
+			{
+				removeDirectory(new File(localDownloadDirectory, data.threadNumber));
+				if (!Thread.currentThread().isInterrupted()) file.delete();
+				return null;
+			}
+		}
+		throw new ApiException(ApiException.DELETE_ERROR_NO_ACCESS);
 	}
 	
-	private void removeDirectory(Thread thread, File directory)
+	private void removeDirectory(File directory)
 	{
+		Thread thread = Thread.currentThread();
 		File[] files = directory.listFiles();
 		if (files != null)
 		{
 			for (File file : files)
 			{
 				if (thread.isInterrupted()) return;
-				if (file.isDirectory()) removeDirectory(thread, file);
-				else file.delete();
+				if (file.isDirectory()) removeDirectory(file); else file.delete();
 			}
 		}
 		directory.delete();
