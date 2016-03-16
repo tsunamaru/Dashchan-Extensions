@@ -32,7 +32,6 @@ import chan.content.model.Posts;
 import chan.http.HttpException;
 import chan.http.HttpHolder;
 import chan.http.HttpRequest;
-import chan.http.HttpResponse;
 import chan.http.MultipartEntity;
 import chan.http.UrlEncodedEntity;
 import chan.text.ParseException;
@@ -47,13 +46,63 @@ public class InfiniteChanPerformer extends ChanPerformer
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
 		InfiniteChanLocator locator = ChanLocator.get(this);
-		Uri uri = locator.buildPath(data.boardName, (data.isCatalog() ? "catalog"
-				: Integer.toString(data.pageNumber)) + ".json");
-		HttpResponse response = new HttpRequest(uri, data.holder, data).setValidator(data.validator).read();
-		JSONObject jsonObject = response.getJsonObject();
-		JSONArray jsonArray = response.getJsonArray();
-		if (jsonObject != null && data.pageNumber >= 0)
+		if (data.isCatalog())
 		{
+			Uri uri = locator.buildPath(data.boardName, "catalog.html");
+			String responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
+					.read().getString();
+			ArrayList<Posts> threads;
+			try
+			{
+				threads = new InfiniteCatalogParser(responseText, this).convertThreads();
+			}
+			catch (ParseException e)
+			{
+				throw new InvalidResponseException(e);
+			}
+			if (threads.isEmpty()) return null;
+			uri = locator.buildPath(data.boardName, "catalog.json");
+			JSONArray jsonArray = new HttpRequest(uri, data.holder, data).read().getJsonArray();
+			JSON: if (jsonArray != null && threads.size() > 0)
+			{
+				try
+				{
+					if (jsonArray.length() == 1)
+					{
+						JSONObject jsonObject = jsonArray.getJSONObject(0);
+						if (!jsonObject.has("threads")) break JSON;
+					}
+					for (int i = 0; i < jsonArray.length(); i++)
+					{
+						JSONArray threadsArray = jsonArray.getJSONObject(i).getJSONArray("threads");
+						for (int j = 0; j < threadsArray.length(); j++)
+						{
+							Posts posts = InfiniteModelMapper.createThread(threadsArray.getJSONObject(j),
+									locator, data.boardName, true);
+							for (int k = 0; k < threads.size(); k++)
+							{
+								if (threads.get(k).getPosts()[0].getPostNumber()
+										.equals(posts.getPosts()[0].getPostNumber()))
+								{
+									threads.set(k, posts);
+								}
+							}
+						}
+					}
+				}
+				catch (JSONException e)
+				{
+					
+				}
+			}
+			return new ReadThreadsResult(threads);
+		}
+		else
+		{
+			Uri uri = locator.buildPath(data.boardName, data.pageNumber + ".json");
+			JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
+					.read().getJsonObject();
+			if (jsonObject == null) throw new InvalidResponseException();
 			if (data.pageNumber == 0)
 			{
 				uri = locator.buildQuery("settings.php", "board", data.boardName);
@@ -80,37 +129,6 @@ public class InfiniteChanPerformer extends ChanPerformer
 				throw new InvalidResponseException(e);
 			}
 		}
-		else if (jsonArray != null)
-		{
-			if (data.isCatalog())
-			{
-				try
-				{
-					if (jsonArray.length() == 1)
-					{
-						jsonObject = jsonArray.getJSONObject(0);
-						if (!jsonObject.has("threads")) return null;
-					}
-					ArrayList<Posts> threads = new ArrayList<>();
-					for (int i = 0; i < jsonArray.length(); i++)
-					{
-						JSONArray threadsArray = jsonArray.getJSONObject(i).getJSONArray("threads");
-						for (int j = 0; j < threadsArray.length(); j++)
-						{
-							threads.add(InfiniteModelMapper.createThread(threadsArray.getJSONObject(j),
-									locator, data.boardName, true));
-						}
-					}
-					return new ReadThreadsResult(threads);
-				}
-				catch (JSONException e)
-				{
-					throw new InvalidResponseException(e);
-				}
-			}
-			else if (jsonArray.length() == 0) return null;
-		}
-		throw new InvalidResponseException();
 	}
 	
 	@Override

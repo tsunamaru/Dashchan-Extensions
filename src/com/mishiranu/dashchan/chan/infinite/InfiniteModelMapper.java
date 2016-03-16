@@ -41,6 +41,13 @@ public class InfiniteModelMapper
 		return attachment;
 	}
 	
+	public static String fixCommentLineBreaks(String comment)
+	{
+		// Paragraphs has "min-height: 1.16em;" in css: this weird trick allows browsers to make empty lines
+		// Dashchan can't handle it because it doesn't work with any css, so I replace these paragraphs with brs
+		return comment.replace("<p class=\"body-line empty \"></p>", "<br />");
+	}
+	
 	public static Post createPost(JSONObject jsonObject, ChanLocator locator, String boardName) throws JSONException
 	{
 		Post post = new Post();
@@ -84,9 +91,7 @@ public class InfiniteModelMapper
 		{
 			// Vichan JSON API bug, sometimes comment is broken
 			com = com.replace("<a  ", "<a ").replaceAll("href=\"\\?", "href=\"");
-			// Paragraphs has "min-height: 1.16em;" in css: this weird trick allows browsers to make empty lines
-			// Dashchan can't handle it because it doesn't work with any css, so I replace these paragraphs with brs
-			com = com.replace("<p class=\"body-line empty \"></p>", "<br />");
+			com = fixCommentLineBreaks(com);
 			post.setComment(com);
 		}
 		String embed = StringUtils.nullIfEmpty(CommonUtils.optJsonString(jsonObject, "embed"));
