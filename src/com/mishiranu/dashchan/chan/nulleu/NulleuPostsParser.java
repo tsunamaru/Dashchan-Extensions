@@ -9,11 +9,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.net.Uri;
-
 import chan.content.ChanConfiguration;
 import chan.content.ChanLocator;
 import chan.content.model.EmbeddedAttachment;
 import chan.content.model.FileAttachment;
+import chan.content.model.Icon;
 import chan.content.model.Post;
 import chan.content.model.Posts;
 import chan.text.GroupParser;
@@ -54,6 +54,8 @@ public class NulleuPostsParser implements GroupParser.Callback
 	
 	private static final Pattern FILE_SIZE = Pattern.compile("\\(([\\d\\.]+)(\\w+)(?: *, *(\\d+)x(\\d+))?" +
 			"(?: *, *(.+))? *\\) *$");
+	private static final Pattern COUNTRY_FLAG = Pattern.compile("<img.*?src=\"(.*?)\""
+			+ "(?:.*?title=\"(.*?)\")?.*?/>(?:&nbsp;)?(.*)");
 	private static final Pattern EMBED = Pattern.compile("data-id=\"(.*?)\" data-site=\"(.*?)\"");
 	private static final Pattern NUMBER = Pattern.compile("(\\d+)");
 	
@@ -378,6 +380,26 @@ public class NulleuPostsParser implements GroupParser.Callback
 			}
 			case EXPECT_NAME:
 			{
+				Matcher matcher = COUNTRY_FLAG.matcher(text);
+				if (matcher.matches())
+				{
+					text = matcher.group(3);
+					String src = matcher.group(1);
+					String title = matcher.group(2);
+					CommonUtils.writeLog(src, title);
+					if (src != null && !"unknown".equals(title))
+					{
+						Uri uri = Uri.parse(src);
+						if (StringUtils.isEmpty(title))
+						{
+							String name = uri.getLastPathSegment();
+							int index = name.indexOf('.');
+							if (index >= 0) name = name.substring(0, index);
+							title = name;
+						}
+						mPost.setIcons(new Icon(mLocator, uri, title));
+					}
+				}
 				mPost.setName(StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim()));
 				break;
 			}
