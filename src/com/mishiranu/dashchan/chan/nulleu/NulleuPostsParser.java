@@ -8,7 +8,11 @@ import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.Uri;
+import android.util.Base64;
 import chan.content.ChanConfiguration;
 import chan.content.ChanLocator;
 import chan.content.model.EmbeddedAttachment;
@@ -266,6 +270,42 @@ public class NulleuPostsParser implements GroupParser.Callback
 					{
 						if (src.endsWith("/css/sticky.gif")) mPost.setSticky(true);
 						else if (src.endsWith("/css/locked.gif")) mPost.setClosed(true);
+						else if (src.startsWith("data:image/png;base64,"))
+						{
+							String base64Data = src.substring(22);
+							byte[] data = null;
+							try
+							{
+								data = Base64.decode(base64Data, Base64.DEFAULT);
+							}
+							catch (Exception e)
+							{
+								
+							}
+							if (data != null)
+							{
+								Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+								if (bitmap != null)
+								{
+									if (bitmap.getWidth() == 16 && bitmap.getHeight() == 16)
+									{
+										int[] colors = new int[] {bitmap.getPixel(2, 2), bitmap.getPixel(5, 5),
+												bitmap.getPixel(10, 2), bitmap.getPixel(13, 5),
+												bitmap.getPixel(2, 10), bitmap.getPixel(5, 13),
+												bitmap.getPixel(10, 10), bitmap.getPixel(13, 13)};
+										StringBuilder builder = new StringBuilder(colors.length);
+										for (int i = 0; i < colors.length; i++)
+										{
+											int c = (Color.red(colors[i]) + Color.green(colors[i])
+													+ Color.blue(colors[i])) / 3;
+											builder.append(String.format("%x", c >> 4));
+										}
+										mPost.setIdentifier(builder.toString());
+									}
+									bitmap.recycle();
+								}
+							}
+						}
 					}
 				}
 			}
