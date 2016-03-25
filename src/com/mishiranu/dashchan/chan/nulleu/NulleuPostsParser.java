@@ -13,6 +13,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.util.Base64;
+
 import chan.content.ChanConfiguration;
 import chan.content.ChanLocator;
 import chan.content.model.EmbeddedAttachment;
@@ -62,6 +63,10 @@ public class NulleuPostsParser implements GroupParser.Callback
 			+ "(?:.*?title=\"(.*?)\")?.*?/>(?:&nbsp;)?(.*)");
 	private static final Pattern EMBED = Pattern.compile("data-id=\"(.*?)\" data-site=\"(.*?)\"");
 	private static final Pattern NUMBER = Pattern.compile("(\\d+)");
+	
+	private int[] mIdentifierColors;
+	private int[] mIdentifierComponents;
+	private byte[] mIdentifierBuffer;
 	
 	public NulleuPostsParser(String source, Object linked, String boardName)
 	{
@@ -289,18 +294,36 @@ public class NulleuPostsParser implements GroupParser.Callback
 								{
 									if (bitmap.getWidth() == 16 && bitmap.getHeight() == 16)
 									{
-										int[] colors = new int[] {bitmap.getPixel(2, 2), bitmap.getPixel(5, 5),
-												bitmap.getPixel(10, 2), bitmap.getPixel(13, 5),
-												bitmap.getPixel(2, 10), bitmap.getPixel(5, 13),
-												bitmap.getPixel(10, 10), bitmap.getPixel(13, 13)};
-										StringBuilder builder = new StringBuilder(colors.length);
+										if (mIdentifierColors == null)
+										{
+											mIdentifierColors = new int[8];
+											mIdentifierComponents = new int[3 * mIdentifierColors.length];
+											mIdentifierBuffer = new byte[mIdentifierComponents.length / 4];
+										}
+										int[] colors = mIdentifierColors;
+										int[] components = mIdentifierComponents;
+										byte[] buffer = mIdentifierBuffer;
+										colors[0] = bitmap.getPixel(2, 2);
+										colors[1] = bitmap.getPixel(5, 5);
+										colors[2] = bitmap.getPixel(10, 2);
+										colors[3] = bitmap.getPixel(13, 5);
+										colors[4] = bitmap.getPixel(2, 10);
+										colors[5] = bitmap.getPixel(5, 13);
+										colors[6] = bitmap.getPixel(10, 10);
+										colors[7] = bitmap.getPixel(13, 13);
 										for (int i = 0; i < colors.length; i++)
 										{
-											int c = (Color.red(colors[i]) + Color.green(colors[i])
-													+ Color.blue(colors[i])) / 3;
-											builder.append(String.format("%x", c >> 4));
+											int color = colors[i];
+											components[3 * i] = Color.red(color);
+											components[3 * i + 1] = Color.green(color);
+											components[3 * i + 2] = Color.blue(color);
 										}
-										mPost.setIdentifier(builder.toString());
+										for (int i = 0; i < buffer.length; i++)
+										{
+											buffer[i] = (byte) ((components[4 * i] + components[4 * i + 1]) / 2 & 0xf0 |
+													((components[4 * i + 2] + components[4 * i + 3]) / 2 & 0xf0) >> 4);
+										}
+										mPost.setIdentifier(Base64.encodeToString(buffer, Base64.NO_WRAP));
 									}
 									bitmap.recycle();
 								}
