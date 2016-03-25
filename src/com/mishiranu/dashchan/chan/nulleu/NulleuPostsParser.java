@@ -512,6 +512,8 @@ public class NulleuPostsParser implements GroupParser.Callback
 					if (message.contains("USER WAS BANNED FOR THIS POST")) mPost.setPosterBanned(true);
 				}
 				text = removePrettyprintBreaks(text);
+				// Display smilies as text
+				text = text.replaceAll("<img style=\"vertical-align: middle;\" src=\".*?/([^/]*?)\\.\\w+\" />", ":$1:");
 				mPost.setComment(text);
 				mPosts.add(mPost);
 				mPost = null;
