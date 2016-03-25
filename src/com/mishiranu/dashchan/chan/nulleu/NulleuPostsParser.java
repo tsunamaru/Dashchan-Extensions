@@ -23,7 +23,6 @@ import chan.content.model.Post;
 import chan.content.model.Posts;
 import chan.text.GroupParser;
 import chan.text.ParseException;
-import chan.util.CommonUtils;
 import chan.util.StringUtils;
 
 public class NulleuPostsParser implements GroupParser.Callback
@@ -512,7 +511,6 @@ public class NulleuPostsParser implements GroupParser.Callback
 					text = text.substring(0, index);
 					if (message.contains("USER WAS BANNED FOR THIS POST")) mPost.setPosterBanned(true);
 				}
-				text = CommonUtils.restoreCloudFlareProtectedEmails(text);
 				text = removePrettyprintBreaks(text);
 				mPost.setComment(text);
 				mPosts.add(mPost);
