@@ -449,7 +449,6 @@ public class NulleuPostsParser implements GroupParser.Callback
 					text = matcher.group(3);
 					String src = matcher.group(1);
 					String title = matcher.group(2);
-					CommonUtils.writeLog(src, title);
 					if (src != null && !"unknown".equals(title))
 					{
 						Uri uri = Uri.parse(src);
