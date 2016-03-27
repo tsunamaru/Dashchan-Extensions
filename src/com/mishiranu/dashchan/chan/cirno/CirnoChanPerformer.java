@@ -241,6 +241,10 @@ public class CirnoChanPerformer extends ChanPerformer
 				{
 					errorType = ApiException.SEND_ERROR_NO_THREAD;
 				}
+				else if (errorMessage.contains("Флуд"))
+				{
+					errorType = ApiException.SEND_ERROR_TOO_FAST;
+				}
 				else if (errorMessage.contains("Строка отклонена"))
 				{
 					errorType = ApiException.SEND_ERROR_SPAM_LIST;
