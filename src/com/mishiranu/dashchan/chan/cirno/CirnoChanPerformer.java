@@ -150,7 +150,7 @@ public class CirnoChanPerformer extends ChanPerformer
 			paint.setColorFilter(CAPTCHA_FILTER);
 			canvas.drawBitmap(image, 0f, (newImage.getHeight() - image.getHeight()) / 2, paint);
 			image.recycle();
-			return new ReadCaptchaResult(CaptchaState.CAPTCHA, new CaptchaData(), newImage);
+			return new ReadCaptchaResult(CaptchaState.CAPTCHA, new CaptchaData()).setImage(newImage);
 		}
 		throw new InvalidResponseException();
 	}
