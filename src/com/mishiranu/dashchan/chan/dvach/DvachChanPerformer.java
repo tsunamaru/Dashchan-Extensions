@@ -494,9 +494,8 @@ public class DvachChanPerformer extends ChanPerformer
 	{
 		CaptchaData captchaData = new CaptchaData();
 		captchaData.put(CAPTCHA_PASS_DATA, captchaPassData);
-		ReadCaptchaResult result = new ReadCaptchaResult(CaptchaState.PASS, captchaData);
-		result.validity = ChanConfiguration.Captcha.Validity.LONG_LIFETIME;
-		return result;
+		return new ReadCaptchaResult(CaptchaState.PASS, captchaData)
+				.setValidity(ChanConfiguration.Captcha.Validity.LONG_LIFETIME);
 	}
 	
 	private static final String CAPTCHA_SIGN = "sign";
@@ -522,9 +521,8 @@ public class DvachChanPerformer extends ChanPerformer
 					{
 						CaptchaData captchaData = new CaptchaData();
 						captchaData.put(CAPTCHA_SIGN, "true");
-						ReadCaptchaResult result = new ReadCaptchaResult(CaptchaState.SKIP, captchaData);
-						result.validity = ChanConfiguration.Captcha.Validity.IN_BOARD_SEPARATELY;
-						return result;
+						return new ReadCaptchaResult(CaptchaState.SKIP, captchaData)
+								.setValidity(ChanConfiguration.Captcha.Validity.IN_BOARD_SEPARATELY);
 					}
 				}
 			}
@@ -564,9 +562,8 @@ public class DvachChanPerformer extends ChanPerformer
 		{
 			if (responseText.equals("OK"))
 			{
-				ReadCaptchaResult result = new ReadCaptchaResult(CaptchaState.SKIP, null);
-				result.validity = ChanConfiguration.Captcha.Validity.LONG_LIFETIME;
-				return result;
+				return new ReadCaptchaResult(CaptchaState.SKIP, null)
+						.setValidity(ChanConfiguration.Captcha.Validity.LONG_LIFETIME);
 			}
 			else if (responseText.equals("DISABLED"))
 			{
@@ -580,7 +577,7 @@ public class DvachChanPerformer extends ChanPerformer
 				if (dvachaptcha) captchaData.put(CaptchaData.CHALLENGE, keyOrChallenge);
 				else if (mailru || recaptcha1 || recaptcha2) captchaData.put(CaptchaData.API_KEY, keyOrChallenge);
 				ReadCaptchaResult result = new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData);
-				if (canBypass) result.validity = ChanConfiguration.Captcha.Validity.IN_BOARD_SEPARATELY;
+				if (canBypass) result.setValidity(ChanConfiguration.Captcha.Validity.IN_BOARD_SEPARATELY);
 				if (dvachaptcha)
 				{
 					uri = locator.createApiUri("captcha.fcgi", "type", "2chaptcha", "action", "image",
@@ -616,7 +613,7 @@ public class DvachChanPerformer extends ChanPerformer
 					canvas.drawColor(0xffffffff);
 					canvas.drawBitmap(editable, src, dst, new Paint(Paint.FILTER_BITMAP_FLAG));
 					editable.recycle();
-					result.image = image;
+					result.setImage(image);
 				}
 				return result;
 			}
@@ -624,9 +621,8 @@ public class DvachChanPerformer extends ChanPerformer
 			{
 				CaptchaData captchaData = new CaptchaData();
 				if (captchaPassData != null) captchaData.put(CAPTCHA_PASS_DATA, captchaPassData);
-				ReadCaptchaResult result = new ReadCaptchaResult(CaptchaState.PASS, captchaData);
-				result.validity = ChanConfiguration.Captcha.Validity.LONG_LIFETIME;
-				return result;
+				return new ReadCaptchaResult(CaptchaState.PASS, captchaData)
+						.setValidity(ChanConfiguration.Captcha.Validity.LONG_LIFETIME);
 			}
 			else if (responseText.equals("VIPFAIL"))
 			{
