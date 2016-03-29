@@ -2,6 +2,8 @@ package com.mishiranu.dashchan.chan.cirno;
 
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -10,7 +12,6 @@ import android.graphics.Canvas;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.net.Uri;
-
 import chan.content.ApiException;
 import chan.content.ChanLocator;
 import chan.content.ChanPerformer;
@@ -130,12 +131,23 @@ public class CirnoChanPerformer extends ChanPerformer
 		return new ReadPostsCountResult(count);
 	}
 	
+	private static final HashSet<String> NO_CAPTCHA_BOARDS = new HashSet<String>();
+	
+	static
+	{
+		Collections.addAll(NO_CAPTCHA_BOARDS, "mu", "o", "ph", "tv", "vg", "a", "tan", "to");
+	}
+	
 	private static final ColorMatrixColorFilter CAPTCHA_FILTER = new ColorMatrixColorFilter(new float[]
 			{0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f});
 	
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
+		synchronized (NO_CAPTCHA_BOARDS)
+		{
+			if (NO_CAPTCHA_BOARDS.contains(data.boardName)) return new ReadCaptchaResult(CaptchaState.SKIP, null);
+		}
 		CirnoChanLocator locator = ChanLocator.get(this);
 		String script = "a".equals(data.boardName) || "b".equals(data.boardName) ? "captcha1.pl" : "captcha.pl";
 		Uri uri = locator.buildQuery("cgi-bin/" + script + "/" + data.boardName + "/", "key",
@@ -211,6 +223,10 @@ public class CirnoChanPerformer extends ChanPerformer
 				if (errorMessage.contains("Введён неверный код подтверждения") ||
 						errorMessage.contains("Код подтверждения не найден в базе"))
 				{
+					synchronized (NO_CAPTCHA_BOARDS)
+					{
+						NO_CAPTCHA_BOARDS.remove(data.boardName);
+					}
 					errorType = ApiException.SEND_ERROR_CAPTCHA;
 				}
 				else if (errorMessage.contains("Пустое поле сообщения"))
