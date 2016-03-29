@@ -39,9 +39,6 @@ public class DvachChanConfiguration extends ChanConfiguration
 		setDefaultName("Аноним");
 		setBumpLimit(500);
 		addCaptchaType(CAPTCHA_TYPE_2CHAPTCHA);
-		//addCaptchaType(CAPTCHA_TYPE_MAILRU);
-		//addCaptchaType(CAPTCHA_TYPE_RECAPTCHA_2);
-		//addCaptchaType(CAPTCHA_TYPE_RECAPTCHA_1);
 		addCustomPreference(KEY_CAPTCHA_BYPASS, true);
 	}
 	
