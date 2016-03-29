@@ -10,7 +10,7 @@ import chan.text.CommentEditor;
 
 public class DvachChanMarkup extends ChanMarkup
 {
-	private static final int SUPPORTED_TAGS = TAG_BOLD | TAG_ITALIC | TAG_UNDERLINE | TAG_STRIKE
+	private static final int SUPPORTED_TAGS = TAG_BOLD | TAG_ITALIC | TAG_UNDERLINE | TAG_OVERLINE | TAG_STRIKE
 			| TAG_SUBSCRIPT | TAG_SUPERSCRIPT | TAG_SPOILER;
 	
 	public DvachChanMarkup()
@@ -24,6 +24,7 @@ public class DvachChanMarkup extends ChanMarkup
 		addTag("span", "spoiler", TAG_SPOILER);
 		addTag("span", "s", TAG_STRIKE);
 		addTag("span", "u", TAG_UNDERLINE);
+		addTag("span", "o", TAG_OVERLINE);
 		addColorable("span");
 	}
 	
