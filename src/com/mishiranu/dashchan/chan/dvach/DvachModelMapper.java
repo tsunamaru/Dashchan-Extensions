@@ -38,13 +38,15 @@ public class DvachModelMapper
 	private static final Uri URI_ICON_OPERA = Uri.parse("chan:///res/raw/raw_browser_opera");
 	private static final Uri URI_ICON_SAFARI = Uri.parse("chan:///res/raw/raw_browser_safari");
 	
-	public static FileAttachment createFileAttachment(JSONObject jsonObject, ChanLocator locator, String boardName)
-			throws JSONException
+	public static FileAttachment createFileAttachment(JSONObject jsonObject, ChanLocator locator, String boardName,
+			boolean archive) throws JSONException
 	{
 		String file = CommonUtils.getJsonString(jsonObject, "path");
 		String thumbnail = CommonUtils.optJsonString(jsonObject, "thumbnail");
-		Uri fileUri = file != null ? locator.buildPath(boardName, file) : null;
-		Uri thumbnailUri = thumbnail != null ? locator.buildPath(boardName, thumbnail) : null;
+		Uri fileUri = file != null ? archive ? locator.buildPath(boardName, "arch", file)
+				: locator.buildPath(boardName, file) : null;
+		Uri thumbnailUri = thumbnail != null ? archive ? locator.buildPath(boardName, "arch", file)
+				: locator.buildPath(boardName, thumbnail) : null;
 		int size = jsonObject.optInt("size") * 1024;
 		int width = jsonObject.optInt("width");
 		int height = jsonObject.optInt("height");
@@ -52,8 +54,8 @@ public class DvachModelMapper
 				.setSize(size).setWidth(width).setHeight(height);
 	}
 	
-	public static Post createPost(JSONObject jsonObject, ChanLocator locator, String boardName, boolean sageEnabled)
-			throws JSONException
+	public static Post createPost(JSONObject jsonObject, ChanLocator locator, String boardName, boolean archive,
+			boolean sageEnabled) throws JSONException
 	{
 		Post post = new Post();
 		String num = CommonUtils.getJsonString(jsonObject, "num");
@@ -81,7 +83,7 @@ public class DvachModelMapper
 				for (int i = 0, length = filesArray.length(); i < length; i++)
 				{
 					if (attachments == null) attachments = new ArrayList<>();
-					attachments.add(createFileAttachment(filesArray.getJSONObject(i), locator, boardName));
+					attachments.add(createFileAttachment(filesArray.getJSONObject(i), locator, boardName, archive));
 				}
 			}
 		}
@@ -201,16 +203,17 @@ public class DvachModelMapper
 				.setAttachments(attachments).setIcons(icons);
 	}
 	
-	public static Post[] createPosts(JSONArray jsonArray, ChanLocator locator, String boardName, boolean sageEnabled)
-			throws JSONException
+	public static Post[] createPosts(JSONArray jsonArray, ChanLocator locator, String boardName, boolean archive,
+			boolean sageEnabled) throws JSONException
 	{
 		if (jsonArray.length() > 0)
 		{
 			Post[] posts = new Post[jsonArray.length()];
 			for (int i = 0; i < posts.length; i++)
 			{
-				posts[i] = createPost(jsonArray.getJSONObject(i), locator, boardName, sageEnabled);
+				posts[i] = createPost(jsonArray.getJSONObject(i), locator, boardName, archive, sageEnabled);
 			}
+			if (archive) posts[0].setArchived(true);
 			return posts;
 		}
 		return null;
@@ -236,10 +239,10 @@ public class DvachModelMapper
 			posts = new Post[jsonArray.length()];
 			for (int i = 0; i < posts.length; i++)
 			{
-				posts[i] = createPost(jsonArray.getJSONObject(i), locator, boardName, sageEnabled);
+				posts[i] = createPost(jsonArray.getJSONObject(i), locator, boardName, false, sageEnabled);
 			}
 		}
-		else posts = new Post[] {createPost(jsonObject, locator, boardName, sageEnabled)};
+		else posts = new Post[] {createPost(jsonObject, locator, boardName, false, sageEnabled)};
 		for (int i = 0; i < posts.length; i++)
 		{
 			if (posts[i].getAttachmentsCount() > 0) postsWithFilesCount++;

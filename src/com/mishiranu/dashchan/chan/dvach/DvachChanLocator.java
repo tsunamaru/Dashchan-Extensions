@@ -10,10 +10,10 @@ import chan.content.ChanLocator;
 public class DvachChanLocator extends ChanLocator
 {
 	private static final Pattern BOARD_PATH = Pattern.compile("/\\w+(?:/(?:(?:index|catalog|\\d+)\\.html)?)?");
-	private static final Pattern THREAD_PATH = Pattern.compile("/\\w+/res/\\d+\\.html");
-	private static final Pattern ATTACHMENT_PATH = Pattern.compile("/\\w+/src/\\d+/\\d+\\.\\w+");
+	private static final Pattern THREAD_PATH = Pattern.compile("/\\w+/(?:arch/)?res/\\d+\\.html");
+	private static final Pattern ATTACHMENT_PATH = Pattern.compile("/\\w+/(?:arch/)?src/\\d+/\\d+\\.\\w+");
 	
-	private static final Pattern THREAD_NUMBER = Pattern.compile("^/\\w+/(?:res|src)/(\\d+)(?:/|\\.html)");
+	private static final Pattern THREAD_NUMBER = Pattern.compile("^/\\w+/(?:arch/)?(?:res|src)/(\\d+)(?:/|\\.html)");
 	
 	public DvachChanLocator()
 	{

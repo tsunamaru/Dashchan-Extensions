@@ -48,6 +48,7 @@ public class DvachChanConfiguration extends ChanConfiguration
 		Board board = new Board();
 		board.allowSearch = true;
 		board.allowCatalog = true;
+		board.allowArchive = true;
 		board.allowPosting = true;
 		board.allowReporting = true;
 		return board;

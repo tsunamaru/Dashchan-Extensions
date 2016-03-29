@@ -20,7 +20,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.net.Uri;
-
 import chan.content.ApiException;
 import chan.content.ChanConfiguration;
 import chan.content.ChanLocator;
@@ -109,23 +108,33 @@ public class DvachChanPerformer extends ChanPerformer
 			InvalidResponseException
 	{
 		boolean mobileApi = data.partialThreadLoading;
+		boolean tryReadStatic = false;
 		try
 		{
-			return new ReadPostsResult(onReadPosts(data, mobileApi));
+			return new ReadPostsResult(onReadPosts(data, mobileApi, false));
 		}
 		catch (HttpException e)
 		{
 			int responseCode = e.getResponseCode();
-			if (responseCode >= 500 && responseCode < 600 && mobileApi)
-			{
-				return new ReadPostsResult(onReadPosts(data, false));
-			}
-			throw e;
+			if (responseCode >= 500 && responseCode < 600 && mobileApi) tryReadStatic = true;
+			else if (responseCode != HttpURLConnection.HTTP_NOT_FOUND) throw e;
 		}
+		if (tryReadStatic)
+		{
+			try
+			{
+				return new ReadPostsResult(onReadPosts(data, false, false));
+			}
+			catch (HttpException e)
+			{
+				if (e.getResponseCode() != HttpURLConnection.HTTP_NOT_FOUND) throw e;
+			}
+		}
+		return new ReadPostsResult(onReadPosts(data, false, true));
 	}
 	
-	public Posts onReadPosts(ReadPostsData data, boolean mobileApi) throws HttpException, ThreadRedirectException,
-			InvalidResponseException
+	public Posts onReadPosts(ReadPostsData data, boolean mobileApi, boolean archive) throws HttpException,
+			ThreadRedirectException, InvalidResponseException
 	{
 		DvachChanLocator locator = ChanLocator.get(this);
 		DvachChanConfiguration configuration = ChanConfiguration.get(this);
@@ -136,12 +145,17 @@ public class DvachChanPerformer extends ChanPerformer
 					"thread", data.threadNumber, "num", data.lastPostNumber == null ? data.threadNumber
 					: Integer.toString(Integer.parseInt(data.lastPostNumber) + 1));
 		}
+		else if (archive)
+		{
+			uri = locator.buildPath(data.boardName, "arch", "res", data.threadNumber + ".json");
+		}
 		else
 		{
 			uri = locator.buildPath(data.boardName, "res", data.threadNumber + ".json");
 		}
 		HttpResponse response = new HttpRequest(uri, data.holder, data).addCookie(buildCookiesWithCaptchaPass())
-				.setValidator(data.validator).read();
+				.setValidator(data.validator).setSuccessOnly(false).read();
+		data.holder.checkResponseCode();
 		JSONObject jsonObject = response.getJsonObject();
 		JSONArray jsonArray = response.getJsonArray();
 		if (mobileApi)
@@ -150,7 +164,7 @@ public class DvachChanPerformer extends ChanPerformer
 			{
 				try
 				{
-					Post[] posts = DvachModelMapper.createPosts(jsonArray, locator, data.boardName,
+					Post[] posts = DvachModelMapper.createPosts(jsonArray, locator, data.boardName, false,
 							configuration.isSageEnabled(data.boardName));
 					if (posts != null && posts.length == 1)
 					{
@@ -184,7 +198,7 @@ public class DvachChanPerformer extends ChanPerformer
 					configuration.updateFromThreadsPostsJson(data.boardName, jsonObject);
 					int uniquePosters = jsonObject.optInt("unique_posters");
 					jsonArray = jsonObject.getJSONArray("threads").getJSONObject(0).getJSONArray("posts");
-					return new Posts(DvachModelMapper.createPosts(jsonArray, locator, data.boardName,
+					return new Posts(DvachModelMapper.createPosts(jsonArray, locator, data.boardName, archive,
 							configuration.isSageEnabled(data.boardName))).setUniquePosters(uniquePosters);
 				}
 				catch (JSONException e)
@@ -212,7 +226,7 @@ public class DvachChanPerformer extends ChanPerformer
 			try
 			{
 				return new ReadSinglePostResult(DvachModelMapper.createPost(jsonArray.getJSONObject(0),
-						locator, data.boardName, configuration.isSageEnabled(data.boardName)));
+						locator, data.boardName, false, configuration.isSageEnabled(data.boardName)));
 			}
 			catch (JSONException e)
 			{
@@ -261,7 +275,7 @@ public class DvachChanPerformer extends ChanPerformer
 				String errorMessage = jsonObject.optString("message");
 				if (!StringUtils.isEmpty(errorMessage)) throw new HttpException(0, errorMessage);
 				return new ReadSearchPostsResult(DvachModelMapper.createPosts(jsonObject.getJSONArray("posts"),
-						locator, data.boardName, configuration.isSageEnabled(data.boardName)));
+						locator, data.boardName, false, configuration.isSageEnabled(data.boardName)));
 			}
 			catch (JSONException e)
 			{
@@ -359,48 +373,69 @@ public class DvachChanPerformer extends ChanPerformer
 		throw new InvalidResponseException();
 	}
 	
+	private static final Pattern PATTERN_ARCHIVED_THREAD = Pattern.compile("<a href=\"(\\d+)\\.json\">.*?" +
+			"</a> *(.{15,}?) \\d+");
+	
 	@Override
 	public ReadThreadSummariesResult onReadThreadSummaries(ReadThreadSummariesData data) throws HttpException,
 			InvalidResponseException
 	{
-		DvachChanLocator locator = ChanLocator.get(this);
-		Uri uri = locator.buildPath("popular.json");
-		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).read().getJsonObject();
-		if (jsonObject != null)
+		if (data.type == ReadThreadSummariesData.TYPE_ARCHIVED_THREADS)
 		{
-			try
+			DvachChanLocator locator = ChanLocator.get(this);
+			Uri uri = locator.createBoardUri(data.boardName, 0).buildUpon().appendEncodedPath("arch/res").build();
+			String responseText = new HttpRequest(uri, data.holder, data).read().getString();
+			ArrayList<ThreadSummary> threadSummaries = new ArrayList<>();
+			Matcher matcher = PATTERN_ARCHIVED_THREAD.matcher(responseText);
+			while (matcher.find())
 			{
-				JSONArray jsonArray = (jsonObject).getJSONArray("threads");
-				ArrayList<ThreadSummary> threadSummaries = new ArrayList<>();
-				for (int i = 0; i < jsonArray.length(); i++)
-				{
-					jsonObject = jsonArray.optJSONObject(i);
-					// Sometimes objects can be null
-					if (jsonObject != null)
-					{
-						String boardName = CommonUtils.getJsonString(jsonObject, "board");
-						String threadNumber = CommonUtils.getJsonString(jsonObject, "num");
-						String description = StringUtils.clearHtml(DvachModelMapper
-								.fixApiEscapeCharacters(CommonUtils.getJsonString(jsonObject, "subject")));
-						ThreadSummary threadSummary = new ThreadSummary(boardName, threadNumber, description);
-						threadSummary.setPostsCount(jsonObject.getInt("posts") + 1);
-						threadSummary.setViewsCount(jsonObject.getInt("views"));
-						String thumbnail = CommonUtils.optJsonString(jsonObject, "thumbnail");
-						if (thumbnail != null)
-						{
-							threadSummary.setThumbnailUri(locator, locator.buildPath(boardName, thumbnail));
-						}
-						threadSummaries.add(threadSummary);
-					}
-				}
-				return new ReadThreadSummariesResult(threadSummaries);
+				threadSummaries.add(new ThreadSummary(data.boardName, matcher.group(1), "#" + matcher.group(1) + ", "
+						+ matcher.group(2).trim()));
 			}
-			catch (JSONException e)
-			{
-				throw new InvalidResponseException(e);
-			}
+			return new ReadThreadSummariesResult(threadSummaries);
 		}
-		throw new InvalidResponseException();
+		else if (data.type == ReadThreadSummariesData.TYPE_POPULAR_THREADS)
+		{
+			DvachChanLocator locator = ChanLocator.get(this);
+			Uri uri = locator.buildPath("popular.json");
+			JSONObject jsonObject = new HttpRequest(uri, data.holder, data).read().getJsonObject();
+			if (jsonObject != null)
+			{
+				try
+				{
+					JSONArray jsonArray = (jsonObject).getJSONArray("threads");
+					ArrayList<ThreadSummary> threadSummaries = new ArrayList<>();
+					for (int i = 0; i < jsonArray.length(); i++)
+					{
+						jsonObject = jsonArray.optJSONObject(i);
+						// Sometimes objects can be null
+						if (jsonObject != null)
+						{
+							String boardName = CommonUtils.getJsonString(jsonObject, "board");
+							String threadNumber = CommonUtils.getJsonString(jsonObject, "num");
+							String description = StringUtils.clearHtml(DvachModelMapper
+									.fixApiEscapeCharacters(CommonUtils.getJsonString(jsonObject, "subject")));
+							ThreadSummary threadSummary = new ThreadSummary(boardName, threadNumber, description);
+							threadSummary.setPostsCount(jsonObject.getInt("posts") + 1);
+							threadSummary.setViewsCount(jsonObject.getInt("views"));
+							String thumbnail = CommonUtils.optJsonString(jsonObject, "thumbnail");
+							if (thumbnail != null)
+							{
+								threadSummary.setThumbnailUri(locator, locator.buildPath(boardName, thumbnail));
+							}
+							threadSummaries.add(threadSummary);
+						}
+					}
+					return new ReadThreadSummariesResult(threadSummaries);
+				}
+				catch (JSONException e)
+				{
+					throw new InvalidResponseException(e);
+				}
+			}
+			throw new InvalidResponseException();
+		}
+		else return super.onReadThreadSummaries(data);
 	}
 	
 	@Override
