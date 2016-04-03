@@ -26,6 +26,7 @@
 				<category android:name="android.intent.category.DEFAULT" />
 				<category android:name="android.intent.category.BROWSABLE" />
 				<data android:scheme="http" />
+				<data android:host="haruhichan.ovh" />
 				<data android:host="haruhichan.ru" />
 			</intent-filter>
 			

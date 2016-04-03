@@ -15,7 +15,8 @@ public class HaruhichanChanLocator extends ChanLocator
 	
 	public HaruhichanChanLocator()
 	{
-		addChanHost("haruhichan.ru");
+		addChanHost("haruhichan.ovh");
+		addConvertableChanHost("haruhichan.ru");
 	}
 	
 	@Override
