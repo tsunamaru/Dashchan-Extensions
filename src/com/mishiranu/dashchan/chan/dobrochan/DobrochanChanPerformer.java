@@ -251,7 +251,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 		}
 		CaptchaData captchaData = new CaptchaData();
 		captchaData.put(CaptchaData.CHALLENGE, hanabiraCookie);
-		return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData, newImage);
+		return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData).setImage(newImage);
 	}
 	
 	public String readThreadId(String boardName, String threadNumber, HttpHolder holder, HttpRequest.Preset preset)
