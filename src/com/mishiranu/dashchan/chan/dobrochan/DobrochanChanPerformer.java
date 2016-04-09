@@ -22,6 +22,7 @@ import chan.content.model.Posts;
 import chan.http.HttpException;
 import chan.http.HttpHolder;
 import chan.http.HttpRequest;
+import chan.http.HttpResponse;
 import chan.http.MultipartEntity;
 import chan.http.UrlEncodedEntity;
 import chan.text.ParseException;
@@ -33,15 +34,33 @@ public class DobrochanChanPerformer extends ChanPerformer
 	private static final int DELAY = 1000;
 	private static final String COOKIE_HANABIRA = "hanabira";
 	
+	private HttpResponse readResponseRepeatable(HttpRequest request) throws HttpException
+	{
+		HttpException exception = null;
+		for (int i = 0; i < 5; i++)
+		{
+			try
+			{
+				return request.read();
+			}
+			catch (HttpException e)
+			{
+				exception = e;
+				if (e.getResponseCode() != HttpURLConnection.HTTP_UNAVAILABLE) break;
+			}
+		}
+		throw exception;
+	}
+	
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
 		DobrochanChanLocator locator = ChanLocator.get(this);
 		DobrochanChanConfiguration configuration = ChanConfiguration.get(this);
 		Uri uri = locator.buildPath(data.boardName, data.pageNumber + ".json");
-		JSONObject response = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
-				.addCookie(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA)).setDelay(DELAY)
-				.read().getJsonObject();
+		JSONObject response = readResponseRepeatable(new HttpRequest(uri, data.holder, data)
+				.setValidator(data.validator).addCookie(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA))
+				.setDelay(DELAY)).getJsonObject();
 		if (response != null)
 		{
 			try
@@ -84,9 +103,9 @@ public class DobrochanChanPerformer extends ChanPerformer
 			uri = locator.createApiUri("thread", data.boardName, data.threadNumber + "/all.json",
 					"new_format", "1", "message_html", "1", "board", "1");
 		}
-		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
-				.addCookie(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA)).setDelay(DELAY)
-				.read().getJsonObject();
+		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data.holder, data)
+				.setValidator(data.validator).addCookie(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA))
+				.setDelay(DELAY)).getJsonObject();
 		handleMobileApiError(jsonObject);
 		try
 		{
@@ -110,8 +129,8 @@ public class DobrochanChanPerformer extends ChanPerformer
 		DobrochanChanConfiguration configuration = ChanConfiguration.get(this);
 		Uri uri = locator.createApiUri("post", data.boardName, data.postNumber + ".json",
 				"new_format", "1", "message_html", "1", "thread", "1");
-		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).addCookie(COOKIE_HANABIRA,
-				configuration.getCookie(COOKIE_HANABIRA)).setDelay(DELAY).read().getJsonObject();
+		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data.holder, data)
+				.addCookie(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA)).setDelay(DELAY)).getJsonObject();
 		handleMobileApiError(jsonObject);
 		try
 		{
@@ -149,9 +168,9 @@ public class DobrochanChanPerformer extends ChanPerformer
 		DobrochanChanConfiguration configuration = ChanConfiguration.get(this);
 		Uri uri = locator.createApiUri("thread", data.boardName, data.threadNumber + "/last.json",
 				"count", "0", "new_format", "1");
-		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
-				.addCookie(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA)).setDelay(DELAY)
-				.read().getJsonObject();
+		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data.holder, data)
+				.setValidator(data.validator).addCookie(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA))
+				.setDelay(DELAY)).getJsonObject();
 		handleMobileApiError(jsonObject);
 		try
 		{
@@ -263,7 +282,8 @@ public class DobrochanChanPerformer extends ChanPerformer
 		DobrochanChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createApiUri("thread", boardName, threadNumber + "/last.json",
 				"count", "0", "new_format", "1");
-		JSONObject jsonObject = new HttpRequest(uri, holder, preset).setDelay(DELAY).read().getJsonObject();
+		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, holder, preset).setDelay(DELAY))
+				.getJsonObject();
 		handleMobileApiError(jsonObject);
 		try
 		{
