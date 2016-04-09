@@ -172,7 +172,10 @@ public class DobrochanChanPerformer extends ChanPerformer
 			String message = CommonUtils.optJsonString(errorObject, "message");
 			if (message != null)
 			{
-				if ("Specified element does not exist.".equals(message)) throw HttpException.createNotFoundException();
+				if ("Specified element does not exist.".equals(message) || "Post is deleted.".equals(message))
+				{
+					throw HttpException.createNotFoundException();
+				}
 				throw new HttpException(0, message);
 			}
 			throw new InvalidResponseException();
