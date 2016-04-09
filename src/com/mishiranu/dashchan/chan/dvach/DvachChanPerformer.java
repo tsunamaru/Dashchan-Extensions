@@ -107,16 +107,16 @@ public class DvachChanPerformer extends ChanPerformer
 	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, ThreadRedirectException,
 			InvalidResponseException
 	{
-		boolean mobileApi = data.partialThreadLoading;
+		boolean usePartialApi = data.partialThreadLoading;
 		boolean tryReadStatic = false;
 		try
 		{
-			return new ReadPostsResult(onReadPosts(data, mobileApi, false));
+			return new ReadPostsResult(onReadPosts(data, usePartialApi, false));
 		}
 		catch (HttpException e)
 		{
 			int responseCode = e.getResponseCode();
-			if (responseCode >= 500 && responseCode < 600 && mobileApi) tryReadStatic = true;
+			if (responseCode >= 500 && responseCode < 600 && usePartialApi) tryReadStatic = true;
 			else if (responseCode != HttpURLConnection.HTTP_NOT_FOUND) throw e;
 		}
 		if (tryReadStatic)
@@ -130,16 +130,16 @@ public class DvachChanPerformer extends ChanPerformer
 				if (e.getResponseCode() != HttpURLConnection.HTTP_NOT_FOUND) throw e;
 			}
 		}
-		return new ReadPostsResult(onReadPosts(data, false, true));
+		return new ReadPostsResult(onReadPosts(data, false, true)).setFullThread(true);
 	}
 	
-	public Posts onReadPosts(ReadPostsData data, boolean mobileApi, boolean archive) throws HttpException,
+	public Posts onReadPosts(ReadPostsData data, boolean usePartialApi, boolean archive) throws HttpException,
 			ThreadRedirectException, InvalidResponseException
 	{
 		DvachChanLocator locator = ChanLocator.get(this);
 		DvachChanConfiguration configuration = ChanConfiguration.get(this);
 		Uri uri;
-		if (mobileApi)
+		if (usePartialApi)
 		{
 			uri = locator.createApiUri("mobile.fcgi", "task", "get_thread", "board", data.boardName,
 					"thread", data.threadNumber, "num", data.lastPostNumber == null ? data.threadNumber
@@ -158,7 +158,7 @@ public class DvachChanPerformer extends ChanPerformer
 		data.holder.checkResponseCode();
 		JSONObject jsonObject = response.getJsonObject();
 		JSONArray jsonArray = response.getJsonArray();
-		if (mobileApi)
+		if (usePartialApi)
 		{
 			if (jsonArray != null)
 			{
