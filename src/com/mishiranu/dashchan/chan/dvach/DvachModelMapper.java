@@ -45,7 +45,7 @@ public class DvachModelMapper
 		String thumbnail = CommonUtils.optJsonString(jsonObject, "thumbnail");
 		Uri fileUri = file != null ? archive ? locator.buildPath(boardName, "arch", file)
 				: locator.buildPath(boardName, file) : null;
-		Uri thumbnailUri = thumbnail != null ? archive ? locator.buildPath(boardName, "arch", file)
+		Uri thumbnailUri = thumbnail != null ? archive ? locator.buildPath(boardName, "arch", thumbnail)
 				: locator.buildPath(boardName, thumbnail) : null;
 		int size = jsonObject.optInt("size") * 1024;
 		int width = jsonObject.optInt("width");
