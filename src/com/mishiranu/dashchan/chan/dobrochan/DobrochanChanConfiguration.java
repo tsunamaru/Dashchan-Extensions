@@ -13,10 +13,7 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 	
 	private static final String KEY_NAMES_ENABLED = "names_enabled";
 	private static final String KEY_TRIPCODES_ENABLED = "tripcodes_enabled";
-	
 	private static final String KEY_ATTACHMENTS_COUNT = "attachments_count";
-	
-	private static final int DEFAULT_ATTACHMENTS_COUNT = 5;
 	
 	public DobrochanChanConfiguration()
 	{
@@ -64,7 +61,7 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 		posting.allowTripcode = get(boardName, KEY_TRIPCODES_ENABLED, true);
 		posting.allowSubject = true;
 		posting.optionSage = true;
-		posting.attachmentCount = get(boardName, KEY_ATTACHMENTS_COUNT, DEFAULT_ATTACHMENTS_COUNT);
+		posting.attachmentCount = get(boardName, KEY_ATTACHMENTS_COUNT, 5);
 		posting.attachmentMimeTypes.add("image/*");
 		posting.attachmentMimeTypes.add("video/*");
 		posting.attachmentMimeTypes.add("audio/*");
@@ -119,7 +116,7 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 		boolean filesEnabled = jsonObject.optBoolean("allow_files", true);
 		boolean namesEnabled = jsonObject.optBoolean("allow_names", true);
 		boolean tripcodesEnabled = !jsonObject.optBoolean("restrict_trip", false);
-		int attachmentsCount = filesEnabled ? jsonObject.optInt("files_max_qty", DEFAULT_ATTACHMENTS_COUNT) : 0;
+		int attachmentsCount = filesEnabled ? jsonObject.optInt("files_max_qty", 5) : 0;
 		set(boardName, KEY_NAMES_ENABLED, namesEnabled);
 		set(boardName, KEY_TRIPCODES_ENABLED, tripcodesEnabled);
 		set(boardName, KEY_ATTACHMENTS_COUNT, attachmentsCount);
