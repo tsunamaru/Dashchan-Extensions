@@ -79,6 +79,7 @@ public class DvachChanConfiguration extends ChanConfiguration
 		posting.optionSage = get(boardName, KEY_SAGE_ENABLED, true);
 		posting.optionOriginalPoster = true;
 		posting.maxCommentLength = get(boardName, KEY_MAX_COMMENT_LENGTH, 15000);
+		posting.maxCommentLengthEncoding = "UTF-8";
 		posting.attachmentCount = get(boardName, KEY_IMAGES_ENABLED, true) ? 4 : 0;
 		posting.attachmentMimeTypes.add("image/*");
 		posting.attachmentMimeTypes.add("video/webm");

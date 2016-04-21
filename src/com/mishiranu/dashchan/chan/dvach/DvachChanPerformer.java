@@ -26,7 +26,6 @@ import chan.content.ChanLocator;
 import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
 import chan.content.ThreadRedirectException;
-import chan.content.ApiException.BanExtra;
 import chan.content.model.Board;
 import chan.content.model.BoardCategory;
 import chan.content.model.Post;
@@ -821,7 +820,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		if (error == 6)
 		{
-			BanExtra banExtra = new BanExtra();
+			ApiException.BanExtra banExtra = new ApiException.BanExtra();
 			Matcher matcher = PATTERN_BAN.matcher(reason);
 			while (matcher.find())
 			{
