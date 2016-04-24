@@ -2,11 +2,9 @@ package com.mishiranu.dashchan.chan.arhivach;
 
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
+import java.util.LinkedHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import android.net.Uri;
-import android.util.Pair;
 
 import chan.content.ChanConfiguration;
 import chan.content.ChanLocator;
@@ -25,7 +23,7 @@ public class ArhivachThreadsParser implements GroupParser.Callback
 	private final boolean mHandlePagesCount;
 
 	private Post mPost;
-	private final ArrayList<Pair<Post, Integer>> mPostHolders = new ArrayList<>();
+	private final LinkedHashMap<Post, Integer> mPostHolders = new LinkedHashMap<>();
 	private final ArrayList<FileAttachment> mAttachments = new ArrayList<>();
 
 	private static final int EXPECT_NONE = 0;
@@ -37,7 +35,8 @@ public class ArhivachThreadsParser implements GroupParser.Callback
 	
 	private int mExpect = EXPECT_NONE;
 	
-	private static final Pattern SUBJECT_PATTERN = Pattern.compile("^<b>(.*?)</b> &mdash; ");
+	private static final Pattern PATTERN_SUBJECT = Pattern.compile("^<b>(.*?)</b> &mdash; ");
+	private static final Pattern PATTERN_NOT_ARCHIVED = Pattern.compile("<a.*?>\\[.*?\\] Ожидание обновления</a>");
 	
 	public ArhivachThreadsParser(String source, Object linked, boolean handlePagesCount)
 	{
@@ -53,9 +52,9 @@ public class ArhivachThreadsParser implements GroupParser.Callback
 		if (mPostHolders.size() > 0)
 		{
 			ArrayList<Posts> threads = new ArrayList<>(mPostHolders.size());
-			for (Pair<Post, Integer> holder : mPostHolders)
+			for (LinkedHashMap.Entry<Post, Integer> entry : mPostHolders.entrySet())
 			{
-				threads.add(new Posts(holder.first).addPostsCount(holder.second));
+				threads.add(new Posts(entry.getKey()).addPostsCount(entry.getValue()));
 			}
 			return threads;
 		}
@@ -68,7 +67,7 @@ public class ArhivachThreadsParser implements GroupParser.Callback
 		if (mPostHolders.size() > 0)
 		{
 			ArrayList<Post> posts = new ArrayList<>(mPostHolders.size());
-			for (Pair<Post, Integer> holder : mPostHolders) posts.add(holder.first);
+			for (Post post : mPostHolders.keySet()) posts.add(post);
 			return posts;
 		}
 		return null;
@@ -124,22 +123,9 @@ public class ArhivachThreadsParser implements GroupParser.Callback
 				String cssClass = parser.getAttr(attrs, "class");
 				if ("expand_image".equals(cssClass))
 				{
-					String onclick = parser.getAttr(attrs, "onclick");
-					if (onclick != null)
+					if (ArhivachPostsParser.parseExpandImage(parser, attrs, mLocator, mAttachments))
 					{
-						int start = onclick.indexOf("http");
-						if (start >= 0)
-						{
-							int end = onclick.indexOf("'", start);
-							if (end >= 0)
-							{
-								FileAttachment attachment = new FileAttachment();
-								mAttachments.add(attachment);
-								String uriString = onclick.substring(start, end);
-								if (uriString != null) attachment.setFileUri(mLocator, Uri.parse(uriString));
-								mExpect = EXPECT_THUMBNAIL;
-							}
-						}
+						mExpect = EXPECT_THUMBNAIL;
 					}
 				}
 			}
@@ -147,21 +133,9 @@ public class ArhivachThreadsParser implements GroupParser.Callback
 			{
 				if (mExpect == EXPECT_THUMBNAIL)
 				{
-					String script = parser.getAttr(attrs, "src");
-					if (script != null)
+					if (ArhivachPostsParser.parseIframeThumbnail(parser, attrs, mLocator, mAttachments))
 					{
-						int start = script.indexOf("http");
-						if (start >= 0)
-						{
-							int end = script.indexOf("\\'", start);
-							if (end >= 0)
-							{
-								FileAttachment attachment = mAttachments.get(mAttachments.size() - 1);
-								String uriString = script.substring(start, end);
-								if (uriString != null) attachment.setThumbnailUri(mLocator, Uri.parse(uriString));
-								mExpect = EXPECT_NONE;
-							}
-						}
+						mExpect = EXPECT_NONE;
 					}
 				}
 			}
@@ -169,9 +143,7 @@ public class ArhivachThreadsParser implements GroupParser.Callback
 			{
 				if (mExpect == EXPECT_THUMBNAIL)
 				{
-					FileAttachment attachment = mAttachments.get(mAttachments.size() - 1);
-					String uriString = parser.getAttr(attrs, "src");
-					if (uriString != null) attachment.setThumbnailUri(mLocator, Uri.parse(uriString));
+					ArhivachPostsParser.parseImageThumbnail(parser, attrs, mLocator, mAttachments);
 					mExpect = EXPECT_NONE;
 				}
 			}
@@ -211,8 +183,8 @@ public class ArhivachThreadsParser implements GroupParser.Callback
 			case EXPECT_POSTS_COUNT:
 			{
 				int postsCount = Integer.parseInt(text.trim());
-				if (postsCount >= 0) mPostHolders.add(new Pair<>(mPost, postsCount));
-				else mPost = null; // Thread is not yet archived
+				if (postsCount >= 0) mPostHolders.put(mPost, postsCount);
+				else mPost = null; // Thread is not archived
 				break;
 			}
 			case EXPECT_COMMENT:
@@ -220,9 +192,15 @@ public class ArhivachThreadsParser implements GroupParser.Callback
 				if (text != null)
 				{
 					text = text.trim();
+					if (PATTERN_NOT_ARCHIVED.matcher(text).matches())
+					{
+						mPostHolders.remove(mPost);
+						mPost = null; // Thread is not archived
+						break;
+					}
 					// remove unclosed <a> tag (see arhivach root page html)
 					text = text.substring(text.indexOf(">") + 1);
-					Matcher matcher = SUBJECT_PATTERN.matcher(text);
+					Matcher matcher = PATTERN_SUBJECT.matcher(text);
 					if (matcher.find())
 					{
 						mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(matcher.group(1)).trim()));

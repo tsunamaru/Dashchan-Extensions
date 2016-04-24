@@ -135,21 +135,9 @@ public class ArhivachPostsParser implements GroupParser.Callback
 		{
 			if (mExpect == EXPECT_THUMBNAIL)
 			{
-				String script = parser.getAttr(attrs, "src");
-				if (script != null)
+				if (parseIframeThumbnail(parser, attrs, mLocator, mAttachments))
 				{
-					int start = script.indexOf("http");
-					if (start >= 0)
-					{
-						int end = script.indexOf("\\'", start);
-						if (end >= 0)
-						{
-							FileAttachment attachment = mAttachments.get(mAttachments.size() - 1);
-							String uriString = script.substring(start, end);
-							if (uriString != null) attachment.setThumbnailUri(mLocator, Uri.parse(uriString));
-							mExpect = EXPECT_NONE;
-						}
-					}
+					mExpect = EXPECT_NONE;
 				}
 			}
 		}
@@ -157,9 +145,7 @@ public class ArhivachPostsParser implements GroupParser.Callback
 		{
 			if (mExpect == EXPECT_THUMBNAIL)
 			{
-				FileAttachment attachment = mAttachments.get(mAttachments.size() - 1);
-				String uriString = parser.getAttr(attrs, "src");
-				if (uriString != null) attachment.setThumbnailUri(mLocator, Uri.parse(uriString));
+				parseImageThumbnail(parser, attrs, mLocator, mAttachments);
 				mExpect = EXPECT_NONE;
 			}
 			else
@@ -173,22 +159,9 @@ public class ArhivachPostsParser implements GroupParser.Callback
 			String cssClass = parser.getAttr(attrs, "class");
 			if ("expand_image".equals(cssClass))
 			{
-				String onclick = parser.getAttr(attrs, "onclick");
-				if (onclick != null)
+				if (parseExpandImage(parser, attrs, mLocator, mAttachments))
 				{
-					int start = onclick.indexOf("http");
-					if (start >= 0)
-					{
-						int end = onclick.indexOf("'", start);
-						if (end >= 0)
-						{
-							FileAttachment attachment = new FileAttachment();
-							mAttachments.add(attachment);
-							String uriString = onclick.substring(start, end);
-							if (uriString != null) attachment.setFileUri(mLocator, Uri.parse(uriString));
-							mExpect = EXPECT_THUMBNAIL;
-						}
-					}
+					mExpect = EXPECT_THUMBNAIL;
 				}
 			}
 			else if ("post_mail".equals(cssClass))
@@ -214,6 +187,83 @@ public class ArhivachPostsParser implements GroupParser.Callback
 	public void onText(GroupParser parser, String source, int start, int end)
 	{
 		
+	}
+	
+	static boolean parseExpandImage(GroupParser parser, String attrs, ArhivachChanLocator locator,
+			ArrayList<FileAttachment> attachments)
+	{
+		String onclick = parser.getAttr(attrs, "onclick");
+		if (onclick != null)
+		{
+			boolean relative = false;
+			int start = onclick.indexOf("http");
+			if (start == -1)
+			{
+				start = onclick.indexOf("/storage");
+				relative = true;
+			}
+			if (start >= 0)
+			{
+				int end = onclick.indexOf("'", start);
+				if (end >= 0)
+				{
+					FileAttachment attachment = new FileAttachment();
+					attachments.add(attachment);
+					String uriString = onclick.substring(start, end);
+					if (uriString != null)
+					{
+						if (relative) attachment.setFileUri(locator, locator.buildPath(uriString));
+						else attachment.setFileUri(locator, Uri.parse(uriString));
+					}
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	static boolean parseIframeThumbnail(GroupParser parser, String attrs, ArhivachChanLocator locator,
+			ArrayList<FileAttachment> attachments)
+	{
+		String script = parser.getAttr(attrs, "src");
+		if (script != null)
+		{
+			boolean relative = false;
+			int start = script.indexOf("http");
+			if (start == -1)
+			{
+				start = script.indexOf("/storage");
+				relative = true;
+			}
+			if (start >= 0)
+			{
+				int end = script.indexOf("\\'", start);
+				if (end >= 0)
+				{
+					FileAttachment attachment = attachments.get(attachments.size() - 1);
+					String uriString = script.substring(start, end);
+					if (uriString != null)
+					{
+						if (relative) attachment.setThumbnailUri(locator, locator.buildPath(uriString));
+						else attachment.setThumbnailUri(locator, Uri.parse(uriString));
+					}
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	static void parseImageThumbnail(GroupParser parser, String attrs, ArhivachChanLocator locator,
+			ArrayList<FileAttachment> attachments)
+	{
+		FileAttachment attachment = attachments.get(attachments.size() - 1);
+		String uriString = parser.getAttr(attrs, "src");
+		if (uriString != null)
+		{
+			if (uriString.startsWith("http")) attachment.setThumbnailUri(locator, Uri.parse(uriString));
+			else attachment.setThumbnailUri(locator, locator.buildPath(uriString));
+		}
 	}
 	
 	private static final Pattern NAME_SAGE_PATTERN = Pattern.compile("ID:( |\u00a0|&nbsp;?)Heaven");
