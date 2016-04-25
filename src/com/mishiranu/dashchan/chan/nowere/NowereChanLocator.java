@@ -19,6 +19,7 @@ public class NowereChanLocator extends ChanLocator
 	{
 		addChanHost("nowere.net");
 		addChanHost("sky.nowere.net");
+		addConvertableChanHost("www.nowere.net");
 	}
 	
 	@Override
