@@ -236,8 +236,9 @@ public class NulleuPostsParser implements GroupParser.Callback
 				}
 			}
 		}
-		else if ("a".equals(tagName))
+		else if ("a".equals(tagName) || "a\r\ntarget=\"_blank\"".equals(tagName))
 		{
+			// TODO Remove "a\r\ntarget=\"_blank\"" checking after fixing the parser
 			if (mParentFromRefLink && "shl".equals(parser.getAttr(attrs, "class")))
 			{
 				String href = parser.getAttr(attrs, "href");
@@ -260,7 +261,10 @@ public class NulleuPostsParser implements GroupParser.Callback
 				if (mAttachment != null)
 				{
 					String path = convertUriString(parser.getAttr(attrs, "src"));
-					if (path != null) mAttachment.setThumbnailUri(mLocator, mLocator.buildPath(path));
+					if (path != null && !path.endsWith("/generic.png"))
+					{
+						mAttachment.setThumbnailUri(mLocator, mLocator.buildPath(path));
+					}
 					mPost.setAttachments(mAttachment);
 					mAttachment = null;
 				}

@@ -54,6 +54,7 @@ public class NulleuChanConfiguration extends ChanConfiguration
 		posting.optionSage = true;
 		posting.attachmentCount = 1;
 		posting.attachmentMimeTypes.add("image/*");
+		posting.attachmentMimeTypes.add("video/webm");
 		return posting;
 	}
 	
