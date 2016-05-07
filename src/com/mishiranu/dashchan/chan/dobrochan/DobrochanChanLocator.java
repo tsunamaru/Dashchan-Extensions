@@ -20,9 +20,9 @@ public class DobrochanChanLocator extends ChanLocator
 		addChanHost("dobrochan.com");
 		addChanHost("dobrochan.org");
 		addChanHost("dobrochan.ru");
-		addSpecialChanHost("www.dobrochan.com");
-		addSpecialChanHost("www.dobrochan.org");
-		addSpecialChanHost("www.dobrochan.ru");
+		addConvertableChanHost("www.dobrochan.com");
+		addConvertableChanHost("www.dobrochan.org");
+		addConvertableChanHost("www.dobrochan.ru");
 	}
 	
 	@Override
