@@ -1,4 +1,4 @@
-# Dashchan Extension: Apachan
+# Dashchan Extension: apachan
 
 Extension for apachan.net.
 

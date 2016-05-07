@@ -15,7 +15,7 @@ public class ApachanChanLocator extends ChanLocator
 	public ApachanChanLocator()
 	{
 		addChanHost("apachan.net");
-		addSpecialChanHost("www.apachan.net");
+		addConvertableChanHost("www.apachan.net");
 	}
 	
 	@Override
