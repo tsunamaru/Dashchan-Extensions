@@ -18,7 +18,7 @@ public class ArchiveRbtChanLocator extends ChanLocator
 	{
 		addChanHost("rbt.asia");
 		addChanHost("archive.rebeccablacktech.com");
-		addSpecialChanHost("www.rbt.asia");
+		addConvertableChanHost("www.rbt.asia");
 		setHttpsMode(HttpsMode.CONFIGURABLE);
 	}
 	
