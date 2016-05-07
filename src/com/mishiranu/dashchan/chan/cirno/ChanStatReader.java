@@ -1,5 +1,6 @@
 package com.mishiranu.dashchan.chan.cirno;
 
+import java.net.HttpURLConnection;
 import java.util.Collections;
 import java.util.HashSet;
 
@@ -9,11 +10,15 @@ import chan.content.ChanLocator;
 import chan.http.HttpException;
 import chan.http.HttpHolder;
 import chan.http.HttpRequest;
+import chan.http.HttpValidator;
 
 public class ChanStatReader
 {
 	private final String mDomainName;
 	private final HashSet<String> mBoardNames = new HashSet<String>();
+	
+	private String mCachedResponseText;
+	private HttpValidator mValidator;
 	
 	public ChanStatReader(String domainName, String... boardNames)
 	{
@@ -29,12 +34,19 @@ public class ChanStatReader
 		String responseText;
 		try
 		{
-			responseText = new HttpRequest(uri, holder, preset).setTimeouts(5000, 5000).read().getString();
+			responseText = new HttpRequest(uri, holder, preset).setValidator(mValidator).setTimeouts(5000, 5000)
+					.read().getString();
+			HttpValidator validator = holder.getValidator();
+			if (validator != null)
+			{
+				mCachedResponseText = responseText;
+				mValidator = validator;
+			}
 		}
 		catch (HttpException e)
 		{
-			if (e.isHttpException() || e.isSocketException()) return -1;
-			throw e;
+			if (e.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED) responseText = mCachedResponseText;
+			else if (e.isHttpException() || e.isSocketException()) return -1; else throw e;
 		}
 		int start = responseText.indexOf("graphs/" + mDomainName + "/" + boardName + ".html#perhour");
 		if (start >= 0)

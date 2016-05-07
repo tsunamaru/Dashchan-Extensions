@@ -23,6 +23,7 @@ import chan.content.model.ThreadSummary;
 import chan.content.model.Threads;
 import chan.http.HttpException;
 import chan.http.HttpRequest;
+import chan.http.HttpValidator;
 import chan.http.MultipartEntity;
 import chan.http.UrlEncodedEntity;
 import chan.text.ParseException;
@@ -45,12 +46,13 @@ public class CirnoChanPerformer extends ChanPerformer
 		{
 			Threads threads = new Threads(data.isCatalog() ? new CirnoCatalogParser(responseText, this).convert()
 					: new CirnoPostsParser(responseText, this, data.boardName).convertThreads());
+			HttpValidator validator = data.holder.getValidator();
 			if (!data.isCatalog() && data.pageNumber == 0 && configuration.isReadChanStat())
 			{
 				int boardSpeed = mChanStatReader.readBoardSpeed(data.boardName, locator, data.holder, data);
 				if (boardSpeed >= 0) threads.setBoardSpeed(boardSpeed);
 			}
-			return new ReadThreadsResult(threads);
+			return new ReadThreadsResult(threads).setValidator(validator);
 		}
 		catch (ParseException e)
 		{
