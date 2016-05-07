@@ -1,0 +1,6 @@
+<resources>
+	
+	<string name="preference_read_chan_stat">Скорость доски</string>
+	<string name="preference_read_chan_stat_summary">Чтение данных о скорости досок с chanstat.ru</string>
+	
+</resources>

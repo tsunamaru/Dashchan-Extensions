@@ -1,0 +1,61 @@
+package com.mishiranu.dashchan.chan.cirno;
+
+import java.util.Collections;
+import java.util.HashSet;
+
+import android.net.Uri;
+
+import chan.content.ChanLocator;
+import chan.http.HttpException;
+import chan.http.HttpHolder;
+import chan.http.HttpRequest;
+
+public class ChanStatReader
+{
+	private final String mDomainName;
+	private final HashSet<String> mBoardNames = new HashSet<String>();
+	
+	public ChanStatReader(String domainName, String... boardNames)
+	{
+		mDomainName = domainName;
+		Collections.addAll(mBoardNames, boardNames);
+	}
+	
+	public int readBoardSpeed(String boardName, ChanLocator locator, HttpHolder holder, HttpRequest.Preset preset)
+			throws HttpException
+	{
+		if (!mBoardNames.contains(boardName)) return -1;
+		Uri uri = locator.buildPathWithSchemeHost(true, "chanstat.ru");
+		String responseText;
+		try
+		{
+			responseText = new HttpRequest(uri, holder, preset).setTimeouts(5000, 5000).read().getString();
+		}
+		catch (HttpException e)
+		{
+			if (e.isHttpException() || e.isSocketException()) return -1;
+			throw e;
+		}
+		int start = responseText.indexOf("graphs/" + mDomainName + "/" + boardName + ".html#perhour");
+		if (start >= 0)
+		{
+			start = responseText.indexOf(':', start) + 1;
+			if (start > 0)
+			{
+				int end = responseText.indexOf('<', start);
+				if (end > start)
+				{
+					try
+					{
+						return Integer.parseInt(responseText.substring(start, end).trim());
+					}
+					catch (NumberFormatException e)
+					{
+						
+					}
+				}
+			}
+		}
+		return -1;
+	}
+}

@@ -12,12 +12,15 @@ import android.graphics.Canvas;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.net.Uri;
+
 import chan.content.ApiException;
+import chan.content.ChanConfiguration;
 import chan.content.ChanLocator;
 import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
 import chan.content.model.Post;
 import chan.content.model.ThreadSummary;
+import chan.content.model.Threads;
 import chan.http.HttpException;
 import chan.http.HttpRequest;
 import chan.http.MultipartEntity;
@@ -27,18 +30,27 @@ import chan.util.CommonUtils;
 
 public class CirnoChanPerformer extends ChanPerformer
 {
+	private final ChanStatReader mChanStatReader = new ChanStatReader("iichan.hk", "b", "a", "vg");
+	
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
 		CirnoChanLocator locator = ChanLocator.get(this);
+		CirnoChanConfiguration configuration = ChanConfiguration.get(this);
 		Uri uri = data.isCatalog() ? locator.buildPath(data.boardName, "catalogue.html")
 				: locator.createBoardUri(data.boardName, data.pageNumber);
 		String responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
 				.read().getString();
 		try
 		{
-			return new ReadThreadsResult(data.isCatalog() ? new CirnoCatalogParser(responseText, this).convert()
+			Threads threads = new Threads(data.isCatalog() ? new CirnoCatalogParser(responseText, this).convert()
 					: new CirnoPostsParser(responseText, this, data.boardName).convertThreads());
+			if (!data.isCatalog() && data.pageNumber == 0 && configuration.isReadChanStat())
+			{
+				int boardSpeed = mChanStatReader.readBoardSpeed(data.boardName, locator, data.holder, data);
+				if (boardSpeed >= 0) threads.setBoardSpeed(boardSpeed);
+			}
+			return new ReadThreadsResult(threads);
 		}
 		catch (ParseException e)
 		{

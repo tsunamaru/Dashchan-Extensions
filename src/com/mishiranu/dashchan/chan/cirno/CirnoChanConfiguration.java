@@ -1,5 +1,7 @@
 package com.mishiranu.dashchan.chan.cirno;
 
+import android.content.res.Resources;
+
 import chan.content.ChanConfiguration;
 
 public class CirnoChanConfiguration extends ChanConfiguration
@@ -7,6 +9,8 @@ public class CirnoChanConfiguration extends ChanConfiguration
 	private static final String KEY_IMAGES_ENABLED = "images_enabled";
 	private static final String KEY_NAMES_ENABLED = "names_enabled";
 	private static final String KEY_IMAGE_SPOILERS_ENABLED = "image_spoilers_enabled";
+	
+	private static final String KEY_READ_CHAN_STAT = "read_chan_stat";
 	
 	public CirnoChanConfiguration()
 	{
@@ -48,6 +52,7 @@ public class CirnoChanConfiguration extends ChanConfiguration
 		setDefaultName("d", "Мод-тян");
 		setBumpLimit(500);
 		addCaptchaType("wakaba");
+		addCustomPreference(KEY_READ_CHAN_STAT, true);
 	}
 	
 	@Override
@@ -97,6 +102,25 @@ public class CirnoChanConfiguration extends ChanConfiguration
 		deleting.multiplePosts = true;
 		deleting.optionFilesOnly = true;
 		return deleting;
+	}
+	
+	@Override
+	public CustomPreference obtainCustomPreferenceConfiguration(String key)
+	{
+		if (KEY_READ_CHAN_STAT.equals(key))
+		{
+			Resources resources = getResources();
+			CustomPreference customPreference = new CustomPreference();
+			customPreference.title = resources.getString(R.string.preference_read_chan_stat);
+			customPreference.summary = resources.getString(R.string.preference_read_chan_stat_summary);
+			return customPreference;
+		}
+		return null;
+	}
+	
+	public boolean isReadChanStat()
+	{
+		return get(null, KEY_READ_CHAN_STAT, true);
 	}
 	
 	public void storeNamesImagesSpoilersEnabled(String boardName, boolean namesEnabled, boolean imagesEnabled,

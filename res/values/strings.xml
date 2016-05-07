@@ -3,4 +3,7 @@
 	<string name="text_app_name">Dashchan for iichan.hk</string>
 	<string name="text_activity_name">Dashchan</string>
 	
+	<string name="preference_read_chan_stat">Board speed</string>
+	<string name="preference_read_chan_stat_summary">Read board speed data from chanstat.ru</string>
+	
 </resources>
