@@ -11,6 +11,8 @@ import org.json.JSONObject;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Paint;
 import android.net.Uri;
 
 import chan.content.ApiException;
@@ -19,6 +21,7 @@ import chan.content.ChanLocator;
 import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
 import chan.content.model.Posts;
+import chan.http.CookieBuilder;
 import chan.http.HttpException;
 import chan.http.HttpHolder;
 import chan.http.HttpRequest;
@@ -27,12 +30,12 @@ import chan.http.MultipartEntity;
 import chan.http.UrlEncodedEntity;
 import chan.text.ParseException;
 import chan.util.CommonUtils;
-import chan.util.StringUtils;
 
 public class DobrochanChanPerformer extends ChanPerformer
 {
 	private static final int DELAY = 1000;
 	private static final String COOKIE_HANABIRA = "hanabira";
+	private static final String COOKIE_HANABIRA_TEMP = "hanabira_temp";
 	
 	private HttpResponse readResponseRepeatable(HttpRequest request) throws HttpException
 	{
@@ -52,6 +55,13 @@ public class DobrochanChanPerformer extends ChanPerformer
 		throw exception;
 	}
 	
+	private CookieBuilder buildCookies()
+	{
+		DobrochanChanConfiguration configuration = ChanConfiguration.get(this);
+		return new CookieBuilder().append(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA))
+				.append(COOKIE_HANABIRA_TEMP, configuration.getCookie(COOKIE_HANABIRA_TEMP));
+	}
+	
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
@@ -59,8 +69,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 		DobrochanChanConfiguration configuration = ChanConfiguration.get(this);
 		Uri uri = locator.buildPath(data.boardName, data.pageNumber + ".json");
 		JSONObject response = readResponseRepeatable(new HttpRequest(uri, data.holder, data)
-				.setValidator(data.validator).addCookie(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA))
-				.setDelay(DELAY)).getJsonObject();
+				.setValidator(data.validator).addCookie(buildCookies()).setDelay(DELAY)).getJsonObject();
 		if (response != null)
 		{
 			try
@@ -104,8 +113,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 					"new_format", "1", "message_html", "1", "board", "1");
 		}
 		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data.holder, data)
-				.setValidator(data.validator).addCookie(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA))
-				.setDelay(DELAY)).getJsonObject();
+				.setValidator(data.validator).addCookie(buildCookies()).setDelay(DELAY)).getJsonObject();
 		handleMobileApiError(jsonObject);
 		try
 		{
@@ -126,11 +134,10 @@ public class DobrochanChanPerformer extends ChanPerformer
 	public ReadSinglePostResult onReadSinglePost(ReadSinglePostData data) throws HttpException, InvalidResponseException
 	{
 		DobrochanChanLocator locator = ChanLocator.get(this);
-		DobrochanChanConfiguration configuration = ChanConfiguration.get(this);
 		Uri uri = locator.createApiUri("post", data.boardName, data.postNumber + ".json",
 				"new_format", "1", "message_html", "1", "thread", "1");
 		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data.holder, data)
-				.addCookie(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA)).setDelay(DELAY)).getJsonObject();
+				.addCookie(buildCookies()).setDelay(DELAY)).getJsonObject();
 		handleMobileApiError(jsonObject);
 		try
 		{
@@ -165,12 +172,10 @@ public class DobrochanChanPerformer extends ChanPerformer
 	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException
 	{
 		DobrochanChanLocator locator = ChanLocator.get(this);
-		DobrochanChanConfiguration configuration = ChanConfiguration.get(this);
 		Uri uri = locator.createApiUri("thread", data.boardName, data.threadNumber + "/last.json",
 				"count", "0", "new_format", "1");
 		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data.holder, data)
-				.setValidator(data.validator).addCookie(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA))
-				.setDelay(DELAY)).getJsonObject();
+				.setValidator(data.validator).addCookie(buildCookies()).setDelay(DELAY)).getJsonObject();
 		handleMobileApiError(jsonObject);
 		try
 		{
@@ -201,6 +206,9 @@ public class DobrochanChanPerformer extends ChanPerformer
 		}
 	}
 	
+	private static final ColorMatrixColorFilter CAPTCHA_FILTER = new ColorMatrixColorFilter(new float[]
+			{0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f});
+	
 	private final HashSet<String> mForceCaptcha = new HashSet<>();
 	
 	private boolean isForceCaptcha(String boardName, String threadNumber)
@@ -219,61 +227,54 @@ public class DobrochanChanPerformer extends ChanPerformer
 	{
 		DobrochanChanLocator locator = ChanLocator.get(this);
 		DobrochanChanConfiguration configuration = ChanConfiguration.get(this);
-		String hanabiraCookie = configuration.getCookie(COOKIE_HANABIRA);
 		if (!configuration.isAlwaysLoadCaptcha())
 		{
-			if (!StringUtils.isEmpty(hanabiraCookie))
+			if (!isForceCaptcha(data.boardName, data.threadNumber))
 			{
-				if (!isForceCaptcha(data.boardName, data.threadNumber))
+				Uri uri = locator.buildPath("api", "user.json");
+				JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data.holder, data)
+						.addCookie(buildCookies()).setDelay(DELAY)).getJsonObject();
+				if (jsonObject != null)
 				{
-					Uri uri = locator.buildPath("api", "user.json");
-					JSONObject jsonObject = new HttpRequest(uri, data.holder, data)
-							.addCookie(COOKIE_HANABIRA, hanabiraCookie).read().getJsonObject();
-					if (jsonObject != null)
+					JSONArray jsonArray = jsonObject.optJSONArray("tokens");
+					if (jsonArray != null)
 					{
-						JSONArray jsonArray = jsonObject.optJSONArray("tokens");
-						if (jsonArray != null)
+						for (int i = 0; i < jsonArray.length(); i++)
 						{
-							for (int i = 0; i < jsonArray.length(); i++)
+							jsonObject = jsonArray.optJSONObject(i);
+							if (jsonObject != null)
 							{
-								jsonObject = jsonArray.optJSONObject(i);
-								if (jsonObject != null)
+								String token = CommonUtils.optJsonString(jsonObject, "token");
+								if ("no_user_captcha".equals(token))
 								{
-									String token = CommonUtils.optJsonString(jsonObject, "token");
-									if ("no_user_captcha".equals(token))
-									{
-										CaptchaData captchaData = new CaptchaData();
-										captchaData.put(CaptchaData.CHALLENGE, hanabiraCookie);
-										return new ReadCaptchaResult(CaptchaState.SKIP, captchaData);
-									}
+									return new ReadCaptchaResult(CaptchaState.SKIP, new CaptchaData());
 								}
 							}
 						}
 					}
 				}
-				else setForceCaptcha(data.boardName, data.threadNumber, false);
 			}
+			else setForceCaptcha(data.boardName, data.threadNumber, false);
 		}
 		Uri uri = locator.buildPath("captcha", data.boardName, System.currentTimeMillis() + ".png");
-		Bitmap image = new HttpRequest(uri, data.holder, data).addCookie(COOKIE_HANABIRA, hanabiraCookie)
-				.read().getBitmap();
+		Bitmap image = readResponseRepeatable(new HttpRequest(uri, data.holder, data).addCookie(buildCookies())
+				.setDelay(DELAY)).getBitmap();
 		Bitmap trimmed = CommonUtils.trimBitmap(image, 0xffffffff);
 		if (trimmed == null) trimmed = image;
 		Bitmap newImage = Bitmap.createBitmap(trimmed.getWidth(), 32, Bitmap.Config.ARGB_8888);
 		Canvas canvas = new Canvas(newImage);
 		int shift = (newImage.getHeight() - trimmed.getHeight()) / 2;
 		canvas.drawColor(0xffffffff);
-		canvas.drawBitmap(trimmed, 0, shift, null);
+		Paint paint = new Paint();
+		paint.setColorFilter(CAPTCHA_FILTER);
+		canvas.drawBitmap(trimmed, 0, shift, paint);
 		if (trimmed != image) trimmed.recycle();
 		image.recycle();
-		if (StringUtils.isEmpty(hanabiraCookie))
-		{
-			hanabiraCookie = data.holder.getCookieValue(COOKIE_HANABIRA);
-			configuration.storeCookie(COOKIE_HANABIRA, hanabiraCookie, "Hanabira");
-		}
-		CaptchaData captchaData = new CaptchaData();
-		captchaData.put(CaptchaData.CHALLENGE, hanabiraCookie);
-		return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData).setImage(newImage);
+		String hanabira = data.holder.getCookieValue(COOKIE_HANABIRA);
+		if (hanabira != null) configuration.storeCookie(COOKIE_HANABIRA, hanabira, "Hanabira");
+		String hanabiraTemp = data.holder.getCookieValue(COOKIE_HANABIRA_TEMP);
+		if (hanabiraTemp != null) configuration.storeCookie(COOKIE_HANABIRA_TEMP, hanabiraTemp, "Hanabira Temp");
+		return new ReadCaptchaResult(CaptchaState.CAPTCHA, new CaptchaData()).setImage(newImage);
 	}
 	
 	public String readThreadId(String boardName, String threadNumber, HttpHolder holder, HttpRequest.Preset preset)
@@ -319,19 +320,14 @@ public class DobrochanChanPerformer extends ChanPerformer
 			}
 			entity.add("post_files_count", Integer.toString(data.attachments.length));
 		}
-		String hanabiraCookie = null;
-		if (data.captchaData != null)
-		{
-			entity.add("captcha", data.captchaData.get(CaptchaData.INPUT));
-			hanabiraCookie = data.captchaData.get(CaptchaData.CHALLENGE);
-		}
+		if (data.captchaData != null) entity.add("captcha", data.captchaData.get(CaptchaData.INPUT));
 		
 		DobrochanChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "post", "new.xhtml");
 		String responseText;
 		try
 		{
-			new HttpRequest(uri, data.holder, data).setPostMethod(entity).addCookie(COOKIE_HANABIRA, hanabiraCookie)
+			new HttpRequest(uri, data.holder, data).setPostMethod(entity).addCookie(buildCookies())
 					.setRedirectHandler(HttpRequest.RedirectHandler.NONE).execute();
 			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_MOVED_TEMP)
 			{
@@ -344,8 +340,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 					if (threadNumber == null) throw new InvalidResponseException();
 					return new SendPostResult(threadNumber, null);
 				}
-				responseText = new HttpRequest(uri, data.holder, data).addCookie(COOKIE_HANABIRA, hanabiraCookie)
-						.read().getString();
+				responseText = new HttpRequest(uri, data.holder, data).addCookie(buildCookies()).read().getString();
 			}
 			else responseText = data.holder.read().getString();
 		}
