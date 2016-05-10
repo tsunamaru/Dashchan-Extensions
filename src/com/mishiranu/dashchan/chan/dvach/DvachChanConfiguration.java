@@ -118,8 +118,8 @@ public class DvachChanConfiguration extends ChanConfiguration
 		{
 			Resources resources = getResources();
 			CustomPreference customPreference = new CustomPreference();
-			customPreference.title = resources.getString(R.string.pref_captcha_bypass);
-			customPreference.summary = resources.getString(R.string.pref_captcha_bypass_summary);
+			customPreference.title = resources.getString(R.string.preference_captcha_bypass);
+			customPreference.summary = resources.getString(R.string.preference_captcha_bypass_summary);
 			return customPreference;
 		}
 		return null;
@@ -132,7 +132,7 @@ public class DvachChanConfiguration extends ChanConfiguration
 	
 	public boolean isCaptchaBypassEnabled()
 	{
-		return get(null, DvachChanConfiguration.KEY_CAPTCHA_BYPASS, true);
+		return get(null, KEY_CAPTCHA_BYPASS, true);
 	}
 	
 	public void updateFromBoardsJson(JSONArray jsonArray)
