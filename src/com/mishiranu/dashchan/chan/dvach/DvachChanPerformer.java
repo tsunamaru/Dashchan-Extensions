@@ -20,6 +20,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.net.Uri;
+
 import chan.content.ApiException;
 import chan.content.ChanConfiguration;
 import chan.content.ChanLocator;
@@ -51,12 +52,12 @@ public class DvachChanPerformer extends ChanPerformer
 	private static final String[] PREFERRED_BOARDS_ORDER = {"Разное", "Тематика", "Творчество", "Политика",
 		"Техника и софт", "Игры", "Японская культура", "Взрослым", "Пробное"};
 	
-	private CookieBuilder buildCookies(String captchaPassData)
+	private CookieBuilder buildCookies(String captchaPassCookie)
 	{
 		DvachChanConfiguration configuration = ChanConfiguration.get(this);
 		CookieBuilder builder = new CookieBuilder();
 		builder.append(COOKIE_AUTH, configuration.getCookie(COOKIE_AUTH));
-		builder.append(COOKIE_NOCAPTCHA, captchaPassData);
+		builder.append(COOKIE_NOCAPTCHA, captchaPassCookie);
 		return builder;
 	}
 	
@@ -471,36 +472,36 @@ public class DvachChanPerformer extends ChanPerformer
 	public CheckAuthorizationResult onCheckAuthorization(CheckAuthorizationData data) throws HttpException,
 			InvalidResponseException
 	{
-		return new CheckAuthorizationResult(readCaptchaPassData(data.holder, data, data.authorizationData[0]) != null);
+		return new CheckAuthorizationResult(readCaptchaPass(data.holder, data, data.authorizationData[0]) != null);
 	}
 	
-	private String mLastCaptchaPass;
 	private String mLastCaptchaPassData;
+	private String mLastCaptchaPassCookie;
 	
-	private String readCaptchaPassData(HttpHolder holder, HttpRequest.Preset preset, String captchaPass)
+	private String readCaptchaPass(HttpHolder holder, HttpRequest.Preset preset, String captchaPassData)
 			throws HttpException, InvalidResponseException
 	{
-		mLastCaptchaPass = null;
 		mLastCaptchaPassData = null;
+		mLastCaptchaPassCookie = null;
 		DvachChanConfiguration configuration = ChanConfiguration.get(this);
 		configuration.storeCookie(COOKIE_NOCAPTCHA, null, null);
 		DvachChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createApiUri("makaba.fcgi");
-		UrlEncodedEntity entity = new UrlEncodedEntity("task", "auth", "usercode", captchaPass, "json", "1");
+		UrlEncodedEntity entity = new UrlEncodedEntity("task", "auth", "usercode", captchaPassData, "json", "1");
 		JSONObject jsonObject = new HttpRequest(uri, holder, preset).addCookie(buildCookies(null))
 				.setPostMethod(entity).setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
 		if (jsonObject != null)
 		{
 			try
 			{
-				String captchaPassData = StringUtils.nullIfEmpty(CommonUtils.getJsonString(jsonObject, "Hash"));
-				mLastCaptchaPass = captchaPass;
+				String captchaPassCookie = StringUtils.nullIfEmpty(CommonUtils.getJsonString(jsonObject, "Hash"));
 				mLastCaptchaPassData = captchaPassData;
-				if (captchaPassData != null)
+				mLastCaptchaPassCookie = captchaPassCookie;
+				if (captchaPassCookie != null)
 				{
-					configuration.storeCookie(COOKIE_NOCAPTCHA, captchaPassData, "Usercode No Captcha");
+					configuration.storeCookie(COOKIE_NOCAPTCHA, captchaPassCookie, "Usercode No Captcha");
 				}
-				return captchaPassData;
+				return captchaPassCookie;
 			}
 			catch (JSONException e)
 			{
@@ -515,19 +516,19 @@ public class DvachChanPerformer extends ChanPerformer
 		throw new InvalidResponseException();
 	}
 	
-	private static final String CAPTCHA_PASS_DATA = "captchaPass";
+	private static final String CAPTCHA_PASS_COOKIE = "captchaPassCookie";
 	
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
-		return onReadCaptcha(data.holder, data, data.captchaType, data.captchaPass != null
-				? data.captchaPass[0] : null, data.threadNumber == null, true);
+		return onReadCaptcha(data.holder, data, data.captchaType, data.captchaPass != null ? data.captchaPass[0] : null,
+				data.threadNumber == null, true);
 	}
 	
-	private ReadCaptchaResult makeCaptchaPassResult(String captchaPassData)
+	private ReadCaptchaResult makeCaptchaPassResult(String captchaPassCookie)
 	{
 		CaptchaData captchaData = new CaptchaData();
-		captchaData.put(CAPTCHA_PASS_DATA, captchaPassData);
+		captchaData.put(CAPTCHA_PASS_COOKIE, captchaPassCookie);
 		return new ReadCaptchaResult(CaptchaState.PASS, captchaData)
 				.setValidity(ChanConfiguration.Captcha.Validity.LONG_LIFETIME);
 	}
@@ -535,7 +536,7 @@ public class DvachChanPerformer extends ChanPerformer
 	private static final String CAPTCHA_SIGN = "sign";
 	
 	private ReadCaptchaResult onReadCaptcha(HttpHolder holder, HttpRequest.Preset preset, String captchaType,
-			String captchaPass, boolean newThread, boolean mayUseLastCaptchaPassData) throws HttpException,
+			String captchaPassData, boolean newThread, boolean mayUseLastCaptchaPassCookie) throws HttpException,
 			InvalidResponseException
 	{
 		DvachChanLocator locator = ChanLocator.get(this);
@@ -561,16 +562,16 @@ public class DvachChanPerformer extends ChanPerformer
 				}
 			}
 		}
-		String captchaPassData = null;
+		String captchaPassCookie = null;
 		boolean mayRelogin = false;
-		if (captchaPass != null)
+		if (captchaPassData != null)
 		{
-			if (mayUseLastCaptchaPassData && captchaPass.equals(mLastCaptchaPass))
+			if (mayUseLastCaptchaPassCookie && captchaPassData.equals(mLastCaptchaPassData))
 			{
-				captchaPassData = mLastCaptchaPassData;
+				captchaPassCookie = mLastCaptchaPassCookie;
 				mayRelogin = true;
 			}
-			else captchaPassData = readCaptchaPassData(holder, preset, captchaPass);
+			else captchaPassCookie = readCaptchaPass(holder, preset, captchaPassData);
 		}
 		boolean mailru = DvachChanConfiguration.CAPTCHA_TYPE_MAILRU.equals(captchaType);
 		boolean recaptcha1 = DvachChanConfiguration.CAPTCHA_TYPE_RECAPTCHA_1.equals(captchaType);
@@ -583,7 +584,7 @@ public class DvachChanPerformer extends ChanPerformer
 		HttpException exception = null;
 		try
 		{
-			responseText = new HttpRequest(uri, holder, preset).addCookie(buildCookies(captchaPassData))
+			responseText = new HttpRequest(uri, holder, preset).addCookie(buildCookies(captchaPassCookie))
 					.read().getString();
 		}
 		catch (HttpException e)
@@ -654,18 +655,18 @@ public class DvachChanPerformer extends ChanPerformer
 			else if (responseText.equals("VIP"))
 			{
 				CaptchaData captchaData = new CaptchaData();
-				if (captchaPassData != null) captchaData.put(CAPTCHA_PASS_DATA, captchaPassData);
+				if (captchaPassCookie != null) captchaData.put(CAPTCHA_PASS_COOKIE, captchaPassCookie);
 				return new ReadCaptchaResult(CaptchaState.PASS, captchaData)
 						.setValidity(ChanConfiguration.Captcha.Validity.LONG_LIFETIME);
 			}
 			else if (responseText.equals("VIPFAIL"))
 			{
-				return onReadCaptcha(holder, preset, captchaType, mayRelogin ? captchaPass : null,
+				return onReadCaptcha(holder, preset, captchaType, mayRelogin ? captchaPassData : null,
 						newThread, false);
 			}
 		}
 		// If wakaba is swaying, but passcode is verified, let's try to use it
-		if (captchaPassData != null) return makeCaptchaPassResult(captchaPassData);
+		if (captchaPassCookie != null) return makeCaptchaPassResult(captchaPassCookie);
 		if (exception != null) throw exception;
 		throw new InvalidResponseException();
 	}
@@ -716,7 +717,7 @@ public class DvachChanPerformer extends ChanPerformer
 			}
 		}
 		entity.add("icon", data.userIcon);
-		String captchaPassData = null;
+		String captchaPassCookie = null;
 		
 		DvachChanLocator locator = ChanLocator.get(this);
 		if (data.captchaData != null)
@@ -746,7 +747,7 @@ public class DvachChanPerformer extends ChanPerformer
 				entity.add("captcha_id", captchaChallenge);
 				entity.add("captcha_value", captchaInput);
 			}
-			captchaPassData = data.captchaData.get(CAPTCHA_PASS_DATA);
+			captchaPassCookie = data.captchaData.get(CAPTCHA_PASS_COOKIE);
 			if ("true".equals(data.captchaData.get(CAPTCHA_SIGN)))
 			{
 				DvachSigner signer = DvachSigner.getInstance();
@@ -765,7 +766,7 @@ public class DvachChanPerformer extends ChanPerformer
 		
 		Uri uri = locator.createApiUri("posting.fcgi", "json", "1");
 		String responseText = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
-				.addCookie(buildCookies(captchaPassData)).setRedirectHandler(HttpRequest.RedirectHandler.STRICT)
+				.addCookie(buildCookies(captchaPassCookie)).setRedirectHandler(HttpRequest.RedirectHandler.STRICT)
 				.read().getString();
 		
 		JSONObject jsonObject;
@@ -852,8 +853,8 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		if (errorType == ApiException.SEND_ERROR_CAPTCHA)
 		{
-			mLastCaptchaPass = null;
 			mLastCaptchaPassData = null;
+			mLastCaptchaPassCookie = null;
 		}
 		if (errorType != 0) throw new ApiException(errorType, extra);
 		if (!StringUtils.isEmpty(reason)) throw new ApiException(reason);
