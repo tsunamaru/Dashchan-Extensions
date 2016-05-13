@@ -91,7 +91,8 @@ public class DvachModelMapper
 		{
 			attachments = null;
 		}
-		if (comment != null)
+		if (!StringUtils.isEmpty(subject)) subject = StringUtils.nullIfEmpty(StringUtils.clearHtml(subject).trim());
+		if (!StringUtils.isEmpty(comment))
 		{
 			comment = comment.replace(" (OP)</a>", "</a>");
 			comment = comment.replace("&#47;", "/");
@@ -137,6 +138,7 @@ public class DvachModelMapper
 			if ("!!%adm%!!".equals(tripcode)) capcode = "Abu";
 			else if ("!!%mod%!!".equals(tripcode)) capcode = "Mod";
 			if (capcode != null) tripcode = null;
+			else tripcode = StringUtils.nullIfEmpty(StringUtils.clearHtml(tripcode).trim());
 		}
 		
 		String icon = CommonUtils.optJsonString(jsonObject, "icon");
