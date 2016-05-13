@@ -30,6 +30,7 @@ import chan.http.HttpHolder;
 import chan.http.HttpRequest;
 import chan.http.HttpResponse;
 import chan.http.MultipartEntity;
+import chan.http.UrlEncodedEntity;
 import chan.util.CommonUtils;
 import chan.util.StringUtils;
 
@@ -41,28 +42,17 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 	private String mLastUserAuthorizationData;
 	private String mLastUserAuthorizationCookie;
 	
-	private static String buildUserAuthorizationData(String email, String usercode)
-	{
-		return email + '|' + usercode;
-	}
-	
 	private HttpResponse readResponse(HttpRequest request, HttpHolder holder, boolean mayRetry) throws HttpException,
 			InvalidResponseException
 	{
 		MakabaPaidChanConfiguration configuration = ChanConfiguration.get(this);
 		String[] userAuthorizationDataArray = configuration.getUserAuthorizationData();
-		String email = null, usercode = null;
-		if (userAuthorizationDataArray != null)
-		{
-			email = userAuthorizationDataArray[0];
-			usercode = userAuthorizationDataArray[1];
-		}
-		String userAuthorizationData = buildUserAuthorizationData(email, usercode);
+		String userAuthorizationData = userAuthorizationDataArray != null ? userAuthorizationDataArray[0] : null;
 		synchronized (this)
 		{
 			if (!StringUtils.equals(userAuthorizationData, mLastUserAuthorizationData))
 			{
-				if (!readUserAuthorization(holder, null, email, usercode))
+				if (!readUserAuthorization(holder, null, userAuthorizationData))
 				{
 					throw new HttpException(HttpURLConnection.HTTP_UNAUTHORIZED, "Unauthorized");
 				}
@@ -267,19 +257,17 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 	public CheckAuthorizationResult onCheckAuthorization(CheckAuthorizationData data) throws HttpException,
 			InvalidResponseException
 	{
-		return new CheckAuthorizationResult(readUserAuthorization(data.holder, data, data.authorizationData[0],
-				data.authorizationData[1]));
+		return new CheckAuthorizationResult(readUserAuthorization(data.holder, data, data.authorizationData[0]));
 	}
 	
-	private boolean readUserAuthorization(HttpHolder holder, HttpRequest.Preset preset, String email, String usercode)
+	private boolean readUserAuthorization(HttpHolder holder, HttpRequest.Preset preset, String userAuthorizationData)
 			throws HttpException, InvalidResponseException
 	{
 		mLastUserAuthorizationData = null;
 		mLastUserAuthorizationCookie = null;
 		MakabaPaidChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createApiUri("makaba.fcgi");
-		// UrlEncodedEntity won't work
-		MultipartEntity entity = new MultipartEntity("task", "auth", "email", email, "usercode", usercode, "json", "1");
+		UrlEncodedEntity entity = new UrlEncodedEntity("task", "auth", "usercode", userAuthorizationData, "json", "1");
 		JSONObject jsonObject = new HttpRequest(uri, holder, preset).setPostMethod(entity)
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
 		if (jsonObject == null) throw new InvalidResponseException();
@@ -288,7 +276,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 			String userAuthorizationCookie = StringUtils.nullIfEmpty(CommonUtils.getJsonString(jsonObject, "Hash"));
 			if (userAuthorizationCookie != null)
 			{
-				mLastUserAuthorizationData = buildUserAuthorizationData(email, usercode);
+				mLastUserAuthorizationData = userAuthorizationData;
 				mLastUserAuthorizationCookie = userAuthorizationCookie;
 			}
 			return true;

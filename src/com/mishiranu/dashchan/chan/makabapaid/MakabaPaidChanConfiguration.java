@@ -88,15 +88,6 @@ public class MakabaPaidChanConfiguration extends ChanConfiguration
 		return reporting;
 	}
 	
-	@Override
-	public Authorization obtainUserAuthorizationConfiguration()
-	{
-		Authorization authorization = new Authorization();
-		authorization.fieldsCount = 2;
-		authorization.hints = new String[] {"Email", getResources().getString(R.string.text_passcode)};
-		return authorization;
-	}
-	
 	public boolean isSageEnabled(String boardName)
 	{
 		return get(boardName, KEY_SAGE_ENABLED, true);
