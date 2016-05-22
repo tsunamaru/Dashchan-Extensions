@@ -236,9 +236,8 @@ public class NulleuPostsParser implements GroupParser.Callback
 				}
 			}
 		}
-		else if ("a".equals(tagName) || "a\r\ntarget=\"_blank\"".equals(tagName))
+		else if ("a".equals(tagName))
 		{
-			// TODO Remove "a\r\ntarget=\"_blank\"" checking after fixing the parser
 			if (mParentFromRefLink && "shl".equals(parser.getAttr(attrs, "class")))
 			{
 				String href = parser.getAttr(attrs, "href");
