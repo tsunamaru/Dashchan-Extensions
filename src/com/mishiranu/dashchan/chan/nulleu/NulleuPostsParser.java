@@ -482,6 +482,7 @@ public class NulleuPostsParser implements GroupParser.Callback
 					String embed = text.substring(0, index);
 					if (index + 6 <= text.length()) index += 6;
 					text = text.substring(index).trim();
+					EmbeddedAttachment attachment = null;
 					Matcher matcher = EMBED.matcher(embed);
 					if (matcher.find())
 					{
@@ -493,7 +494,7 @@ public class NulleuPostsParser implements GroupParser.Callback
 						else if ("coub".equals(site)) uriString = "https://coub.com/view/" + id;
 						if (uriString != null)
 						{
-							EmbeddedAttachment attachment = EmbeddedAttachment.obtain(uriString);
+							attachment = EmbeddedAttachment.obtain(uriString);
 							if (attachment == null)
 							{
 								if ("coub".equals(site))
@@ -502,9 +503,26 @@ public class NulleuPostsParser implements GroupParser.Callback
 											EmbeddedAttachment.ContentType.VIDEO, false, null);
 								}
 							}
-							mPost.setAttachments(attachment);
 						}
 					}
+					else
+					{
+						index = embed.indexOf("vimeo.com");
+						if (index >= 0)
+						{
+							index = embed.indexOf("clip_id=");
+							if (index >= 0)
+							{
+								int end = embed.indexOf('&', index);
+								if (end > index)
+								{
+									String uriString = "https://vimeo.com/" + embed.substring(index + 8, end);
+									attachment = EmbeddedAttachment.obtain(uriString);
+								}
+							}
+						}
+					}
+					if (attachment != null) mPost.setAttachments(attachment);
 				}
 				int index = text.lastIndexOf("<div class=\"abbrev\">");
 				if (index >= 0) text = text.substring(0, index).trim();
