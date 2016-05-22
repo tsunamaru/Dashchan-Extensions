@@ -260,7 +260,8 @@ public class NulleuPostsParser implements GroupParser.Callback
 				if (mAttachment != null)
 				{
 					String path = convertUriString(parser.getAttr(attrs, "src"));
-					if (path != null && !path.endsWith("/generic.png"))
+					if (path != null && !path.endsWith("/inc/filetypes/generic.png")
+							&& !path.endsWith("/inc/filetypes/null.png"))
 					{
 						mAttachment.setThumbnailUri(mLocator, mLocator.buildPath(path));
 					}
