@@ -11,9 +11,8 @@ import java.util.regex.Pattern;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.net.Uri;
 import android.util.Pair;
 
@@ -208,6 +207,9 @@ public class NulleuChanPerformer extends ChanPerformer
 		return new ReadPostsCountResult(count);
 	}
 	
+	private static final ColorMatrixColorFilter CAPTCHA_FILTER = new ColorMatrixColorFilter(new float[]
+			{0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 0f});
+	
 	private final HashMap<String, Pair<HttpValidator, Boolean>> mReadCaptchaValidators = new HashMap<>();
 	
 	@Override
@@ -239,7 +241,7 @@ public class NulleuChanPerformer extends ChanPerformer
 			Canvas canvas = new Canvas(newImage);
 			canvas.drawColor(0xffffffff);
 			Paint paint = new Paint();
-			paint.setColorFilter(new PorterDuffColorFilter(0x00555555, PorterDuff.Mode.XOR));
+			paint.setColorFilter(CAPTCHA_FILTER);
 			canvas.drawBitmap(image, 0f, 0f, paint);
 			image.recycle();
 			String sessionCookie = data.holder.getCookieValue("PHPSESSID");
