@@ -196,12 +196,14 @@ public class ArhivachPostsParser implements GroupParser.Callback
 		if (onclick != null)
 		{
 			boolean relative = false;
-			int start = onclick.indexOf("http");
+			int start = onclick.indexOf("'http");
 			if (start == -1)
 			{
-				start = onclick.indexOf("/storage");
+				start = onclick.indexOf("'/");
+				if (start >= 0) start++;
 				relative = true;
 			}
+			else start++;
 			if (start >= 0)
 			{
 				int end = onclick.indexOf("'", start);
@@ -229,15 +231,17 @@ public class ArhivachPostsParser implements GroupParser.Callback
 		if (script != null)
 		{
 			boolean relative = false;
-			int start = script.indexOf("http");
+			int start = script.indexOf("'http");
 			if (start == -1)
 			{
-				start = script.indexOf("/storage");
+				start = script.indexOf("'/");
+				if (start >= 0) start++;
 				relative = true;
 			}
+			else start++;
 			if (start >= 0)
 			{
-				int end = script.indexOf("\\'", start);
+				int end = script.indexOf("\\'", start) - 1;
 				if (end >= 0)
 				{
 					FileAttachment attachment = attachments.get(attachments.size() - 1);
