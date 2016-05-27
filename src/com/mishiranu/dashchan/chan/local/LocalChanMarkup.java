@@ -14,13 +14,16 @@ public class LocalChanMarkup extends ChanMarkup
 		addTag("b", TAG_BOLD);
 		addTag("i", TAG_ITALIC);
 		addTag("u", TAG_UNDERLINE);
+		addTag("span", "overline", TAG_OVERLINE);
 		addTag("s", TAG_STRIKE);
 		addTag("sub", TAG_SUBSCRIPT);
 		addTag("sup", TAG_SUPERSCRIPT);
-		addTag("span", "code", TAG_CODE);
-		addTag("span", "unkfunc", TAG_QUOTE);
 		addTag("span", "spoiler", TAG_SPOILER);
-		addTag("span", "header", TAG_HEADING);
+		addTag("span", "unkfunc", TAG_QUOTE);
+		addTag("span", "code", TAG_CODE);
+		addTag("span", "aa", TAG_ASCII_ART);
+		addTag("span", "heading", TAG_HEADING);
+		addPreformatted("span", "code", true);
 		addColorable("span");
 	}
 	
