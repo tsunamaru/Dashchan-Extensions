@@ -23,7 +23,7 @@ public class RuletChanMarkup extends ChanMarkup
 		addTag("span", "spoiler", TAG_SPOILER);
 		addTag("code", TAG_CODE);
 		addTag("pre", TAG_CODE);
-		addPreformatted("code");
+		addPreformatted("code", true);
 	}
 	
 	@Override
