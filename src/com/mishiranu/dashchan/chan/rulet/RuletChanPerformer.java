@@ -241,7 +241,7 @@ public class RuletChanPerformer extends ChanPerformer
 					canvas.drawPath(path, paint);
 				}
 			}
-			return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData, image);
+			return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData).setImage(image);
 		}
 		return new ReadCaptchaResult(CaptchaState.SKIP, captchaData);
 	}
