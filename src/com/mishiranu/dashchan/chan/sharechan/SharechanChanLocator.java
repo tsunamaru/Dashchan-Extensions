@@ -16,7 +16,7 @@ public class SharechanChanLocator extends ChanLocator
 	public SharechanChanLocator()
 	{
 		addChanHost("sharechan.org");
-		addSpecialChanHost("www.sharechan.org");
+		addConvertableChanHost("www.sharechan.org");
 	}
 	
 	@Override
