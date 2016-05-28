@@ -21,7 +21,7 @@ public class RuletChanLocator extends ChanLocator
 		addChanHost("2chru.cafe");
 		addChanHost("2-chru.cafe");
 		addChanHost("dmirrgetyojz735v.onion");
-		addSpecialChanHost("www.2-chru.net");
+		addConvertableChanHost("www.2-chru.net");
 		setHttpsMode(HttpsMode.CONFIGURABLE);
 	}
 	
