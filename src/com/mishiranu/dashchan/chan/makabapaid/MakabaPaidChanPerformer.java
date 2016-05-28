@@ -58,8 +58,8 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 				}
 			}
 		}
-		HttpResponse response = request.addCookie(COOKIE_AUTH, configuration.getCookie(COOKIE_AUTH))
-				.addCookie("usercode_nocaptcha", mLastUserAuthorizationCookie).read();
+		HttpResponse response = (mayRetry ? request.copy() : request).addCookie(COOKIE_AUTH, configuration
+				.getCookie(COOKIE_AUTH)).addCookie("usercode_nocaptcha", mLastUserAuthorizationCookie).read();
 		if (response == null) return response;
 		String responseText = response.getString();
 		if (responseText.contains("<title>\nU shall not pass\n</title>"))
@@ -69,21 +69,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 				mLastUserAuthorizationData = null;
 				mLastUserAuthorizationCookie = null;
 			}
-			if (mayRetry)
-			{
-				// TODO Add clear cookie method to HttpRequest builder instead of this workaround
-				try
-				{
-					java.lang.reflect.Field field = HttpRequest.class.getDeclaredField("mCookieBuilder");
-					field.setAccessible(true);
-					field.set(request, null);
-					return readResponse(request, holder, false);
-				}
-				catch (Exception e)
-				{
-					
-				}
-			}
+			if (mayRetry) return readResponse(request, holder, false);
 			throw new HttpException(HttpURLConnection.HTTP_UNAUTHORIZED, "Unauthorized");
 		}
 		return response;
