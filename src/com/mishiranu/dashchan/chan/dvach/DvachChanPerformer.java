@@ -563,7 +563,7 @@ public class DvachChanPerformer extends ChanPerformer
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
 		return onReadCaptcha(data.holder, data, data.captchaType, data.captchaPass != null ? data.captchaPass[0] : null,
-				data.threadNumber == null, true);
+				data.boardName, data.threadNumber == null, true);
 	}
 	
 	private ReadCaptchaResult makeCaptchaPassResult(String captchaPassCookie)
@@ -575,8 +575,8 @@ public class DvachChanPerformer extends ChanPerformer
 	}
 	
 	private ReadCaptchaResult onReadCaptcha(HttpHolder holder, HttpRequest.Preset preset, String captchaType,
-			String captchaPassData, boolean newThread, boolean mayUseLastCaptchaPassCookie) throws HttpException,
-			InvalidResponseException
+			String captchaPassData, String boardName, boolean newThread, boolean mayUseLastCaptchaPassCookie)
+			throws HttpException, InvalidResponseException
 	{
 		DvachChanLocator locator = ChanLocator.get(this);
 		String captchaPassCookie = null;
@@ -590,7 +590,7 @@ public class DvachChanPerformer extends ChanPerformer
 			}
 			else captchaPassCookie = readCaptchaPass(holder, preset, captchaPassData);
 		}
-		Uri uri = locator.createApiUri("captcha.fcgi", "type", "2chaptcha");
+		Uri uri = locator.createApiUri("captcha.fcgi", "type", "2chaptcha", "board", boardName);
 		if (!newThread) uri = uri.buildUpon().appendQueryParameter("action", "thread").build();
 		String responseText;
 		HttpException exception = null;
@@ -669,7 +669,7 @@ public class DvachChanPerformer extends ChanPerformer
 			else if (responseText.equals("VIPFAIL"))
 			{
 				return onReadCaptcha(holder, preset, captchaType, mayRelogin ? captchaPassData : null,
-						newThread, false);
+						boardName, newThread, false);
 			}
 		}
 		// If wakaba is swaying, but passcode is verified, let's try to use it
