@@ -139,6 +139,8 @@ public class DvachChanPerformer extends ChanPerformer
 		DvachChanLocator locator = ChanLocator.get(this);
 		DvachChanConfiguration configuration = ChanConfiguration.get(this);
 		Uri uri;
+		HttpRequest.RedirectHandler handler = HttpRequest.RedirectHandler.BROWSER;
+		Uri[] threadUri = null;
 		if (usePartialApi)
 		{
 			uri = locator.createApiUri("mobile.fcgi", "task", "get_thread", "board", data.boardName,
@@ -147,15 +149,34 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		else if (archive)
 		{
-			uri = locator.buildPath(data.boardName, "arch", "res", data.threadNumber + ".json");
+			uri = locator.createApiUri("archive.fcgi", "board", data.boardName, "thread", data.threadNumber,
+					"json", "1");
+			final Uri[] finalThreadUri = {uri};
+			threadUri = finalThreadUri;
+			handler = new HttpRequest.RedirectHandler()
+			{
+				@Override
+				public Action onRedirectReached(int responseCode, Uri requestedUri, Uri redirectedUri,
+						HttpHolder holder) throws HttpException
+				{
+					finalThreadUri[0] = redirectedUri;
+					return BROWSER.onRedirectReached(responseCode, requestedUri, redirectedUri, holder);
+				}
+			};
 		}
 		else
 		{
 			uri = locator.buildPath(data.boardName, "res", data.threadNumber + ".json");
 		}
 		HttpResponse response = new HttpRequest(uri, data.holder, data).addCookie(buildCookiesWithCaptchaPass())
-				.setValidator(data.validator).setSuccessOnly(false).read();
-		data.holder.checkResponseCode();
+				.setValidator(data.validator).setRedirectHandler(handler).read();
+		String archiveStartPath = null;
+		if (archive)
+		{
+			archiveStartPath = threadUri[0].getPath();
+			int index = archiveStartPath.indexOf("/res");
+			if (index > 0) archiveStartPath = archiveStartPath.substring(0, index + 1);
+		}
 		JSONObject jsonObject = response.getJsonObject();
 		JSONArray jsonArray = response.getJsonArray();
 		if (usePartialApi)
@@ -164,7 +185,7 @@ public class DvachChanPerformer extends ChanPerformer
 			{
 				try
 				{
-					Post[] posts = DvachModelMapper.createPosts(jsonArray, locator, data.boardName, false,
+					Post[] posts = DvachModelMapper.createPosts(jsonArray, locator, data.boardName, null,
 							configuration.isSageEnabled(data.boardName));
 					if (posts != null && posts.length == 1)
 					{
@@ -198,7 +219,7 @@ public class DvachChanPerformer extends ChanPerformer
 					configuration.updateFromThreadsPostsJson(data.boardName, jsonObject);
 					int uniquePosters = jsonObject.optInt("unique_posters");
 					jsonArray = jsonObject.getJSONArray("threads").getJSONObject(0).getJSONArray("posts");
-					return new Posts(DvachModelMapper.createPosts(jsonArray, locator, data.boardName, archive,
+					return new Posts(DvachModelMapper.createPosts(jsonArray, locator, data.boardName, archiveStartPath,
 							configuration.isSageEnabled(data.boardName))).setUniquePosters(uniquePosters);
 				}
 				catch (JSONException e)
@@ -226,7 +247,7 @@ public class DvachChanPerformer extends ChanPerformer
 			try
 			{
 				return new ReadSinglePostResult(DvachModelMapper.createPost(jsonArray.getJSONObject(0),
-						locator, data.boardName, false, configuration.isSageEnabled(data.boardName)));
+						locator, data.boardName, null, configuration.isSageEnabled(data.boardName)));
 			}
 			catch (JSONException e)
 			{
@@ -275,7 +296,7 @@ public class DvachChanPerformer extends ChanPerformer
 				String errorMessage = jsonObject.optString("message");
 				if (!StringUtils.isEmpty(errorMessage)) throw new HttpException(0, errorMessage);
 				return new ReadSearchPostsResult(DvachModelMapper.createPosts(jsonObject.getJSONArray("posts"),
-						locator, data.boardName, false, configuration.isSageEnabled(data.boardName)));
+						locator, data.boardName, null, configuration.isSageEnabled(data.boardName)));
 			}
 			catch (JSONException e)
 			{
@@ -373,24 +394,44 @@ public class DvachChanPerformer extends ChanPerformer
 		throw new InvalidResponseException();
 	}
 	
-	private static final Pattern PATTERN_ARCHIVED_THREAD = Pattern.compile("<a href=\"(\\d+)\\.json\">.*?" +
-			"</a> *(.{15,}?) \\d+");
-	
 	@Override
 	public ReadThreadSummariesResult onReadThreadSummaries(ReadThreadSummariesData data) throws HttpException,
 			InvalidResponseException
 	{
 		if (data.type == ReadThreadSummariesData.TYPE_ARCHIVED_THREADS)
 		{
-			DvachChanLocator locator = ChanLocator.get(this);
-			Uri uri = locator.createBoardUri(data.boardName, 0).buildUpon().appendEncodedPath("arch/res").build();
-			String responseText = new HttpRequest(uri, data.holder, data).read().getString();
 			ArrayList<ThreadSummary> threadSummaries = new ArrayList<>();
-			Matcher matcher = PATTERN_ARCHIVED_THREAD.matcher(responseText);
-			while (matcher.find())
+			DvachChanLocator locator = ChanLocator.get(this);
+			for (int i = -1; i < 10; i++)
 			{
-				threadSummaries.add(new ThreadSummary(data.boardName, matcher.group(1), "#" + matcher.group(1) + ", "
-						+ matcher.group(2).trim()));
+				Uri uri = locator.buildPath(data.boardName, "arch", (i >= 0 ? i : "index") + ".json");
+				JSONObject jsonObject = null;
+				try
+				{
+					jsonObject = new HttpRequest(uri, data.holder, data).read().getJsonObject();
+				}
+				catch (HttpException e)
+				{
+					if ((e.isHttpException() || e.isSocketException()) && !threadSummaries.isEmpty()) break;
+					throw e;
+				}
+				if (jsonObject == null) throw new InvalidResponseException();
+				try
+				{
+					JSONArray jsonArray = jsonObject.getJSONArray("threads");
+					for (int j = 0; j < jsonArray.length(); j++)
+					{
+						jsonObject = jsonArray.getJSONObject(j);
+						String threadNumber = CommonUtils.getJsonString(jsonObject, "num");
+						String subject = StringUtils.clearHtml(CommonUtils.getJsonString(jsonObject, "subject")).trim();
+						if ("Нет темы".equals(subject)) subject = "#" + threadNumber;
+						threadSummaries.add(new ThreadSummary(data.boardName, threadNumber, subject));
+					}
+				}
+				catch (JSONException e)
+				{
+					
+				}
 			}
 			return new ReadThreadSummariesResult(threadSummaries);
 		}
