@@ -6,7 +6,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.res.Resources;
 import android.util.Pair;
 
 import chan.content.ChanConfiguration;
@@ -26,8 +25,6 @@ public class DvachChanConfiguration extends ChanConfiguration
 	private static final String KEY_FLAGS_ENABLED = "flags_enabled";
 	private static final String KEY_MAX_COMMENT_LENGTH = "max_comment_length";
 	
-	private static final String KEY_CAPTCHA_BYPASS = "captcha_bypass";
-	
 	public DvachChanConfiguration()
 	{
 		request(OPTION_READ_THREAD_PARTIALLY);
@@ -39,7 +36,6 @@ public class DvachChanConfiguration extends ChanConfiguration
 		setDefaultName("Аноним");
 		setBumpLimit(500);
 		addCaptchaType(CAPTCHA_TYPE_2CHAPTCHA);
-		addCustomPreference(KEY_CAPTCHA_BYPASS, true);
 	}
 	
 	@Override
@@ -111,28 +107,9 @@ public class DvachChanConfiguration extends ChanConfiguration
 		return reporting;
 	}
 	
-	@Override
-	public CustomPreference obtainCustomPreferenceConfiguration(String key)
-	{
-		if (KEY_CAPTCHA_BYPASS.equals(key))
-		{
-			Resources resources = getResources();
-			CustomPreference customPreference = new CustomPreference();
-			customPreference.title = resources.getString(R.string.preference_captcha_bypass);
-			customPreference.summary = resources.getString(R.string.preference_captcha_bypass_summary);
-			return customPreference;
-		}
-		return null;
-	}
-	
 	public boolean isSageEnabled(String boardName)
 	{
 		return get(boardName, KEY_SAGE_ENABLED, true);
-	}
-	
-	public boolean isCaptchaBypassEnabled()
-	{
-		return get(null, KEY_CAPTCHA_BYPASS, true);
 	}
 	
 	public void updateFromBoardsJson(JSONArray jsonArray)

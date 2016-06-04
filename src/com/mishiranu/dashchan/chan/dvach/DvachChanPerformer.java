@@ -574,35 +574,11 @@ public class DvachChanPerformer extends ChanPerformer
 				.setValidity(ChanConfiguration.Captcha.Validity.LONG_LIFETIME);
 	}
 	
-	private static final String CAPTCHA_SIGN = "sign";
-	
 	private ReadCaptchaResult onReadCaptcha(HttpHolder holder, HttpRequest.Preset preset, String captchaType,
 			String captchaPassData, boolean newThread, boolean mayUseLastCaptchaPassCookie) throws HttpException,
 			InvalidResponseException
 	{
 		DvachChanLocator locator = ChanLocator.get(this);
-		DvachChanConfiguration configuration = ChanConfiguration.get(this);
-		boolean canBypass = false;
-		if (configuration.isCaptchaBypassEnabled())
-		{
-			DvachSigner signer = DvachSigner.getInstance();
-			if (signer != null)
-			{
-				canBypass = true;
-				if (!newThread)
-				{
-					Uri uri = locator.createApiUri("captcha.fcgi", "appid", signer.getPublicKey(), "check", "1");
-					String responseText = new HttpRequest(uri, holder, preset).read().getString();
-					if ("APP VALID".equals(responseText))
-					{
-						CaptchaData captchaData = new CaptchaData();
-						captchaData.put(CAPTCHA_SIGN, "true");
-						return new ReadCaptchaResult(CaptchaState.SKIP, captchaData)
-								.setValidity(ChanConfiguration.Captcha.Validity.IN_BOARD_SEPARATELY);
-					}
-				}
-			}
-		}
 		String captchaPassCookie = null;
 		boolean mayRelogin = false;
 		if (captchaPassData != null)
@@ -614,13 +590,8 @@ public class DvachChanPerformer extends ChanPerformer
 			}
 			else captchaPassCookie = readCaptchaPass(holder, preset, captchaPassData);
 		}
-		boolean mailru = DvachChanConfiguration.CAPTCHA_TYPE_MAILRU.equals(captchaType);
-		boolean recaptcha1 = DvachChanConfiguration.CAPTCHA_TYPE_RECAPTCHA_1.equals(captchaType);
-		boolean recaptcha2 = DvachChanConfiguration.CAPTCHA_TYPE_RECAPTCHA_2.equals(captchaType);
-		boolean dvachaptcha = !(mailru || recaptcha1 || recaptcha2);
-		Uri uri = locator.createApiUri("captcha.fcgi", "type", recaptcha1 ? "recaptchav1" : recaptcha2 ? "recaptcha"
-				: mailru ? "mailru" : "2chaptcha");
-		if (dvachaptcha && !newThread) uri = uri.buildUpon().appendQueryParameter("action", "thread").build();
+		Uri uri = locator.createApiUri("captcha.fcgi", "type", "2chaptcha");
+		if (!newThread) uri = uri.buildUpon().appendQueryParameter("action", "thread").build();
 		String responseText;
 		HttpException exception = null;
 		try
@@ -650,47 +621,42 @@ public class DvachChanPerformer extends ChanPerformer
 				String keyOrChallenge = StringUtils.nullIfEmpty(responseText.substring(responseText.indexOf('\n') + 1));
 				if (keyOrChallenge == null) throw new InvalidResponseException();
 				CaptchaData captchaData = new CaptchaData();
-				if (dvachaptcha) captchaData.put(CaptchaData.CHALLENGE, keyOrChallenge);
-				else if (mailru || recaptcha1 || recaptcha2) captchaData.put(CaptchaData.API_KEY, keyOrChallenge);
+				captchaData.put(CaptchaData.CHALLENGE, keyOrChallenge);
 				ReadCaptchaResult result = new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData);
-				if (canBypass) result.setValidity(ChanConfiguration.Captcha.Validity.IN_BOARD_SEPARATELY);
-				if (dvachaptcha)
+				uri = locator.createApiUri("captcha.fcgi", "type", "2chaptcha", "action", "image",
+						"id", keyOrChallenge);
+				Bitmap image = new HttpRequest(uri, holder, preset).read().getBitmap();
+				if (image == null) throw new InvalidResponseException();
+				Bitmap editable = image.copy(Bitmap.Config.ARGB_8888, true);
+				image.recycle();
+				if (editable == null) throw new RuntimeException();
+				int[] pixels = new int[9];
+				int center = pixels.length / 2;
+				for (int i = 1; i < editable.getWidth() - 1; i++)
 				{
-					uri = locator.createApiUri("captcha.fcgi", "type", "2chaptcha", "action", "image",
-							"id", keyOrChallenge);
-					Bitmap image = new HttpRequest(uri, holder, preset).read().getBitmap();
-					if (image == null) throw new InvalidResponseException();
-					Bitmap editable = image.copy(Bitmap.Config.ARGB_8888, true);
-					image.recycle();
-					if (editable == null) throw new RuntimeException();
-					int[] pixels = new int[9];
-					int center = pixels.length / 2;
-					for (int i = 1; i < editable.getWidth() - 1; i++)
+					for (int j = 1; j < editable.getHeight() - 1; j++)
 					{
-						for (int j = 1; j < editable.getHeight() - 1; j++)
+						editable.getPixels(pixels, 0, 3, i - 1, j - 1, 3, 3);
+						if (pixels[center] != 0xffffffff)
 						{
-							editable.getPixels(pixels, 0, 3, i - 1, j - 1, 3, 3);
-							if (pixels[center] != 0xffffffff)
+							int count = 0;
+							for (int k = 0; k < pixels.length; k++)
 							{
-								int count = 0;
-								for (int k = 0; k < pixels.length; k++)
-								{
-									if (pixels[k] != 0xffffffff) count++;
-								}
-								if (count < 5) editable.setPixel(i, j, 0x00000000);
+								if (pixels[k] != 0xffffffff) count++;
 							}
+							if (count < 5) editable.setPixel(i, j, 0x00000000);
 						}
 					}
-					image = Bitmap.createBitmap((int) (editable.getWidth() * 1.5f) - 2, editable.getHeight(),
-							Bitmap.Config.ARGB_8888);
-					Rect src = new Rect(1, 1, editable.getWidth() - 2, editable.getHeight() - 2);
-					Rect dst = new Rect(0, 0, image.getWidth(), image.getHeight());
-					Canvas canvas = new Canvas(image);
-					canvas.drawColor(0xffffffff);
-					canvas.drawBitmap(editable, src, dst, new Paint(Paint.FILTER_BITMAP_FLAG));
-					editable.recycle();
-					result.setImage(image);
 				}
+				image = Bitmap.createBitmap((int) (editable.getWidth() * 1.5f) - 2, editable.getHeight(),
+						Bitmap.Config.ARGB_8888);
+				Rect src = new Rect(1, 1, editable.getWidth() - 2, editable.getHeight() - 2);
+				Rect dst = new Rect(0, 0, image.getWidth(), image.getHeight());
+				Canvas canvas = new Canvas(image);
+				canvas.drawColor(0xffffffff);
+				canvas.drawBitmap(editable, src, dst, new Paint(Paint.FILTER_BITMAP_FLAG));
+				editable.recycle();
+				result.setImage(image);
 				return result;
 			}
 			else if (responseText.equals("VIP"))
@@ -763,46 +729,10 @@ public class DvachChanPerformer extends ChanPerformer
 		DvachChanLocator locator = ChanLocator.get(this);
 		if (data.captchaData != null)
 		{
-			String captchaChallenge = data.captchaData.get(CaptchaData.CHALLENGE);
-			String captchaInput = StringUtils.nullIfEmpty(data.captchaData.get(CaptchaData.INPUT));
-			if (DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA.equals(data.captchaType))
-			{
-				entity.add("captcha_type", "2chaptcha");
-				entity.add("2chaptcha_id", captchaChallenge);
-				entity.add("2chaptcha_value", captchaInput);
-			}
-			else if (DvachChanConfiguration.CAPTCHA_TYPE_RECAPTCHA_2.equals(data.captchaType))
-			{
-				entity.add("captcha_type", "recaptcha");
-				entity.add("g-recaptcha-response", captchaInput);
-			}
-			else if (DvachChanConfiguration.CAPTCHA_TYPE_RECAPTCHA_1.equals(data.captchaType))
-			{
-				entity.add("captcha_type", "recaptchav1");
-				entity.add("recaptcha_challenge_field", captchaChallenge);
-				entity.add("recaptcha_response_field", captchaInput);
-			}
-			else if (DvachChanConfiguration.CAPTCHA_TYPE_MAILRU.equals(data.captchaType))
-			{
-				entity.add("captcha_type", "mailru");
-				entity.add("captcha_id", captchaChallenge);
-				entity.add("captcha_value", captchaInput);
-			}
+			entity.add("captcha_type", "2chaptcha");
+			entity.add("2chaptcha_id", data.captchaData.get(CaptchaData.CHALLENGE));
+			entity.add("2chaptcha_value", StringUtils.nullIfEmpty(data.captchaData.get(CaptchaData.INPUT)));
 			captchaPassCookie = data.captchaData.get(CAPTCHA_PASS_COOKIE);
-			if ("true".equals(data.captchaData.get(CAPTCHA_SIGN)))
-			{
-				DvachSigner signer = DvachSigner.getInstance();
-				if (signer == null) throw new RuntimeException();
-				Uri uri = locator.createApiUri("captcha.fcgi", "appid", signer.getPublicKey());
-				String responseText = new HttpRequest(uri, data.holder, data).read().getString();
-				if (responseText.startsWith("APP CHECK KEY"))
-				{
-					String[] values = responseText.split("\n");
-					String checkId = values[1];
-					String checkString = values[2];
-					signer.signEntity(data, entity, checkId, checkString);
-				}
-			}
 		}
 		
 		Uri uri = locator.createApiUri("posting.fcgi", "json", "1");
