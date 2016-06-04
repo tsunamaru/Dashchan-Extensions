@@ -23,15 +23,12 @@ public class MakabaPaidChanConfiguration extends ChanConfiguration
 	private static final String KEY_FLAGS_ENABLED = "flags_enabled";
 	private static final String KEY_MAX_COMMENT_LENGTH = "max_comment_length";
 	
-	private static final String KEY_CAPTCHA_BYPASS = "captcha_bypass";
-	
 	public MakabaPaidChanConfiguration()
 	{
 		request(OPTION_READ_POSTS_COUNT);
 		request(OPTION_ALLOW_USER_AUTHORIZATION);
 		setDefaultName("Аноним");
 		setBumpLimit(500);
-		addCustomPreference(KEY_CAPTCHA_BYPASS, true);
 	}
 	
 	@Override
