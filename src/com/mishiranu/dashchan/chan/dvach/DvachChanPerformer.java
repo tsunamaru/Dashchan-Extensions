@@ -149,8 +149,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		else if (archive)
 		{
-			uri = locator.createApiUri("archive.fcgi", "board", data.boardName, "thread", data.threadNumber,
-					"json", "1");
+			uri = locator.buildPath(data.boardName, "arch", "res", data.threadNumber + ".json");
 			final Uri[] finalThreadUri = {uri};
 			threadUri = finalThreadUri;
 			handler = new HttpRequest.RedirectHandler()
