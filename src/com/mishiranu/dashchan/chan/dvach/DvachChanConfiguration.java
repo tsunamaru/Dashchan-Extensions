@@ -17,7 +17,7 @@ public class DvachChanConfiguration extends ChanConfiguration
 	public static final String CAPTCHA_TYPE_2CHAPTCHA = "2chaptcha";
 	
 	private static final String KEY_ICONS = "icons";
-	private static final String KEY_IMAGES_ENABLED = "images_enabled";
+	private static final String KEY_IMAGES_COUNT = "images_count";
 	private static final String KEY_NAMES_ENABLED = "names_enabled";
 	private static final String KEY_TRIPCODES_ENABLED = "tripcodes_enabled";
 	private static final String KEY_SUBJECTS_ENABLED = "subjects_enabled";
@@ -76,7 +76,7 @@ public class DvachChanConfiguration extends ChanConfiguration
 		posting.optionOriginalPoster = true;
 		posting.maxCommentLength = get(boardName, KEY_MAX_COMMENT_LENGTH, 15000);
 		posting.maxCommentLengthEncoding = "UTF-8";
-		posting.attachmentCount = get(boardName, KEY_IMAGES_ENABLED, true) ? 4 : 0;
+		posting.attachmentCount = get(boardName, KEY_IMAGES_COUNT, 4);
 		posting.attachmentMimeTypes.add("image/*");
 		posting.attachmentMimeTypes.add("video/webm");
 		try
@@ -145,7 +145,8 @@ public class DvachChanConfiguration extends ChanConfiguration
 		if (!StringUtils.isEmpty(defaultName)) storeDefaultName(boardName, defaultName);
 		if (bumpLimit > 0) storeBumpLimit(boardName, bumpLimit);
 		if (maxCommentLength > 0) set(boardName, KEY_MAX_COMMENT_LENGTH, maxCommentLength);
-		editBoards(boardName, jsonObject, KEY_IMAGES_ENABLED, "enable_images");
+		int imagesCount = jsonObject.optInt("enable_images") != 0 ? Math.max(jsonObject.optInt("max_vip_files"), 4) : 0;
+		set(boardName, KEY_IMAGES_COUNT, imagesCount);
 		editBoards(boardName, jsonObject, KEY_NAMES_ENABLED, "enable_names");
 		editBoards(boardName, jsonObject, KEY_TRIPCODES_ENABLED, "enable_trips");
 		editBoards(boardName, jsonObject, KEY_SUBJECTS_ENABLED, "enable_subject");
