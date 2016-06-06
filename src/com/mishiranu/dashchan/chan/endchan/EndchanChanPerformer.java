@@ -6,6 +6,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
@@ -191,12 +192,12 @@ public class EndchanChanPerformer extends ChanPerformer
 		throw new InvalidResponseException();
 	}
 	
-	private static final String REQUIRE_DELETE_REPORT = "delete_report";
+	private static final String REQUIRE_REPORT = "report";
 	
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
-		if (REQUIRE_DELETE_REPORT.equals(data.requirement))
+		if (REQUIRE_REPORT.equals(data.requirement))
 		{
 			EndchanChanLocator locator = ChanLocator.get(this);
 			Uri uri = locator.buildPath("captcha.js");
@@ -370,6 +371,21 @@ public class EndchanChanPerformer extends ChanPerformer
 		throw new InvalidResponseException();
 	}
 	
+	private static void fillDeleteReportPostings(JSONObject parametersObject, String boardName, String threadNumber,
+			Collection<String> postNumbers) throws JSONException
+	{
+		JSONArray jsonArray = new JSONArray();
+		for (String postNumber : postNumbers)
+		{
+			JSONObject postObject = new JSONObject();
+			postObject.put("board", boardName);
+			postObject.put("thread", threadNumber);
+			if (!postNumber.equals(threadNumber)) postObject.put("post", postNumber);
+			jsonArray.put(postObject);
+		}
+		parametersObject.put("postings", jsonArray);
+	}
+	
 	/* TODO Implement deleting when it will be fixed
 	@Override
 	public SendDeletePostsResult onSendDeletePosts(SendDeletePostsData data) throws HttpException, ApiException,
@@ -383,16 +399,7 @@ public class EndchanChanPerformer extends ChanPerformer
 			parametersObject.put("password", data.password);
 			parametersObject.put("deleteMedia", true);
 			if (data.optionFilesOnly) parametersObject.put("deleteUploads", true);
-			JSONArray jsonArray = new JSONArray();
-			for (String postNumber : data.postNumbers)
-			{
-				JSONObject postObject = new JSONObject();
-				postObject.put("board", data.boardName);
-				postObject.put("thread", data.threadNumber);
-				if (!postNumber.equals(data.threadNumber)) postObject.put("post", postNumber);
-				jsonArray.put(postObject);
-			}
-			parametersObject.put("postings", jsonArray);
+			fillDeleteReportPostings(parametersObject, data.boardName, data.threadNumber, data.postNumbers);
 		}
 		catch (JSONException e)
 		{
@@ -407,4 +414,60 @@ public class EndchanChanPerformer extends ChanPerformer
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
 		if (jsonObject == null) throw new InvalidResponseException();
 	}*/
+	
+	@Override
+	public SendReportPostsResult onSendReportPosts(SendReportPostsData data) throws HttpException, ApiException,
+			InvalidResponseException
+	{
+		JSONObject jsonObject = new JSONObject();
+		JSONObject parametersObject = new JSONObject();
+		try
+		{
+			jsonObject.put("parameters", parametersObject);
+			parametersObject.put("reason", StringUtils.emptyIfNull(data.comment));
+			if (data.options.contains("global")) parametersObject.put("global", true);
+			fillDeleteReportPostings(parametersObject, data.boardName, data.threadNumber, data.postNumbers);
+		}
+		catch (JSONException e)
+		{
+			throw new RuntimeException(e);
+		}
+		boolean retry = false;
+		while (true)
+		{
+			CaptchaData captchaData = requireUserCaptcha(REQUIRE_REPORT, data.boardName, data.threadNumber, retry);
+			if (captchaData == null) throw new ApiException(ApiException.REPORT_ERROR_NO_ACCESS);
+			try
+			{
+				jsonObject.put("captchaId", captchaData.get(CaptchaData.CHALLENGE));
+				parametersObject.put("captcha", StringUtils.emptyIfNull(captchaData.get(CaptchaData.INPUT)));
+			}
+			catch (JSONException e)
+			{
+				throw new RuntimeException(e);
+			}
+			retry = true;
+			SimpleEntity entity = new SimpleEntity();
+			entity.setContentType("application/json; charset=utf-8");
+			entity.setData(jsonObject.toString());
+			EndchanChanLocator locator = ChanLocator.get(this);
+			Uri uri = locator.buildPath(".api", "reportContent");
+			JSONObject responseJsonObject = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
+					.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
+			if (responseJsonObject == null) throw new InvalidResponseException();
+			String status = CommonUtils.optJsonString(responseJsonObject, "status");
+			if ("ok".equals(status)) return null;
+			String errorMessage = CommonUtils.optJsonString(responseJsonObject, "data");
+			if (errorMessage != null)
+			{
+				if (errorMessage.contains("Wrong captcha") || errorMessage.contains("Expired captcha"))
+				{
+					continue;
+				}
+				CommonUtils.writeLog("Endchan report message", status, errorMessage);
+				throw new ApiException(status + ": " + errorMessage);
+			}
+			throw new InvalidResponseException();
+		}
+	}
 }
