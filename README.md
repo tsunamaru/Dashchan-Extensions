@@ -1,6 +1,6 @@
 # Dashchan Extension: haruhichan
 
-Extension for haruhichan.ru.
+Extension for haruhichan.ovh.
 
 # License
 
