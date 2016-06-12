@@ -16,9 +16,6 @@ import org.json.JSONObject;
 
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.Rect;
 import android.net.Uri;
 
 import chan.content.ApiException;
@@ -626,35 +623,12 @@ public class DvachChanPerformer extends ChanPerformer
 						"id", keyOrChallenge);
 				Bitmap image = new HttpRequest(uri, holder, preset).read().getBitmap();
 				if (image == null) throw new InvalidResponseException();
-				Bitmap editable = image.copy(Bitmap.Config.ARGB_8888, true);
-				image.recycle();
-				if (editable == null) throw new RuntimeException();
-				int[] pixels = new int[9];
-				int center = pixels.length / 2;
-				for (int i = 1; i < editable.getWidth() - 1; i++)
+				Bitmap trimmed = CommonUtils.trimBitmap(image, 0xffffffff);
+				if (trimmed != null)
 				{
-					for (int j = 1; j < editable.getHeight() - 1; j++)
-					{
-						editable.getPixels(pixels, 0, 3, i - 1, j - 1, 3, 3);
-						if (pixels[center] != 0xffffffff)
-						{
-							int count = 0;
-							for (int k = 0; k < pixels.length; k++)
-							{
-								if (pixels[k] != 0xffffffff) count++;
-							}
-							if (count < 5) editable.setPixel(i, j, 0x00000000);
-						}
-					}
+					if (trimmed != image) image.recycle();
+					image = trimmed;
 				}
-				image = Bitmap.createBitmap((int) (editable.getWidth() * 1.5f) - 2, editable.getHeight(),
-						Bitmap.Config.ARGB_8888);
-				Rect src = new Rect(1, 1, editable.getWidth() - 2, editable.getHeight() - 2);
-				Rect dst = new Rect(0, 0, image.getWidth(), image.getHeight());
-				Canvas canvas = new Canvas(image);
-				canvas.drawColor(0xffffffff);
-				canvas.drawBitmap(editable, src, dst, new Paint(Paint.FILTER_BITMAP_FLAG));
-				editable.recycle();
 				result.setImage(image);
 				return result;
 			}
