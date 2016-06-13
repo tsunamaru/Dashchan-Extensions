@@ -224,6 +224,11 @@ public class DvachChanPerformer extends ChanPerformer
 				}
 			}
 		}
+		if (archive)
+		{
+			String responseText = response.getString();
+			if (responseText.contains("Доска не существует")) throw HttpException.createNotFoundException();
+		}
 		throw new InvalidResponseException();
 	}
 	
@@ -260,17 +265,12 @@ public class DvachChanPerformer extends ChanPerformer
 	private void handleMobileApiError(JSONObject jsonObject) throws HttpException
 	{
 		int code = Math.abs(jsonObject.optInt("Code"));
-		if (code != 0)
+		if (code == 1 || code == HttpURLConnection.HTTP_NOT_FOUND)
 		{
-			String error = CommonUtils.optJsonString(jsonObject, "Error");
-			if (code == HttpURLConnection.HTTP_NOT_FOUND) error = "Not Found";
-			if (code == 1)
-			{
-				// Board not found
-				throw HttpException.createNotFoundException();
-			}
-			throw new HttpException(code, error);
+			// Board or thread not found
+			throw HttpException.createNotFoundException();
 		}
+		else if (code != 0) throw new HttpException(code, CommonUtils.optJsonString(jsonObject, "Error"));
 	}
 	
 	@Override
