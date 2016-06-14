@@ -233,8 +233,8 @@ public class NulleuChanPerformer extends ChanPerformer
 		}
 		if (!needCaptcha) return new ReadCaptchaResult(CaptchaState.SKIP, null);
 		if (data.mayShowLoadButton) return new ReadCaptchaResult(CaptchaState.NEED_LOAD, null);
-		Uri uri = locator.buildPath("captcha.php");
-		Bitmap image = new HttpRequest(uri, data.holder, data).addCookie("captchalang", "ru").read().getBitmap();
+		Uri uri = locator.buildPath("myata.php");
+		Bitmap image = new HttpRequest(uri, data.holder, data).read().getBitmap();
 		if (image != null)
 		{
 			Bitmap newImage = Bitmap.createBitmap(image.getWidth(), image.getHeight(), Bitmap.Config.ARGB_8888);
