@@ -398,9 +398,9 @@ public class DvachChanPerformer extends ChanPerformer
 		{
 			ArrayList<ThreadSummary> threadSummaries = new ArrayList<>();
 			DvachChanLocator locator = ChanLocator.get(this);
-			for (int i = -1; i < 10; i++)
+			for (int i = Integer.MAX_VALUE, pages = 0; i >= 0 && pages < 20; i--, pages++)
 			{
-				Uri uri = locator.buildPath(data.boardName, "arch", (i >= 0 ? i : "index") + ".json");
+				Uri uri = locator.buildPath(data.boardName, "arch", (i == Integer.MAX_VALUE ? "index" : i) + ".json");
 				JSONObject jsonObject = null;
 				try
 				{
@@ -414,8 +414,9 @@ public class DvachChanPerformer extends ChanPerformer
 				if (jsonObject == null) throw new InvalidResponseException();
 				try
 				{
+					if (i == Integer.MAX_VALUE) i = jsonObject.getJSONArray("pages").length();
 					JSONArray jsonArray = jsonObject.getJSONArray("threads");
-					for (int j = 0; j < jsonArray.length(); j++)
+					for (int j = jsonArray.length() - 1; j >= 0; j--)
 					{
 						jsonObject = jsonArray.getJSONObject(j);
 						String threadNumber = CommonUtils.getJsonString(jsonObject, "num");
@@ -426,7 +427,8 @@ public class DvachChanPerformer extends ChanPerformer
 				}
 				catch (JSONException e)
 				{
-					
+					if (!threadSummaries.isEmpty()) break;
+					throw new InvalidResponseException(e);
 				}
 			}
 			return new ReadThreadSummariesResult(threadSummaries);
