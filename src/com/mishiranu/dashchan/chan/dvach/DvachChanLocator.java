@@ -10,10 +10,10 @@ import chan.content.ChanLocator;
 public class DvachChanLocator extends ChanLocator
 {
 	private static final Pattern BOARD_PATH = Pattern.compile("/\\w+(?:/(?:(?:index|catalog|\\d+)\\.html)?)?");
-	private static final Pattern THREAD_PATH = Pattern.compile("/\\w+/(?:arch/)?res/\\d+\\.html");
-	private static final Pattern ATTACHMENT_PATH = Pattern.compile("/\\w+/(?:arch/)?src/\\d+/\\d+\\.\\w+");
-	
-	private static final Pattern THREAD_NUMBER = Pattern.compile("^/\\w+/(?:arch/)?(?:res|src)/(\\d+)(?:/|\\.html)");
+	private static final Pattern THREAD_PATH = Pattern.compile("/\\w+/(?:arch/(?:\\d{4}-\\d{2}-\\d{2}/|wakaba/)?)?"
+			+ "res/(\\d+)\\.html");
+	private static final Pattern ATTACHMENT_PATH = Pattern.compile("/\\w+/(?:arch/(?:\\d{4}-\\d{2}-\\d{2}/|wakaba/)?)?"
+			+ "src/(\\d+)/\\d+\\.\\w+");
 	
 	public DvachChanLocator()
 	{
@@ -57,7 +57,9 @@ public class DvachChanLocator extends ChanLocator
 	@Override
 	public String getThreadNumber(Uri uri)
 	{
-		return getGroupValue(uri.getPath(), THREAD_NUMBER, 1);
+		String value = getGroupValue(uri.getPath(), THREAD_PATH, 1);
+		if (value == null) value = getGroupValue(uri.getPath(), ATTACHMENT_PATH, 1);
+		return value;
 	}
 	
 	@Override
