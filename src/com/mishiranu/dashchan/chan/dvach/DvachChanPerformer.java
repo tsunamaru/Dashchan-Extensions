@@ -130,7 +130,7 @@ public class DvachChanPerformer extends ChanPerformer
 		return new ReadPostsResult(onReadPosts(data, false, true)).setFullThread(true);
 	}
 	
-	public Posts onReadPosts(ReadPostsData data, boolean usePartialApi, boolean archive) throws HttpException,
+	private Posts onReadPosts(ReadPostsData data, boolean usePartialApi, boolean archive) throws HttpException,
 			ThreadRedirectException, InvalidResponseException
 	{
 		DvachChanLocator locator = ChanLocator.get(this);
@@ -212,11 +212,26 @@ public class DvachChanPerformer extends ChanPerformer
 			{
 				try
 				{
-					configuration.updateFromThreadsPostsJson(data.boardName, jsonObject);
-					int uniquePosters = jsonObject.optInt("unique_posters");
-					jsonArray = jsonObject.getJSONArray("threads").getJSONObject(0).getJSONArray("posts");
-					return new Posts(DvachModelMapper.createPosts(jsonArray, locator, data.boardName, archiveStartPath,
-							configuration.isSageEnabled(data.boardName))).setUniquePosters(uniquePosters);
+					if (archiveStartPath != null && archiveStartPath.endsWith("/wakaba/"))
+					{
+						jsonArray = jsonObject.getJSONArray("thread");
+						ArrayList<Post> posts = new ArrayList<>();
+						for (int i = 0; i < jsonArray.length(); i++)
+						{
+							posts.add(DvachModelMapper.createWakabaArchivePost(jsonArray.getJSONArray(i)
+									.getJSONObject(0), locator, data.boardName));
+						}
+						return new Posts(posts);
+					}
+					else
+					{
+						configuration.updateFromThreadsPostsJson(data.boardName, jsonObject);
+						int uniquePosters = jsonObject.optInt("unique_posters");
+						jsonArray = jsonObject.getJSONArray("threads").getJSONObject(0).getJSONArray("posts");
+						return new Posts(DvachModelMapper.createPosts(jsonArray, locator, data.boardName,
+								archiveStartPath, configuration.isSageEnabled(data.boardName)))
+								.setUniquePosters(uniquePosters);
+					}
 				}
 				catch (JSONException e)
 				{

@@ -12,6 +12,7 @@ import android.net.Uri;
 
 import chan.content.ChanLocator;
 import chan.content.model.Attachment;
+import chan.content.model.EmbeddedAttachment;
 import chan.content.model.FileAttachment;
 import chan.content.model.Icon;
 import chan.content.model.Post;
@@ -68,12 +69,12 @@ public class DvachModelMapper
 		int banned = jsonObject.optInt("banned");
 		if (banned == 1) post.setPosterBanned(true);
 		else if (banned == 2) post.setPosterWarned(true);
-		String comment = CommonUtils.getJsonString(jsonObject, "comment");
-		String email = CommonUtils.optJsonString(jsonObject, "email");
-		String name = CommonUtils.optJsonString(jsonObject, "name");
 		String subject = CommonUtils.optJsonString(jsonObject, "subject");
-		String tripcode = CommonUtils.optJsonString(jsonObject, "trip");
-		long timestamp = jsonObject.getLong("timestamp") * 1000L;
+		if (!StringUtils.isEmpty(subject))
+		{
+			post.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(subject).trim()));
+		}
+		post.setTimestamp(jsonObject.getLong("timestamp") * 1000L);
 		ArrayList<Attachment> attachments = null;
 		try
 		{
@@ -92,7 +93,8 @@ public class DvachModelMapper
 		{
 			attachments = null;
 		}
-		if (!StringUtils.isEmpty(subject)) subject = StringUtils.nullIfEmpty(StringUtils.clearHtml(subject).trim());
+		post.setAttachments(attachments);
+		String comment = CommonUtils.getJsonString(jsonObject, "comment");
 		if (!StringUtils.isEmpty(comment))
 		{
 			comment = comment.replace(" (OP)</a>", "</a>");
@@ -103,7 +105,11 @@ public class DvachModelMapper
 		{
 			comment = CODE_PATTERN.matcher(comment).replaceAll("<fakecode>$1</fakecode>");
 		}
+		post.setComment(comment);
 		
+		String name = CommonUtils.optJsonString(jsonObject, "name");
+		String tripcode = CommonUtils.optJsonString(jsonObject, "trip");
+		String email = CommonUtils.optJsonString(jsonObject, "email");
 		boolean sage = sageEnabled && !StringUtils.isEmpty(email) && email.equals("mailto:sage");
 		String userAgentData = null;
 		if (sage)
@@ -141,6 +147,11 @@ public class DvachModelMapper
 			if (capcode != null) tripcode = null;
 			else tripcode = StringUtils.nullIfEmpty(StringUtils.clearHtml(tripcode).trim());
 		}
+		post.setName(name);
+		post.setIdentifier(identifier);
+		post.setTripcode(tripcode);
+		post.setCapcode(capcode);
+		post.setEmail(email);
 		
 		String icon = CommonUtils.optJsonString(jsonObject, "icon");
 		ArrayList<Icon> icons = null;
@@ -200,10 +211,8 @@ public class DvachModelMapper
 				}
 			}
 		}
-		
-		return post.setTimestamp(timestamp).setSubject(subject).setComment(comment).setName(name)
-				.setIdentifier(identifier).setTripcode(tripcode).setCapcode(capcode).setEmail(email)
-				.setAttachments(attachments).setIcons(icons);
+		post.setIcons(icons);
+		return post;
 	}
 	
 	public static Post[] createPosts(JSONArray jsonArray, ChanLocator locator, String boardName,
@@ -252,6 +261,64 @@ public class DvachModelMapper
 		}
 		postsCount += posts.length;
 		return new Posts(posts).addPostsCount(postsCount).addPostsWithFilesCount(postsWithFilesCount);
+	}
+	
+	public static Post createWakabaArchivePost(JSONObject jsonObject, ChanLocator locator, String boardName)
+			throws JSONException
+	{
+		Post post = new Post();
+		post.setArchived(true);
+		String num = CommonUtils.getJsonString(jsonObject, "num");
+		String parent = CommonUtils.getJsonString(jsonObject, "parent");
+		post.setPostNumber(num);
+		if (!"0".equals(parent)) post.setParentPostNumber(parent);
+		if (jsonObject.getInt("op") != 0) post.setOriginalPoster(true);
+		if (jsonObject.getInt("sticky") != 0) post.setSticky(true);
+		if (jsonObject.getInt("closed") != 0) post.setClosed(true);
+		int banned = jsonObject.optInt("banned");
+		if (banned == 1) post.setPosterBanned(true);
+		else if (banned == 2) post.setPosterWarned(true);
+		post.setComment(CommonUtils.getJsonString(jsonObject, "comment"));
+		String name = CommonUtils.optJsonString(jsonObject, "name");
+		if (!StringUtils.isEmpty(name))
+		{
+			post.setName(StringUtils.nullIfEmpty(StringUtils.clearHtml(name).trim()));
+		}
+		String subject = CommonUtils.optJsonString(jsonObject, "suject");
+		if (!StringUtils.isEmpty(subject))
+		{
+			post.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(subject).trim()));
+		}
+		post.setTimestamp(jsonObject.getLong("timestamp") * 1000L);
+		ArrayList<Attachment> mAttachments = null;
+		String image = CommonUtils.optJsonString(jsonObject, "image");
+		if (!StringUtils.isEmpty(image))
+		{
+			String thumbnail = CommonUtils.optJsonString(jsonObject, "thumbnail");
+			FileAttachment attachment = new FileAttachment();
+			attachment.setFileUri(locator, locator.buildPath(boardName, "arch", "wakaba", image));
+			if (!StringUtils.isEmpty(thumbnail))
+			{
+				attachment.setThumbnailUri(locator, locator.buildPath(boardName, "arch", "wakaba", thumbnail));
+			}
+			attachment.setWidth(jsonObject.optInt("width"));
+			attachment.setHeight(jsonObject.optInt("height"));
+			attachment.setSize(jsonObject.optInt("size") * 1024);
+			if (mAttachments == null) mAttachments = new ArrayList<>();
+			mAttachments.add(attachment);
+		}
+		String video = CommonUtils.optJsonString(jsonObject, "video");
+		if (!StringUtils.isEmpty(video))
+		{
+			EmbeddedAttachment attachment = EmbeddedAttachment.obtain(video);
+			if (attachment != null)
+			{
+				if (mAttachments == null) mAttachments = new ArrayList<>();
+				mAttachments.add(attachment);
+			}
+		}
+		if (mAttachments != null) post.setAttachments(mAttachments);
+		return post;
 	}
 	
 	public static String fixApiEscapeCharacters(String text)
