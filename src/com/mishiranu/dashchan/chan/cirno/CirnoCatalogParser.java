@@ -111,7 +111,7 @@ public class CirnoCatalogParser implements GroupParser.Callback
 	@Override
 	public void onEndElement(GroupParser parser, String tagName)
 	{
-		if ("div".equals(tagName)) mPost = null;
+		
 	}
 	
 	@Override
@@ -135,6 +135,7 @@ public class CirnoCatalogParser implements GroupParser.Callback
 				text = StringUtils.nullIfEmpty(text);
 				if (text != null) text = text.trim() + '\u2026';
 				mPost.setComment(text);
+				mPost = null;
 				break;
 			}
 		}
