@@ -396,8 +396,8 @@ public class CirnoPostsParser implements GroupParser.Callback
 			case EXPECT_BOARD_TITLE:
 			{
 				text = StringUtils.clearHtml(text).trim();
-				String start = "Ычан — ";
-				if (text.startsWith(start)) text = text.substring(start.length());
+				int index = text.indexOf("— ");
+				if (index >= 0) text = text.substring(index + 2);
 				if (!StringUtils.isEmpty(text)) mConfiguration.storeBoardTitle(mBoardName, text);
 				break;
 			}
