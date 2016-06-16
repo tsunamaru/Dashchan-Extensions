@@ -9,6 +9,10 @@ import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorMatrixColorFilter;
@@ -21,6 +25,7 @@ import chan.content.ChanPerformer;
 import chan.content.ChanLocator;
 import chan.content.InvalidResponseException;
 import chan.content.ThreadRedirectException;
+import chan.content.model.Board;
 import chan.content.model.Post;
 import chan.content.model.Posts;
 import chan.http.HttpException;
@@ -189,6 +194,34 @@ public class NulleuChanPerformer extends ChanPerformer
 		{
 			throw new InvalidResponseException(e);
 		}
+	}
+	
+	@Override
+	public ReadUserBoardsResult onReadUserBoards(ReadUserBoardsData data) throws HttpException, InvalidResponseException
+	{
+		NulleuChanLocator locator = ChanLocator.get(this);
+		Uri uri = locator.buildPath("cloud20.php");
+		JSONArray jsonArray = new HttpRequest(uri, data.holder, data).read().getJsonArray();
+		if (jsonArray != null)
+		{
+			try
+			{
+				ArrayList<Board> boards = new ArrayList<>();
+				for (int i = 0; i < jsonArray.length(); i++)
+				{
+					JSONObject jsonObject = jsonArray.getJSONObject(i);
+					String boardName = CommonUtils.getJsonString(jsonObject, "name");
+					String title = CommonUtils.getJsonString(jsonObject, "desc");
+					boards.add(new Board(boardName, title));
+				}
+				return new ReadUserBoardsResult(boards);
+			}
+			catch (JSONException e)
+			{
+				throw new InvalidResponseException(e);
+			}
+		}
+		throw new InvalidResponseException();
 	}
 	
 	@Override

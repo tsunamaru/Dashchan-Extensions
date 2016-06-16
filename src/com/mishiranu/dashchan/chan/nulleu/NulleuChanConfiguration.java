@@ -13,6 +13,7 @@ public class NulleuChanConfiguration extends ChanConfiguration
 		request(OPTION_READ_THREAD_PARTIALLY);
 		request(OPTION_READ_SINGLE_POST);
 		request(OPTION_READ_POSTS_COUNT);
+		request(OPTION_READ_USER_BOARDS);
 		setDefaultName("Аноним");
 		addCaptchaType(CAPTCHA_TYPE_INCH_CYRILLIC);
 	}
