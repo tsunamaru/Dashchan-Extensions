@@ -14,7 +14,7 @@ public class DesustorageChanLocator extends ChanLocator
 	
 	private static final Pattern BOARD_PATH = Pattern.compile("/\\w+(?:/(?:page/\\d+/?)?)?");
 	private static final Pattern THREAD_PATH = Pattern.compile("/\\w+/(?:thread|post)/(\\d+)/?");
-	private static final Pattern ATTACHMENT_PATH = Pattern.compile("/4ch/\\w+/image/\\d+/\\d+/\\d+\\.\\w+");
+	private static final Pattern ATTACHMENT_PATH = Pattern.compile("/\\w+/image/\\d+/\\d+/\\d+\\.\\w+");
 	
 	public DesustorageChanLocator()
 	{
@@ -45,12 +45,7 @@ public class DesustorageChanLocator extends ChanLocator
 	public String getBoardName(Uri uri)
 	{
 		List<String> segments = uri.getPathSegments();
-		if (segments.size() > 0)
-		{
-			String boardName = segments.get(0);
-			if ("4ch".equals(boardName) && segments.size() > 1) return segments.get(1);
-			return boardName;
-		}
+		if (segments.size() > 0) return segments.get(0);
 		return null;
 	}
 	
