@@ -17,6 +17,7 @@ public class ArchiveLiomChanLocator extends ChanLocator
 	public ArchiveLiomChanLocator()
 	{
 		addConvertableChanHost("loveisover.me");
+		addChanHost("archive.loveisover.me");
 		addChanHost("deploy.loveisover.me");
 	}
 	
