@@ -46,7 +46,7 @@ public class ArchiveLiomPostsParser implements GroupParser.Callback
 	
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ssZZZZZ", Locale.US);
 	
-	private static final Pattern FILE_SIZE = Pattern.compile("(\\d+)(\\w+), (\\d+)x(\\d+)");
+	private static final Pattern FILE_SIZE = Pattern.compile("(\\d+)(\\w+), (\\d+)x(\\d+)(?:, (.*))?");
 	private static final Pattern FLAG = Pattern.compile("flag-([a-z]+)");
 	
 	public ArchiveLiomPostsParser(String source, Object linked)
@@ -296,8 +296,9 @@ public class ArchiveLiomPostsParser implements GroupParser.Callback
 		{
 			case EXPECT_FILE_SIZE:
 			{
+				text = StringUtils.clearHtml(text).trim();
 				Matcher matcher = FILE_SIZE.matcher(text);
-				if (matcher.find())
+				if (matcher.matches())
 				{
 					int size = Integer.parseInt(matcher.group(1));
 					String dim = matcher.group(2);
@@ -305,9 +306,11 @@ public class ArchiveLiomPostsParser implements GroupParser.Callback
 					else if ("MiB".equals(dim)) size *= 1024 * 1024;
 					int width = Integer.parseInt(matcher.group(3));
 					int height = Integer.parseInt(matcher.group(4));
+					String originalName = matcher.group(5);
 					mAttachment.setSize(size);
 					mAttachment.setWidth(width);
 					mAttachment.setHeight(height);
+					if (!StringUtils.isEmptyOrWhitespace(originalName)) mAttachment.setOriginalName(originalName);
 				}
 				break;
 			}
