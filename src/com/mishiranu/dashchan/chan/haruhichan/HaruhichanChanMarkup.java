@@ -23,7 +23,7 @@ public class HaruhichanChanMarkup extends ChanMarkup
 		addTag("code", TAG_CODE);
 		addTag("span", "style", "text-decoration: underline", TAG_UNDERLINE);
 		addTag("span", "style", "text-decoration: line-through", TAG_STRIKE);
-		addPreformatted("code");
+		addPreformatted("code", true);
 	}
 	
 	@Override
