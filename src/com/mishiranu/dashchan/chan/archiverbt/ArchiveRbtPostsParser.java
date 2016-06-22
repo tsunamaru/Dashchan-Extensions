@@ -244,19 +244,19 @@ public class ArchiveRbtPostsParser implements GroupParser.Callback
 		{
 			case EXPECT_SUBJECT:
 			{
-				mPost.setSubject(StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim()));
+				mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
 				break;
 			}
 			case EXPECT_NAME:
 			{
-				text = StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim());
+				text = StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim());
 				if (text != null && text.startsWith("##")) mPost.setCapcode(text.substring(2));
 				else mPost.setName(text);
 				break;
 			}
 			case EXPECT_TRIP:
 			{
-				mPost.setTripcode(StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim()));
+				mPost.setTripcode(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
 				break;
 			}
 			case EXPECT_COMMENT:
