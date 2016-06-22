@@ -421,9 +421,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 		CaptchaData captchaData = new CaptchaData();
 		if (sendingCaptchaChallenge != null) captchaData.put(CaptchaData.CHALLENGE, sendingCaptchaChallenge);
 		if (dnsblsCaptchaChallenge != null) captchaData.put(DNSBLS_CAPTCHA_CHALLENGE, dnsblsCaptchaChallenge);
-		ReadCaptchaResult result = new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData, image);
-		result.validity = validity;
-		return result;
+		return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData).setImage(image).setValidity(validity);
 	}
 	
 	private boolean checkCaptcha(CaptchaData captchaData, HttpHolder holder, HttpRequest.Preset preset)

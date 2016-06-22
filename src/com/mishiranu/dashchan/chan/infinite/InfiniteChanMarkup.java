@@ -26,7 +26,7 @@ public class InfiniteChanMarkup extends ChanMarkup
 		addTag("span", "aa", TAG_CODE);
 		addTag("span", "heading", TAG_HEADING);
 		addColorable("span");
-		addBlock("p", false); // "p" is not spaced on 8chan
+		addBlock("p", true, false); // "p" is not spaced on 8chan
 	}
 	
 	@Override
