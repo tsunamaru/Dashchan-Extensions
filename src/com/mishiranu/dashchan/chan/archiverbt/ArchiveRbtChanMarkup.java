@@ -13,7 +13,7 @@ public class ArchiveRbtChanMarkup extends ChanMarkup
 	{
 		addTag("code", TAG_CODE);
 		addTag("span", "unkfunc", TAG_QUOTE);
-		addPreformatted("code");
+		addPreformatted("code", true);
 	}
 	
 	private static final Pattern THREAD_LINK = Pattern.compile("(?:^|(?:thread|post)/(\\d+))(?:#p(\\d+))?$");
