@@ -20,8 +20,8 @@ public class DobrochanChanMarkup extends ChanMarkup
 		addTag("code", TAG_CODE);
 		addTag("del", TAG_STRIKE);
 		addTag("span", "spoiler", TAG_SPOILER);
-		addBlock("blockquote", false); // Blockquotes are not spaced on dobrochan
-		addBlock("ul", false); // Lists are not spaced on dobrochan
+		addBlock("blockquote", true, false); // Blockquotes are not spaced on dobrochan
+		addBlock("ul", true, false); // Lists are not spaced on dobrochan
 	}
 	
 	@Override
