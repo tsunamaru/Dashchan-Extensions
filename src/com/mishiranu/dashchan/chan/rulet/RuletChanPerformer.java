@@ -112,8 +112,9 @@ public class RuletChanPerformer extends ChanPerformer
 	@Override
 	public ReadContentResult onReadContent(ReadContentData data) throws HttpException, InvalidResponseException
 	{
-		String boardName = ChanLocator.get(this).getBoardName(data.uri);
-		return new ReadContentResult(modifyHttpRequst(new HttpRequest(data.uri, data.holder, data), boardName).read());
+		RuletChanLocator locator = ChanLocator.get(this);
+		return new ReadContentResult(modifyHttpRequst(new HttpRequest(data.uri, data.holder, data),
+				locator.getBoardName(data.uri)).read());
 	}
 	
 	@Override
