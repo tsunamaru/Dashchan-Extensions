@@ -18,7 +18,7 @@ import chan.util.StringUtils;
 public class ArchiveRbtPostsParser implements GroupParser.Callback
 {
 	private final String mSource;
-	private final ChanLocator mLocator;
+	private final ArchiveRbtChanLocator mLocator;
 	
 	private String mResTo;
 	private Posts mThread;
