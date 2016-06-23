@@ -17,7 +17,7 @@ import chan.util.StringUtils;
 public class LocalPostsParser implements GroupParser.Callback
 {
 	private final String mSource;
-	private final ChanLocator mLocator;
+	private final LocalChanLocator mLocator;
 	private final String mThreadNumber;
 	private final String mLocalPath;
 	
