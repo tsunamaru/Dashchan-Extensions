@@ -18,7 +18,7 @@ import chan.util.StringUtils;
 public class KrautchanCatalogParser implements GroupParser.Callback
 {
 	private final String mSource;
-	private final ChanLocator mLocator;
+	private final KrautchanChanLocator mLocator;
 	
 	private Post mPost;
 	private final ArrayList<Posts> mThreads = new ArrayList<>();
