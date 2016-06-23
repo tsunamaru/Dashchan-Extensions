@@ -43,7 +43,7 @@ public class RuletCssTestPasser implements Handler.Callback
 		return sInstance;
 	}
 	
-	private final ChanLocator mLocator;
+	private final RuletChanLocator mLocator;
 	private final Handler mHandler;
 	
 	private WebView mWebView;
