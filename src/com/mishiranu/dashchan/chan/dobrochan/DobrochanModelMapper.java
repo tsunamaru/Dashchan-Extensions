@@ -82,10 +82,9 @@ public class DobrochanModelMapper
 		String date = CommonUtils.getJsonString(jsonObject, "date");
 		try
 		{
-			// Fix ~16 min gaining
-			post.setTimestamp(DATE_FORMAT.parse(date).getTime() - 954 * 1000);
+			post.setTimestamp(DATE_FORMAT.parse(date).getTime());
 		}
-		catch (ParseException e1)
+		catch (ParseException e)
 		{
 			
 		}
