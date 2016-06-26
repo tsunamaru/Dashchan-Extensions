@@ -69,12 +69,24 @@ public class DvachModelMapper
 		int banned = jsonObject.optInt("banned");
 		if (banned == 1) post.setPosterBanned(true);
 		else if (banned == 2) post.setPosterWarned(true);
+		post.setTimestamp(jsonObject.getLong("timestamp") * 1000L);
 		String subject = CommonUtils.optJsonString(jsonObject, "subject");
 		if (!StringUtils.isEmpty(subject))
 		{
 			post.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(subject).trim()));
 		}
-		post.setTimestamp(jsonObject.getLong("timestamp") * 1000L);
+		String comment = CommonUtils.getJsonString(jsonObject, "comment");
+		if (!StringUtils.isEmpty(comment))
+		{
+			comment = comment.replace(" (OP)</a>", "</a>");
+			comment = comment.replace("&#47;", "/");
+		}
+		comment = fixApiEscapeCharacters(comment);
+		if ("pr".equals(boardName) && comment != null)
+		{
+			comment = CODE_PATTERN.matcher(comment).replaceAll("<fakecode>$1</fakecode>");
+		}
+		post.setComment(comment);
 		ArrayList<Attachment> attachments = null;
 		try
 		{
@@ -94,18 +106,6 @@ public class DvachModelMapper
 			attachments = null;
 		}
 		post.setAttachments(attachments);
-		String comment = CommonUtils.getJsonString(jsonObject, "comment");
-		if (!StringUtils.isEmpty(comment))
-		{
-			comment = comment.replace(" (OP)</a>", "</a>");
-			comment = comment.replace("&#47;", "/");
-		}
-		comment = fixApiEscapeCharacters(comment);
-		if ("pr".equals(boardName) && comment != null)
-		{
-			comment = CODE_PATTERN.matcher(comment).replaceAll("<fakecode>$1</fakecode>");
-		}
-		post.setComment(comment);
 		
 		String name = CommonUtils.optJsonString(jsonObject, "name");
 		String tripcode = CommonUtils.optJsonString(jsonObject, "trip");
