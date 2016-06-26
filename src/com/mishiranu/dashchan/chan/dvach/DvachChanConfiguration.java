@@ -31,7 +31,6 @@ public class DvachChanConfiguration extends ChanConfiguration
 		request(OPTION_READ_SINGLE_POST);
 		request(OPTION_READ_POSTS_COUNT);
 		request(OPTION_READ_USER_BOARDS);
-		request(OPTION_READ_POPULAR_THREADS);
 		request(OPTION_ALLOW_CAPTCHA_PASS);
 		setDefaultName("Аноним");
 		setBumpLimit(500);

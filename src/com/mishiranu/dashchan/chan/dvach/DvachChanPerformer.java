@@ -450,47 +450,6 @@ public class DvachChanPerformer extends ChanPerformer
 				throw new InvalidResponseException(e);
 			}
 		}
-		else if (data.type == ReadThreadSummariesData.TYPE_POPULAR_THREADS)
-		{
-			DvachChanLocator locator = ChanLocator.get(this);
-			Uri uri = locator.buildPath("popular.json");
-			JSONObject jsonObject = new HttpRequest(uri, data.holder, data).read().getJsonObject();
-			if (jsonObject != null)
-			{
-				try
-				{
-					JSONArray jsonArray = (jsonObject).getJSONArray("threads");
-					ArrayList<ThreadSummary> threadSummaries = new ArrayList<>();
-					for (int i = 0; i < jsonArray.length(); i++)
-					{
-						jsonObject = jsonArray.optJSONObject(i);
-						// Sometimes objects can be null
-						if (jsonObject != null)
-						{
-							String boardName = CommonUtils.getJsonString(jsonObject, "board");
-							String threadNumber = CommonUtils.getJsonString(jsonObject, "num");
-							String description = StringUtils.clearHtml(DvachModelMapper
-									.fixApiEscapeCharacters(CommonUtils.getJsonString(jsonObject, "subject")));
-							ThreadSummary threadSummary = new ThreadSummary(boardName, threadNumber, description);
-							threadSummary.setPostsCount(jsonObject.getInt("posts") + 1);
-							threadSummary.setViewsCount(jsonObject.getInt("views"));
-							String thumbnail = CommonUtils.optJsonString(jsonObject, "thumbnail");
-							if (thumbnail != null)
-							{
-								threadSummary.setThumbnailUri(locator, locator.buildPath(boardName, thumbnail));
-							}
-							threadSummaries.add(threadSummary);
-						}
-					}
-					return new ReadThreadSummariesResult(threadSummaries);
-				}
-				catch (JSONException e)
-				{
-					throw new InvalidResponseException(e);
-				}
-			}
-			throw new InvalidResponseException();
-		}
 		else return super.onReadThreadSummaries(data);
 	}
 	
