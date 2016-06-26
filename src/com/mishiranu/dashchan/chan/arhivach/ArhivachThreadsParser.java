@@ -207,7 +207,7 @@ public class ArhivachThreadsParser implements GroupParser.Callback
 						text = text.substring(matcher.group(0).length());
 					}
 					if (text.length() > 500 && !text.endsWith(".")) text += '\u2026';
-					mPost.setComment(StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim()));
+					mPost.setComment(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
 				}
 				break;
 			}

@@ -285,7 +285,7 @@ public class ArhivachPostsParser implements GroupParser.Callback
 			}
 			case EXPECT_SUBJECT:
 			{
-				mPost.setSubject(StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim()));
+				mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
 				break;
 			}
 			case EXPECT_NAME:
@@ -313,10 +313,10 @@ public class ArhivachPostsParser implements GroupParser.Callback
 					}
 					mPost.setIcons(icons);
 				}
-				String name = StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim());
-				if (NAME_SAGE_PATTERN.matcher(name).find()) mPost.setSage(true); else
+				String name = StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim());
+				if (name != null)
 				{
-					if (!StringUtils.isEmpty(name))
+					if (NAME_SAGE_PATTERN.matcher(name).find()) mPost.setSage(true); else
 					{
 						index = name.indexOf(" ID: ");
 						if (index >= 0)
@@ -326,14 +326,14 @@ public class ArhivachPostsParser implements GroupParser.Callback
 							mPost.setIdentifier(identifier);
 						}
 						else if (name.endsWith(" ID:")) name = name.substring(0, name.length() - 4);
+						mPost.setName(name);
 					}
-					mPost.setName(name);
 				}
 				break;
 			}
 			case EXPECT_TRIPCODE:
 			{
-				String tripcode = StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim());
+				String tripcode = StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim());
 				if (tripcode != null)
 				{
 					if ("## Abu ##".equals(tripcode)) mPost.setCapcode("Abu");
