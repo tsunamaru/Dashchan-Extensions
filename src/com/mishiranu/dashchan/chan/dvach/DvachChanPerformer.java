@@ -411,42 +411,44 @@ public class DvachChanPerformer extends ChanPerformer
 	{
 		if (data.type == ReadThreadSummariesData.TYPE_ARCHIVED_THREADS)
 		{
-			ArrayList<ThreadSummary> threadSummaries = new ArrayList<>();
 			DvachChanLocator locator = ChanLocator.get(this);
-			for (int i = Integer.MAX_VALUE, pages = 0; i >= 0 && pages < 20; i--, pages++)
+			Uri uri = locator.buildPath(data.boardName, "arch", "index.json");
+			JSONObject jsonObject = new HttpRequest(uri, data.holder, data).read().getJsonObject();
+			if (jsonObject == null) throw new InvalidResponseException();
+			int pagesCount;
+			try
 			{
-				Uri uri = locator.buildPath(data.boardName, "arch", (i == Integer.MAX_VALUE ? "index" : i) + ".json");
-				JSONObject jsonObject = null;
-				try
-				{
-					jsonObject = new HttpRequest(uri, data.holder, data).read().getJsonObject();
-				}
-				catch (HttpException e)
-				{
-					if ((e.isHttpException() || e.isSocketException()) && !threadSummaries.isEmpty()) break;
-					throw e;
-				}
-				if (jsonObject == null) throw new InvalidResponseException();
-				try
-				{
-					if (i == Integer.MAX_VALUE) i = jsonObject.getJSONArray("pages").length();
-					JSONArray jsonArray = jsonObject.getJSONArray("threads");
-					for (int j = jsonArray.length() - 1; j >= 0; j--)
-					{
-						jsonObject = jsonArray.getJSONObject(j);
-						String threadNumber = CommonUtils.getJsonString(jsonObject, "num");
-						String subject = StringUtils.clearHtml(CommonUtils.getJsonString(jsonObject, "subject")).trim();
-						if ("Нет темы".equals(subject)) subject = "#" + threadNumber;
-						threadSummaries.add(new ThreadSummary(data.boardName, threadNumber, subject));
-					}
-				}
-				catch (JSONException e)
-				{
-					if (!threadSummaries.isEmpty()) break;
-					throw new InvalidResponseException(e);
-				}
+				pagesCount = jsonObject.getJSONArray("pages").length();
 			}
-			return new ReadThreadSummariesResult(threadSummaries);
+			catch (JSONException e)
+			{
+				throw new InvalidResponseException(e);
+			}
+			if (data.pageNumber > 0)
+			{
+				if (data.pageNumber > pagesCount) return new ReadThreadSummariesResult();
+				uri = locator.buildPath(data.boardName, "arch", (pagesCount - data.pageNumber) + ".json");
+				jsonObject = new HttpRequest(uri, data.holder, data).read().getJsonObject();
+				if (jsonObject == null) throw new InvalidResponseException();
+			}
+			try
+			{
+				ArrayList<ThreadSummary> threadSummaries = new ArrayList<>();
+				JSONArray jsonArray = jsonObject.getJSONArray("threads");
+				for (int j = jsonArray.length() - 1; j >= 0; j--)
+				{
+					jsonObject = jsonArray.getJSONObject(j);
+					String threadNumber = CommonUtils.getJsonString(jsonObject, "num");
+					String subject = StringUtils.clearHtml(CommonUtils.getJsonString(jsonObject, "subject")).trim();
+					if ("Нет темы".equals(subject)) subject = "#" + threadNumber;
+					threadSummaries.add(new ThreadSummary(data.boardName, threadNumber, subject));
+				}
+				return new ReadThreadSummariesResult(threadSummaries);
+			}
+			catch (JSONException e)
+			{
+				throw new InvalidResponseException(e);
+			}
 		}
 		else if (data.type == ReadThreadSummariesData.TYPE_POPULAR_THREADS)
 		{
