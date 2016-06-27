@@ -241,7 +241,7 @@ public class ArhivachPostsParser implements GroupParser.Callback
 			else start++;
 			if (start >= 0)
 			{
-				int end = script.indexOf("\\'", start) - 1;
+				int end = script.indexOf("\\'", start);
 				if (end >= 0)
 				{
 					FileAttachment attachment = attachments.get(attachments.size() - 1);
