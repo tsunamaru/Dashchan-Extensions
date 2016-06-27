@@ -3,6 +3,10 @@ package com.mishiranu.dashchan.chan.arhivach;
 import java.io.ByteArrayOutputStream;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -17,7 +21,6 @@ import chan.content.ChanConfiguration;
 import chan.content.ChanLocator;
 import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
-import chan.content.model.Post;
 import chan.http.HttpException;
 import chan.http.HttpHolder;
 import chan.http.HttpRequest;
@@ -62,61 +65,108 @@ public class ArhivachChanPerformer extends ChanPerformer
 		}
 	}
 	
+	private static final Pattern PATTERN_LONG_QUERY_PART = Pattern.compile("(?:^| )\"(.*?)\"(?= |$)");
+
+	private String mLastSearchQuery;
+	private String mLastSearchTags;
+	private ArrayList<String> mLastSearchTagsList;
+	
 	@Override
 	public ReadSearchPostsResult onReadSearchPosts(ReadSearchPostsData data) throws HttpException,
 			InvalidResponseException
 	{
 		ArhivachChanLocator locator = ChanLocator.get(this);
-		Uri uri = locator.buildQuery("ajax", "callback", "", "act", "tagcomplete", "q", data.searchQuery);
-		String responseText = new HttpRequest(uri, data.holder, data).read().getString();
-		if (responseText.length() <= 2) return null;
-		responseText = responseText.substring(1, responseText.length() - 1);
-		ArrayList<String> tags = new ArrayList<>();
-		try
+		ArhivachChanConfiguration configuration = ChanConfiguration.get(this);
+		String searchQuery = data.searchQuery;
+		boolean tagsOnly = searchQuery.startsWith(":");
+		if (tagsOnly) searchQuery = searchQuery.substring(1);
+		String searchTags = null;
+		ArrayList<String> searchTagsList = null;
+		boolean equals;
+		synchronized (this)
 		{
-			JSONObject jsonObject = new JSONObject(responseText);
-			JSONArray jsonArray = jsonObject.getJSONArray("tags");
-			for (int i = 0; i < jsonArray.length(); i++)
+			equals = searchQuery.equals(mLastSearchQuery);
+			if (equals)
 			{
-				jsonObject = jsonArray.getJSONObject(i);
-				String id = CommonUtils.getJsonString(jsonObject, "id");
-				tags.add(id);
+				searchTags = mLastSearchTags;
+				searchTagsList = mLastSearchTagsList;
 			}
 		}
-		catch (JSONException e)
+		if (!equals)
 		{
-			throw new InvalidResponseException(e);
-		}
-		if (tags.size() > 0)
-		{
-			ArrayList<Post> posts = new ArrayList<>();
-			for (int i = 0, maxTags = Math.min(tags.size(), 5); i < maxTags; i++)
+			StringBuilder queryBuilder = null;
+			int shift = 0;
+			Matcher matcher = PATTERN_LONG_QUERY_PART.matcher(searchQuery);
+			HashSet<String> tags = new HashSet<>();
+			while (matcher.find())
 			{
-				uri = locator.buildQuery("index", "tags", tags.get(i));
+				tags.add(matcher.group(1));
+				int start = matcher.start(), end = matcher.end();
+				int remove = end - start;
+				if (queryBuilder == null) queryBuilder = new StringBuilder(searchQuery);
+				queryBuilder.delete(start - shift, end - shift);
+				shift += remove;
+			}
+			Collections.addAll(tags, (queryBuilder != null ? queryBuilder.toString() : searchQuery).split(" +"));
+			tags.remove("");
+			if (tags.size() == 0) return new ReadSearchPostsResult();
+			StringBuilder searchTagsBuilder = new StringBuilder();
+			ArrayList<String> tagsList = new ArrayList<>();
+			for (String tag : tags)
+			{
+				Uri uri = locator.buildQuery("ajax", "callback", "", "act", "tagcomplete", "q", tag);
+				String responseText = new HttpRequest(uri, data.holder, data).read().getString();
 				try
 				{
-					responseText = new HttpRequest(uri, data.holder, data).read().getString();
+					JSONObject jsonObject = new JSONObject(responseText.substring(1, responseText.length() - 1));
+					JSONArray jsonArray = jsonObject.optJSONArray("tags");
+					if (jsonArray == null || jsonArray.length() == 0)
+					{
+						if (tagsOnly)
+						{
+							throw new HttpException(0, configuration.getResources()
+									.getString(R.string.message_tag_not_found_format, tag));
+						}
+						return new ReadSearchPostsResult();
+					}
+					if (searchTagsBuilder.length() > 0) searchTagsBuilder.append(',');
+					jsonObject = jsonArray.getJSONObject(0);
+					searchTagsBuilder.append(CommonUtils.getJsonString(jsonObject, "id"));
+					tagsList.add(tag + ": " + CommonUtils.getJsonString(jsonObject, "title"));
 				}
-				catch (HttpException e)
-				{
-					if (e.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND) break;
-					throw e;
-				}
-				try
-				{
-					ArrayList<Post> result = new ArhivachThreadsParser(responseText, this, false).convertPosts();
-					if (result == null || result.isEmpty()) break;
-					if (posts == null) posts = new ArrayList<>();
-					posts.addAll(result);
-				}
-				catch (ParseException e)
+				catch (JSONException e)
 				{
 					throw new InvalidResponseException(e);
 				}
 			}
-			return new ReadSearchPostsResult(posts);
+			synchronized (this)
+			{
+				searchTags = searchTagsBuilder.toString();
+				searchTagsList = tagsList;
+				mLastSearchQuery = searchQuery;
+				mLastSearchTags = searchTags;
+				mLastSearchTagsList = searchTagsList;
+			}
 		}
-		return null;
+		if (tagsOnly)
+		{
+			StringBuilder builder = new StringBuilder();
+			builder.append(configuration.getResources().getString(R.string.message_list_of_found_tags)).append(":\n");
+			for (String tag : searchTagsList) builder.append('\n').append(tag);
+			throw new HttpException(0, builder.toString());
+		}
+		Uri uri = locator.buildQuery("index/" + (data.pageNumber * PAGE_SIZE), "tags", searchTags);
+		String responseText = new HttpRequest(uri, data.holder, data).setSuccessOnly(false).read().getString();
+		if (data.holder.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND) return new ReadSearchPostsResult();
+		data.holder.checkResponseCode();
+		try
+		{
+			return new ReadSearchPostsResult(new ArhivachThreadsParser(responseText, this, false).convertPosts());
+		}
+		catch (ParseException e)
+		{
+			throw new InvalidResponseException(e);
+		}
 	}
 	
 	private boolean isBlack(int[] line)

@@ -7,4 +7,7 @@
 	<string name="text_collapsed">Minimize in threads list</string>
 	<string name="text_password">Password</string>
 	
+	<string name="message_tag_not_found_format">Tag not found: %s</string>
+	<string name="message_list_of_found_tags">List of found tags</string>
+	
 </resources>
