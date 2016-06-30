@@ -9,8 +9,7 @@ import chan.content.ChanLocator;
 
 public class DesustorageChanLocator extends ChanLocator
 {
-	private static final String HOST_MAIN = "desustorage.org";
-	private static final String HOST_DATA = "data.desustorage.org";
+	private static final String HOST_DATA = "desu-usergeneratedcontent.xyz";
 	
 	private static final Pattern BOARD_PATH = Pattern.compile("/\\w+(?:/(?:page/\\d+/?)?)?");
 	private static final Pattern THREAD_PATH = Pattern.compile("/\\w+/(?:thread|post)/(\\d+)/?");
@@ -18,7 +17,8 @@ public class DesustorageChanLocator extends ChanLocator
 	
 	public DesustorageChanLocator()
 	{
-		addChanHost(HOST_MAIN);
+		addChanHost("desuarchive.org");
+		addConvertableChanHost("desustorage.org");
 		addSpecialChanHost(HOST_DATA);
 		setHttpsMode(HttpsMode.CONFIGURABLE);
 	}
