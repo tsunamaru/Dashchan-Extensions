@@ -62,7 +62,7 @@ public class ArhivachPostsParser implements GroupParser.Callback
 		if ("div".equals(tagName))
 		{
 			String cssClass = parser.getAttr(attrs, "class");
-			if ("post".equals(cssClass))
+			if ("post".equals(cssClass) || "post post_deleted".equals(cssClass))
 			{
 				String number = parser.getAttr(attrs, "postid");
 				if (StringUtils.isEmpty(number))
@@ -82,95 +82,98 @@ public class ArhivachPostsParser implements GroupParser.Callback
 				else mPost.setParentPostNumber(mParent);
 				mAttachments.clear();
 			}
-			else if ("post_comment_body".equals(cssClass))
-			{
-				mExpect = EXPECT_COMMENT;
-				return true;
-			}
 			else if ("span3".equals(cssClass))
 			{
 				mExpect = EXPECT_THREAD_URI;
 				return true;
 			}
-		}
-		else if ("h1".equals(tagName))
-		{
-			String cssClass = parser.getAttr(attrs, "class");
-			if ("post_subject".equals(cssClass))
+			else if (mPost != null && "post_comment_body".equals(cssClass))
 			{
-				mExpect = EXPECT_SUBJECT;
+				mExpect = EXPECT_COMMENT;
 				return true;
 			}
 		}
-		else if ("span".equals(tagName))
+		else if (mPost != null)
 		{
-			String cssClass = parser.getAttr(attrs, "class");
-			if ("poster_name".equals(cssClass))
-			{
-				mExpect = EXPECT_NAME;
-				return true;
-			}
-			else if ("poster_trip".equals(cssClass))
-			{
-				mExpect = EXPECT_TRIPCODE;
-				return true;
-			}
-			else if ("post_time".equals(cssClass))
-			{
-				mExpect = EXPECT_DATE;
-				return true;
-			}
-			else if ("label label-success".equals(cssClass))
-			{
-				mExpect = EXPECT_LABEL;
-				return true;
-			}
-			else if ("post_subject".equals(cssClass))
-			{
-				mExpect = EXPECT_SUBJECT;
-				return true;
-			}
-		}
-		else if ("iframe".equals(tagName))
-		{
-			if (mExpect == EXPECT_THUMBNAIL)
-			{
-				if (parseIframeThumbnail(parser, attrs, mLocator, mAttachments))
-				{
-					mExpect = EXPECT_NONE;
-				}
-			}
-		}
-		else if ("img".equals(tagName))
-		{
-			if (mExpect == EXPECT_THUMBNAIL)
-			{
-				parseImageThumbnail(parser, attrs, mLocator, mAttachments);
-				mExpect = EXPECT_NONE;
-			}
-			else
+			if ("h1".equals(tagName))
 			{
 				String cssClass = parser.getAttr(attrs, "class");
-				if ("poster_sage".equals(cssClass)) mPost.setSage(true);
-			}
-		}
-		else if ("a".equals(tagName))
-		{
-			String cssClass = parser.getAttr(attrs, "class");
-			if ("expand_image".equals(cssClass))
-			{
-				if (parseExpandImage(parser, attrs, mLocator, mAttachments))
+				if ("post_subject".equals(cssClass))
 				{
-					mExpect = EXPECT_THUMBNAIL;
+					mExpect = EXPECT_SUBJECT;
+					return true;
 				}
 			}
-			else if ("post_mail".equals(cssClass))
+			else if ("span".equals(tagName))
 			{
-				String email = StringUtils.nullIfEmpty(StringUtils.clearHtml(parser.getAttr(attrs, "href")));
-				if (email != null)
+				String cssClass = parser.getAttr(attrs, "class");
+				if ("poster_name".equals(cssClass))
 				{
-					if (email.equals("mailto:sage")) mPost.setSage(true);
-					else mPost.setEmail(email);
+					mExpect = EXPECT_NAME;
+					return true;
+				}
+				else if ("poster_trip".equals(cssClass))
+				{
+					mExpect = EXPECT_TRIPCODE;
+					return true;
+				}
+				else if ("post_time".equals(cssClass))
+				{
+					mExpect = EXPECT_DATE;
+					return true;
+				}
+				else if ("label label-success".equals(cssClass))
+				{
+					mExpect = EXPECT_LABEL;
+					return true;
+				}
+				else if ("post_subject".equals(cssClass))
+				{
+					mExpect = EXPECT_SUBJECT;
+					return true;
+				}
+			}
+			else if ("iframe".equals(tagName))
+			{
+				if (mExpect == EXPECT_THUMBNAIL)
+				{
+					if (parseIframeThumbnail(parser, attrs, mLocator, mAttachments))
+					{
+						mExpect = EXPECT_NONE;
+					}
+				}
+			}
+			else if ("img".equals(tagName))
+			{
+				if (mExpect == EXPECT_THUMBNAIL)
+				{
+					parseImageThumbnail(parser, attrs, mLocator, mAttachments);
+					mExpect = EXPECT_NONE;
+				}
+				else
+				{
+					String cssClass = parser.getAttr(attrs, "class");
+					if ("poster_sage".equals(cssClass)) mPost.setSage(true);
+				}
+			}
+			else if ("a".equals(tagName))
+			{
+				String cssClass = parser.getAttr(attrs, "class");
+				if ("expand_image".equals(cssClass))
+				{
+					if (parseExpandImage(parser, attrs, mLocator, mAttachments))
+					{
+						mExpect = EXPECT_THUMBNAIL;
+					}
+				}
+				else if ("post_mail".equals(cssClass))
+				{
+					String email = StringUtils.nullIfEmpty(StringUtils.clearHtml(parser.getAttr(attrs, "href")));
+					if (email != null)
+					{
+						if (email.equals("mailto:sage")) mPost.setSage(true);
+						else mPost.setEmail(email);
+					}
 				}
 			}
 		}
@@ -369,6 +372,7 @@ public class ArhivachPostsParser implements GroupParser.Callback
 				mPost.setComment(text);
 				if (mAttachments.size() > 0) mPost.setAttachments(mAttachments);
 				mPosts.add(mPost);
+				mPost = null;
 				break;
 			}
 		}
