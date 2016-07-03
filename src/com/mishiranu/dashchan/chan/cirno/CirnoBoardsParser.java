@@ -3,6 +3,7 @@ package com.mishiranu.dashchan.chan.cirno;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,11 +16,9 @@ import chan.util.StringUtils;
 
 public class CirnoBoardsParser implements GroupParser.Callback
 {
-	private static final String[] PREFERRED_BOARDS_ORDER = {"Общее", "Японская культура", "Обсуждения"};
-	
 	private final String mSource;
 	
-	private final ArrayList<BoardCategory> mBoardCategories = new ArrayList<>();
+	private final LinkedHashMap<String, BoardCategory> mBoardCategories = new LinkedHashMap<>();
 	private final ArrayList<Board> mBoards = new ArrayList<>();
 	
 	private String mBoardCategoryTitle;
@@ -57,27 +56,20 @@ public class CirnoBoardsParser implements GroupParser.Callback
 	{
 		GroupParser.parse(mSource, this);
 		closeCategory();
-		ArrayList<BoardCategory> boardCategories = new ArrayList<>();
-		for (String title : PREFERRED_BOARDS_ORDER)
-		{
-			for (BoardCategory boardCategory : mBoardCategories)
-			{
-				if (title.equals(boardCategory.getTitle()))
-				{
-					Arrays.sort(boardCategory.getBoards());
-					boardCategories.add(boardCategory);
-					break;
-				}
-			}
-		}
-		return boardCategories;
+		for (BoardCategory boardCategory : mBoardCategories.values()) Arrays.sort(boardCategory.getBoards());
+		BoardCategory boardCategory = mBoardCategories.remove("Обсуждения");
+		if (boardCategory != null) mBoardCategories.put(boardCategory.getTitle(), boardCategory);
+		return new ArrayList<>(mBoardCategories.values());
 	}
 	
 	private void closeCategory()
 	{
 		if (mBoardCategoryTitle != null)
 		{
-			if (mBoards.size() > 0) mBoardCategories.add(new BoardCategory(mBoardCategoryTitle, mBoards));
+			if (mBoards.size() > 0)
+			{
+				mBoardCategories.put(mBoardCategoryTitle, new BoardCategory(mBoardCategoryTitle, mBoards));
+			}
 			mBoardCategoryTitle = null;
 			mBoards.clear();
 		}
