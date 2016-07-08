@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,8 +59,6 @@ public class NulleuPostsParser implements GroupParser.Callback
 	
 	private static final Pattern FILE_SIZE = Pattern.compile("\\(([\\d\\.]+)(\\w+)(?: *, *(\\d+)x(\\d+))?" +
 			"(?: *, *(.+))? *\\) *$");
-	private static final Pattern COUNTRY_FLAG = Pattern.compile("<img.*?src=\"(.*?)\""
-			+ "(?:.*?title=\"(.*?)\")?.*?/>(?:&nbsp;)?(.*)");
 	private static final Pattern EMBED = Pattern.compile("data-id=\"(.*?)\" data-site=\"(.*?)\"");
 	private static final Pattern NUMBER = Pattern.compile("(\\d+)");
 	
@@ -266,6 +265,18 @@ public class NulleuPostsParser implements GroupParser.Callback
 					mAttachment = null;
 				}
 			}
+			else if ("_country_".equals(cssClass))
+			{
+				String src = parser.getAttr(attrs, "src");
+				if (src != null && !src.endsWith("xx.png") && !src.endsWith("a1.png"))
+				{
+					Uri uri = Uri.parse(src);
+					String title = uri.getLastPathSegment();
+					int index = title.indexOf('.');
+					if (index >= 0) title = title.substring(0, index).toUpperCase(Locale.US);
+					mPost.setIcons(new Icon(mLocator, uri, title));
+				}
+			}
 			else
 			{
 				if (mPost != null)
@@ -443,25 +454,6 @@ public class NulleuPostsParser implements GroupParser.Callback
 			}
 			case EXPECT_NAME:
 			{
-				Matcher matcher = COUNTRY_FLAG.matcher(text);
-				if (matcher.matches())
-				{
-					text = matcher.group(3);
-					String src = matcher.group(1);
-					String title = matcher.group(2);
-					if (src != null && !"unknown".equals(title))
-					{
-						Uri uri = Uri.parse(src);
-						if (StringUtils.isEmpty(title))
-						{
-							String name = uri.getLastPathSegment();
-							int index = name.indexOf('.');
-							if (index >= 0) name = name.substring(0, index);
-							title = name;
-						}
-						mPost.setIcons(new Icon(mLocator, uri, title));
-					}
-				}
 				mPost.setName(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
 				break;
 			}
