@@ -17,6 +17,7 @@ public class NulleuChanLocator extends ChanLocator
 	{
 		addChanHost("0chan.eu");
 		addConvertableChanHost("www.0chan.eu");
+		setHttpsMode(HttpsMode.CONFIGURABLE);
 	}
 	
 	@Override
