@@ -29,6 +29,7 @@ import chan.content.model.Board;
 import chan.content.model.Post;
 import chan.content.model.Posts;
 import chan.http.HttpException;
+import chan.http.HttpHolder;
 import chan.http.HttpRequest;
 import chan.http.HttpValidator;
 import chan.http.MultipartEntity;
@@ -285,6 +286,16 @@ public class NulleuChanPerformer extends ChanPerformer
 		throw new InvalidResponseException();
 	}
 	
+	private static final HttpRequest.RedirectHandler POST_REDIRECT_HANDLER = new HttpRequest.RedirectHandler()
+	{
+		@Override
+		public Action onRedirectReached(int responseCode, Uri requestedUri, Uri redirectedUri, HttpHolder holder)
+				throws HttpException
+		{
+			return responseCode == HttpURLConnection.HTTP_MOVED_PERM ? Action.RETRANSMIT : Action.CANCEL;
+		}
+	};
+	
 	private static final Pattern PATTERN_POST_ERROR = Pattern.compile("(?s)<h2.*?>(.*?)</h2>");
 	private static final Pattern PATTERN_BLACK_LIST_WORD = Pattern.compile("Blacklisted link \\( (.*) \\) detected.");
 	private static final Pattern PATTERN_BAN_DATA = Pattern.compile("<strong>(.*?)</strong>");
@@ -323,7 +334,7 @@ public class NulleuChanPerformer extends ChanPerformer
 		try
 		{
 			new HttpRequest(uri, data.holder, data).setPostMethod(entity).addCookie("PHPSESSID", sessionCookie)
-					.setRedirectHandler(HttpRequest.RedirectHandler.NONE).execute();
+					.setRedirectHandler(POST_REDIRECT_HANDLER).execute();
 			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_MOVED_TEMP)
 			{
 				uri = data.holder.getRedirectedUri();
