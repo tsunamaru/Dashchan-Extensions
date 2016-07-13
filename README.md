@@ -2,6 +2,6 @@
 
 Extension for 2-chru.net.
 
-# License
+## License
 
-[MIT License](LICENSE)
+Extension is licensed under the [MIT License](LICENSE).
