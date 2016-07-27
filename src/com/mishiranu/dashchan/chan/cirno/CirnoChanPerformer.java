@@ -22,6 +22,7 @@ import chan.content.model.Post;
 import chan.content.model.ThreadSummary;
 import chan.content.model.Threads;
 import chan.http.HttpException;
+import chan.http.HttpHolder;
 import chan.http.HttpRequest;
 import chan.http.HttpValidator;
 import chan.http.MultipartEntity;
@@ -66,10 +67,21 @@ public class CirnoChanPerformer extends ChanPerformer
 		CirnoChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createThreadUri(data.boardName, data.threadNumber);
 		String responseText;
-		boolean archived = false;
+		final boolean[] archived = {false};
 		try
 		{
-			responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator).read().getString();
+			responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
+					.setRedirectHandler(new HttpRequest.RedirectHandler()
+			{
+				@Override
+				public Action onRedirectReached(int responseCode, Uri requestedUri, Uri redirectedUri,
+						HttpHolder holder) throws HttpException
+				{
+					String path = redirectedUri.getPath();
+					if (path != null && path.contains("/arch/")) archived[0] = true;
+					return BROWSER.onRedirectReached(responseCode, requestedUri, redirectedUri, holder);
+				}
+			}).read().getString();
 		}
 		catch (HttpException e)
 		{
@@ -77,7 +89,7 @@ public class CirnoChanPerformer extends ChanPerformer
 			{
 				uri = locator.createThreadArchiveUri(data.boardName, data.threadNumber);
 				responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator).read().getString();
-				archived = true;
+				archived[0] = true;
 			}
 			else throw e;
 		}
@@ -85,7 +97,7 @@ public class CirnoChanPerformer extends ChanPerformer
 		{
 			ArrayList<Post> posts = new CirnoPostsParser(responseText, this, data.boardName).convertPosts();
 			if (posts == null || posts.isEmpty()) throw new InvalidResponseException();
-			if (archived) posts.get(0).setArchived(true);
+			if (archived[0]) posts.get(0).setArchived(true);
 			return new ReadPostsResult(posts);
 		}
 		catch (ParseException e)
