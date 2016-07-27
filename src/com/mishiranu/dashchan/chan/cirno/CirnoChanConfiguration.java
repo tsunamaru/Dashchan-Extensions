@@ -7,6 +7,7 @@ import chan.content.ChanConfiguration;
 public class CirnoChanConfiguration extends ChanConfiguration
 {
 	private static final String KEY_IMAGES_ENABLED = "images_enabled";
+	private static final String KEY_EMAILS_ENABLED = "emails_enabled";
 	private static final String KEY_NAMES_ENABLED = "names_enabled";
 	private static final String KEY_IMAGE_SPOILERS_ENABLED = "image_spoilers_enabled";
 	
@@ -84,9 +85,8 @@ public class CirnoChanConfiguration extends ChanConfiguration
 	public Posting obtainPostingConfiguration(String boardName, boolean newThread)
 	{
 		Posting posting = new Posting();
-		posting.allowName = get(boardName, KEY_NAMES_ENABLED, true);
-		posting.allowTripcode = true;
-		posting.allowEmail = true;
+		posting.allowName = posting.allowTripcode = get(boardName, KEY_NAMES_ENABLED, true);
+		posting.allowEmail = get(boardName, KEY_EMAILS_ENABLED, true);
 		posting.allowSubject = true;
 		posting.attachmentCount = get(boardName, KEY_IMAGES_ENABLED, true) ? 1 : 0;
 		posting.attachmentMimeTypes.add("image/*");
@@ -123,10 +123,11 @@ public class CirnoChanConfiguration extends ChanConfiguration
 		return get(null, KEY_READ_CHAN_STAT, true);
 	}
 	
-	public void storeNamesImagesSpoilersEnabled(String boardName, boolean namesEnabled, boolean imagesEnabled,
-			boolean imageSpoilersEnabled)
+	public void storeNamesEmailsImagesSpoilersEnabled(String boardName, boolean namesEnabled, boolean emailsEnabled,
+			boolean imagesEnabled, boolean imageSpoilersEnabled)
 	{
 		set(boardName, KEY_NAMES_ENABLED, namesEnabled);
+		set(boardName, KEY_EMAILS_ENABLED, emailsEnabled);
 		set(boardName, KEY_IMAGES_ENABLED, imagesEnabled);
 		set(boardName, KEY_IMAGE_SPOILERS_ENABLED, imageSpoilersEnabled);
 	}

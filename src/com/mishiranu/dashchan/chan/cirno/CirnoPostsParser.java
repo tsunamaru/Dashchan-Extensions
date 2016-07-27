@@ -51,6 +51,7 @@ public class CirnoPostsParser implements GroupParser.Callback
 	
 	private boolean mHasPostBlock = false;
 	private boolean mHasPostBlockName = false;
+	private boolean mHasPostBlockEmail = false;
 	private boolean mHasPostBlockFile = false;
 	private boolean mHasSpoilerCheckBox = false;
 	
@@ -122,8 +123,8 @@ public class CirnoPostsParser implements GroupParser.Callback
 	{
 		if (mHasPostBlock)
 		{
-			mConfiguration.storeNamesImagesSpoilersEnabled(mBoardName, mHasPostBlockName, mHasPostBlockFile,
-					mHasSpoilerCheckBox);
+			mConfiguration.storeNamesEmailsImagesSpoilersEnabled(mBoardName, mHasPostBlockName, mHasPostBlockEmail,
+					mHasPostBlockFile, mHasSpoilerCheckBox);
 		}
 	}
 	
@@ -424,6 +425,7 @@ public class CirnoPostsParser implements GroupParser.Callback
 			case EXPECT_POST_BLOCK:
 			{
 				if ("Имя".equals(text)) mHasPostBlockName = true;
+				else if ("E-mail".equals(text)) mHasPostBlockEmail = true;
 				else if ("Файл".equals(text)) mHasPostBlockFile = true;
 				break;
 			}
