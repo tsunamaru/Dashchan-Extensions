@@ -84,7 +84,8 @@ public class CirnoChanPerformer extends ChanPerformer
 		try
 		{
 			ArrayList<Post> posts = new CirnoPostsParser(responseText, this, data.boardName).convertPosts();
-			if (archived && posts != null && posts.size() > 0) posts.get(0).setArchived(true);
+			if (posts == null || posts.isEmpty()) throw new InvalidResponseException();
+			if (archived) posts.get(0).setArchived(true);
 			return new ReadPostsResult(posts);
 		}
 		catch (ParseException e)
@@ -135,6 +136,11 @@ public class CirnoChanPerformer extends ChanPerformer
 		CirnoChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createThreadUri(data.boardName, data.threadNumber);
 		String responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator).read().getString();
+		if (!responseText.contains("<form id=\"delform\" action=\"/cgi-bin/wakaba.pl/" + data.boardName + "/\" "
+				+ "method=\"post\">"))
+		{
+			throw new InvalidResponseException();
+		}
 		int count = 0;
 		int index = 0;
 		while (index != -1)
