@@ -32,7 +32,6 @@ import chan.content.model.ThreadSummary;
 import chan.content.model.Threads;
 import chan.http.CookieBuilder;
 import chan.http.HttpException;
-import chan.http.HttpHolder;
 import chan.http.HttpRequest;
 import chan.http.HttpResponse;
 import chan.http.MultipartEntity;
@@ -69,13 +68,12 @@ public class DvachChanPerformer extends ChanPerformer
 		DvachChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, (data.isCatalog() ? "catalog" : data.pageNumber == 0
 				? "index" : Integer.toString(data.pageNumber)) + ".json");
-		JSONObject response = new HttpRequest(uri, data.holder, data).addCookie(buildCookiesWithCaptchaPass())
+		JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass())
 				.setValidator(data.validator).read().getJsonObject();
-		if (response != null)
+		if (jsonObject != null)
 		{
 			try
 			{
-				JSONObject jsonObject = (JSONObject) response;
 				DvachChanConfiguration configuration = ChanConfiguration.get(this);
 				configuration.updateFromThreadsPostsJson(data.boardName, jsonObject);
 				JSONArray threadsArray = jsonObject.getJSONArray("threads");
@@ -147,24 +145,17 @@ public class DvachChanPerformer extends ChanPerformer
 		else if (archive)
 		{
 			uri = locator.buildPath(data.boardName, "arch", "res", data.threadNumber + ".json");
-			final Uri[] finalThreadUri = {uri};
+			Uri[] finalThreadUri = {uri};
 			threadUri = finalThreadUri;
-			handler = new HttpRequest.RedirectHandler()
+			handler = (responseCode, requestedUri, redirectedUri, holder) ->
 			{
-				@Override
-				public Action onRedirectReached(int responseCode, Uri requestedUri, Uri redirectedUri,
-						HttpHolder holder) throws HttpException
-				{
-					finalThreadUri[0] = redirectedUri;
-					return BROWSER.onRedirectReached(responseCode, requestedUri, redirectedUri, holder);
-				}
+				finalThreadUri[0] = redirectedUri;
+				return HttpRequest.RedirectHandler.BROWSER.onRedirectReached(responseCode,
+						requestedUri, redirectedUri, holder);
 			};
 		}
-		else
-		{
-			uri = locator.buildPath(data.boardName, "res", data.threadNumber + ".json");
-		}
-		HttpResponse response = new HttpRequest(uri, data.holder, data).addCookie(buildCookiesWithCaptchaPass())
+		else uri = locator.buildPath(data.boardName, "res", data.threadNumber + ".json");
+		HttpResponse response = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass())
 				.setValidator(data.validator).setRedirectHandler(handler).read();
 		String archiveStartPath = null;
 		if (archive)
@@ -254,8 +245,7 @@ public class DvachChanPerformer extends ChanPerformer
 		DvachChanConfiguration configuration = ChanConfiguration.get(this);
 		Uri uri = locator.createFcgiUri("mobile", "task", "get_post", "board", data.boardName,
 				"post", data.postNumber);
-		HttpResponse response = new HttpRequest(uri, data.holder, data)
-				.addCookie(buildCookiesWithCaptchaPass()).read();
+		HttpResponse response = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass()).read();
 		JSONObject jsonObject = response.getJsonObject();
 		JSONArray jsonArray = response.getJsonArray();
 		if (jsonArray != null)
@@ -297,7 +287,7 @@ public class DvachChanPerformer extends ChanPerformer
 		Uri uri = locator.createFcgiUri("makaba");
 		MultipartEntity entity = new MultipartEntity("task", "search", "board", data.boardName,
 				"find", data.searchQuery, "json", "1");
-		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).addCookie(buildCookiesWithCaptchaPass())
+		JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass())
 				.setPostMethod(entity).setRedirectHandler(HttpRequest.RedirectHandler.STRICT)
 				.read().getJsonObject();
 		if (jsonObject != null)
@@ -323,7 +313,7 @@ public class DvachChanPerformer extends ChanPerformer
 		DvachChanConfiguration configuration = ChanConfiguration.get(this);
 		DvachChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.buildPath("boards.json");
-		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).addCookie(buildCookiesWithCaptchaPass())
+		JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass())
 				.read().getJsonObject();
 		if (jsonObject != null)
 		{
@@ -378,7 +368,7 @@ public class DvachChanPerformer extends ChanPerformer
 		DvachChanConfiguration configuration = ChanConfiguration.get(this);
 		DvachChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.buildPath("userboards.json");
-		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).addCookie(buildCookiesWithCaptchaPass())
+		JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass())
 				.read().getJsonObject();
 		if (jsonObject != null)
 		{
@@ -413,7 +403,7 @@ public class DvachChanPerformer extends ChanPerformer
 		{
 			DvachChanLocator locator = ChanLocator.get(this);
 			Uri uri = locator.buildPath(data.boardName, "arch", "index.json");
-			JSONObject jsonObject = new HttpRequest(uri, data.holder, data).read().getJsonObject();
+			JSONObject jsonObject = new HttpRequest(uri, data).read().getJsonObject();
 			if (jsonObject == null) throw new InvalidResponseException();
 			int pagesCount;
 			try
@@ -428,7 +418,7 @@ public class DvachChanPerformer extends ChanPerformer
 			{
 				if (data.pageNumber > pagesCount) return new ReadThreadSummariesResult();
 				uri = locator.buildPath(data.boardName, "arch", (pagesCount - data.pageNumber) + ".json");
-				jsonObject = new HttpRequest(uri, data.holder, data).read().getJsonObject();
+				jsonObject = new HttpRequest(uri, data).read().getJsonObject();
 				if (jsonObject == null) throw new InvalidResponseException();
 			}
 			try
@@ -459,7 +449,7 @@ public class DvachChanPerformer extends ChanPerformer
 		DvachChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createFcgiUri("mobile", "task", "get_thread_last_info", "board",
 				data.boardName, "thread", data.threadNumber);
-		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).addCookie(buildCookiesWithCaptchaPass())
+		JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass())
 				.read().getJsonObject();
 		if (jsonObject != null)
 		{
@@ -479,22 +469,21 @@ public class DvachChanPerformer extends ChanPerformer
 		{
 			uri = uri.buildUpon().encodedQuery("image=" + System.currentTimeMillis()).build();
 		}
-		return new ReadContentResult(new HttpRequest(uri, data.holder, data)
-				.addCookie(buildCookiesWithCaptchaPass()).read());
+		return new ReadContentResult(new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass()).read());
 	}
 	
 	@Override
 	public CheckAuthorizationResult onCheckAuthorization(CheckAuthorizationData data) throws HttpException,
 			InvalidResponseException
 	{
-		return new CheckAuthorizationResult(readCaptchaPass(data.holder, data, data.authorizationData[0]) != null);
+		return new CheckAuthorizationResult(readCaptchaPass(data, data.authorizationData[0]) != null);
 	}
 	
 	private String mLastCaptchaPassData;
 	private String mLastCaptchaPassCookie;
 	
-	private String readCaptchaPass(HttpHolder holder, HttpRequest.Preset preset, String captchaPassData)
-			throws HttpException, InvalidResponseException
+	private String readCaptchaPass(HttpRequest.Preset preset, String captchaPassData) throws HttpException,
+			InvalidResponseException
 	{
 		mLastCaptchaPassData = null;
 		mLastCaptchaPassCookie = null;
@@ -503,8 +492,8 @@ public class DvachChanPerformer extends ChanPerformer
 		DvachChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createFcgiUri("makaba");
 		UrlEncodedEntity entity = new UrlEncodedEntity("task", "auth", "usercode", captchaPassData, "json", "1");
-		JSONObject jsonObject = new HttpRequest(uri, holder, preset).addCookie(buildCookies(null))
-				.setPostMethod(entity).setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
+		JSONObject jsonObject = new HttpRequest(uri, preset).addCookie(buildCookies(null)).setPostMethod(entity)
+				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
 		if (jsonObject != null)
 		{
 			try
@@ -536,7 +525,7 @@ public class DvachChanPerformer extends ChanPerformer
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
-		return onReadCaptcha(data.holder, data, data.captchaType, data.captchaPass != null ? data.captchaPass[0] : null,
+		return onReadCaptcha(data, data.captchaPass != null ? data.captchaPass[0] : null,
 				data.boardName, data.threadNumber == null, true);
 	}
 	
@@ -548,9 +537,9 @@ public class DvachChanPerformer extends ChanPerformer
 				.setValidity(ChanConfiguration.Captcha.Validity.LONG_LIFETIME);
 	}
 	
-	private ReadCaptchaResult onReadCaptcha(HttpHolder holder, HttpRequest.Preset preset, String captchaType,
-			String captchaPassData, String boardName, boolean newThread, boolean mayUseLastCaptchaPassCookie)
-			throws HttpException, InvalidResponseException
+	private ReadCaptchaResult onReadCaptcha(HttpRequest.Preset preset, String captchaPassData,
+			String boardName, boolean newThread, boolean mayUseLastCaptchaPassCookie) throws HttpException,
+			InvalidResponseException
 	{
 		DvachChanLocator locator = ChanLocator.get(this);
 		String captchaPassCookie = null;
@@ -562,7 +551,7 @@ public class DvachChanPerformer extends ChanPerformer
 				captchaPassCookie = mLastCaptchaPassCookie;
 				mayRelogin = true;
 			}
-			else captchaPassCookie = readCaptchaPass(holder, preset, captchaPassData);
+			else captchaPassCookie = readCaptchaPass(preset, captchaPassData);
 		}
 		Uri uri = locator.createFcgiUri("captcha", "type", "2chaptcha", "board", boardName);
 		if (!newThread) uri = uri.buildUpon().appendQueryParameter("action", "thread").build();
@@ -570,8 +559,7 @@ public class DvachChanPerformer extends ChanPerformer
 		HttpException exception = null;
 		try
 		{
-			responseText = new HttpRequest(uri, holder, preset).addCookie(buildCookies(captchaPassCookie))
-					.read().getString();
+			responseText = new HttpRequest(uri, preset).addCookie(buildCookies(captchaPassCookie)).read().getString();
 		}
 		catch (HttpException e)
 		{
@@ -599,7 +587,7 @@ public class DvachChanPerformer extends ChanPerformer
 				ReadCaptchaResult result = new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData);
 				uri = locator.createFcgiUri("captcha", "type", "2chaptcha", "action", "image",
 						"id", keyOrChallenge);
-				Bitmap image = new HttpRequest(uri, holder, preset).read().getBitmap();
+				Bitmap image = new HttpRequest(uri, preset).read().getBitmap();
 				if (image == null) throw new InvalidResponseException();
 				Bitmap trimmed = CommonUtils.trimBitmap(image, 0xffffffff);
 				if (trimmed != null)
@@ -619,8 +607,7 @@ public class DvachChanPerformer extends ChanPerformer
 			}
 			else if (responseText.equals("VIPFAIL"))
 			{
-				return onReadCaptcha(holder, preset, captchaType, mayRelogin ? captchaPassData : null,
-						boardName, newThread, false);
+				return onReadCaptcha(preset, mayRelogin ? captchaPassData : null, boardName, newThread, false);
 			}
 		}
 		// If wakaba is swaying, but passcode is verified, let's try to use it
@@ -687,7 +674,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		
 		Uri uri = locator.createFcgiUri("posting", "json", "1");
-		String responseText = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
+		String responseText = new HttpRequest(uri, data).setPostMethod(entity)
 				.addCookie(buildCookies(captchaPassCookie)).setRedirectHandler(HttpRequest.RedirectHandler.STRICT)
 				.read().getString();
 		
@@ -794,7 +781,7 @@ public class DvachChanPerformer extends ChanPerformer
 		MultipartEntity entity = new MultipartEntity("task", "report", "board", data.boardName,
 				"thread", data.threadNumber, "posts", postsBuilder.toString(), "comment", data.comment, "json", "1");
 		String referer = locator.createThreadUri(data.boardName, data.threadNumber).toString();
-		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).addCookie(buildCookiesWithCaptchaPass())
+		JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass())
 				.addHeader("Referer", referer).setPostMethod(entity)
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
 		if (jsonObject == null) throw new InvalidResponseException();
