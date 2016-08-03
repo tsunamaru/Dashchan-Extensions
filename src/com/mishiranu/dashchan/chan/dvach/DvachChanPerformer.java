@@ -140,7 +140,7 @@ public class DvachChanPerformer extends ChanPerformer
 		Uri[] threadUri = null;
 		if (usePartialApi)
 		{
-			uri = locator.createApiUri("mobile.fcgi", "task", "get_thread", "board", data.boardName,
+			uri = locator.createFcgiUri("mobile", "task", "get_thread", "board", data.boardName,
 					"thread", data.threadNumber, "num", data.lastPostNumber == null ? data.threadNumber
 					: Integer.toString(Integer.parseInt(data.lastPostNumber) + 1));
 		}
@@ -252,7 +252,7 @@ public class DvachChanPerformer extends ChanPerformer
 	{
 		DvachChanLocator locator = ChanLocator.get(this);
 		DvachChanConfiguration configuration = ChanConfiguration.get(this);
-		Uri uri = locator.createApiUri("mobile.fcgi", "task", "get_post", "board", data.boardName,
+		Uri uri = locator.createFcgiUri("mobile", "task", "get_post", "board", data.boardName,
 				"post", data.postNumber);
 		HttpResponse response = new HttpRequest(uri, data.holder, data)
 				.addCookie(buildCookiesWithCaptchaPass()).read();
@@ -294,7 +294,7 @@ public class DvachChanPerformer extends ChanPerformer
 	{
 		DvachChanLocator locator = ChanLocator.get(this);
 		DvachChanConfiguration configuration = ChanConfiguration.get(this);
-		Uri uri = locator.createApiUri("makaba.fcgi");
+		Uri uri = locator.createFcgiUri("makaba");
 		MultipartEntity entity = new MultipartEntity("task", "search", "board", data.boardName,
 				"find", data.searchQuery, "json", "1");
 		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).addCookie(buildCookiesWithCaptchaPass())
@@ -457,7 +457,7 @@ public class DvachChanPerformer extends ChanPerformer
 	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException
 	{
 		DvachChanLocator locator = ChanLocator.get(this);
-		Uri uri = locator.createApiUri("mobile.fcgi", "task", "get_thread_last_info", "board",
+		Uri uri = locator.createFcgiUri("mobile", "task", "get_thread_last_info", "board",
 				data.boardName, "thread", data.threadNumber);
 		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).addCookie(buildCookiesWithCaptchaPass())
 				.read().getJsonObject();
@@ -501,7 +501,7 @@ public class DvachChanPerformer extends ChanPerformer
 		DvachChanConfiguration configuration = ChanConfiguration.get(this);
 		configuration.storeCookie(COOKIE_NOCAPTCHA, null, null);
 		DvachChanLocator locator = ChanLocator.get(this);
-		Uri uri = locator.createApiUri("makaba.fcgi");
+		Uri uri = locator.createFcgiUri("makaba");
 		UrlEncodedEntity entity = new UrlEncodedEntity("task", "auth", "usercode", captchaPassData, "json", "1");
 		JSONObject jsonObject = new HttpRequest(uri, holder, preset).addCookie(buildCookies(null))
 				.setPostMethod(entity).setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
@@ -564,7 +564,7 @@ public class DvachChanPerformer extends ChanPerformer
 			}
 			else captchaPassCookie = readCaptchaPass(holder, preset, captchaPassData);
 		}
-		Uri uri = locator.createApiUri("captcha.fcgi", "type", "2chaptcha", "board", boardName);
+		Uri uri = locator.createFcgiUri("captcha", "type", "2chaptcha", "board", boardName);
 		if (!newThread) uri = uri.buildUpon().appendQueryParameter("action", "thread").build();
 		String responseText;
 		HttpException exception = null;
@@ -597,7 +597,7 @@ public class DvachChanPerformer extends ChanPerformer
 				CaptchaData captchaData = new CaptchaData();
 				captchaData.put(CaptchaData.CHALLENGE, keyOrChallenge);
 				ReadCaptchaResult result = new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData);
-				uri = locator.createApiUri("captcha.fcgi", "type", "2chaptcha", "action", "image",
+				uri = locator.createFcgiUri("captcha", "type", "2chaptcha", "action", "image",
 						"id", keyOrChallenge);
 				Bitmap image = new HttpRequest(uri, holder, preset).read().getBitmap();
 				if (image == null) throw new InvalidResponseException();
@@ -686,7 +686,7 @@ public class DvachChanPerformer extends ChanPerformer
 			captchaPassCookie = data.captchaData.get(CAPTCHA_PASS_COOKIE);
 		}
 		
-		Uri uri = locator.createApiUri("posting.fcgi", "json", "1");
+		Uri uri = locator.createFcgiUri("posting", "json", "1");
 		String responseText = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
 				.addCookie(buildCookies(captchaPassCookie)).setRedirectHandler(HttpRequest.RedirectHandler.STRICT)
 				.read().getString();
@@ -788,7 +788,7 @@ public class DvachChanPerformer extends ChanPerformer
 			InvalidResponseException
 	{
 		DvachChanLocator locator = ChanLocator.get(this);
-		Uri uri = locator.createApiUri("makaba.fcgi");
+		Uri uri = locator.createFcgiUri("makaba");
 		StringBuilder postsBuilder = new StringBuilder();
 		for (String postNumber : data.postNumbers) postsBuilder.append(postNumber).append(", ");
 		MultipartEntity entity = new MultipartEntity("task", "report", "board", data.boardName,

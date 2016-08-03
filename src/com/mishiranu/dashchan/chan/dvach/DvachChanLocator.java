@@ -19,12 +19,12 @@ public class DvachChanLocator extends ChanLocator
 	{
 		addChanHost("2ch.hk");
 		addChanHost("2ch.pm");
-		addChanHost("2ch.cm");
-		addChanHost("2ch.re");
-		addChanHost("2ch.tf");
-		addChanHost("2ch.wf");
-		addChanHost("2ch.yt");
-		addChanHost("2-ch.so");
+		addConvertableChanHost("2ch.cm");
+		addConvertableChanHost("2ch.re");
+		addConvertableChanHost("2ch.tf");
+		addConvertableChanHost("2ch.wf");
+		addConvertableChanHost("2ch.yt");
+		addConvertableChanHost("2-ch.so");
 		setHttpsMode(HttpsMode.CONFIGURABLE);
 	}
 	
@@ -86,9 +86,9 @@ public class DvachChanLocator extends ChanLocator
 		return createThreadUri(boardName, threadNumber).buildUpon().fragment(postNumber).build();
 	}
 	
-	public Uri createApiUri(String name, String... params)
+	public Uri createFcgiUri(String name, String... params)
 	{
-		Uri.Builder builder = buildPath("makaba", name).buildUpon();
+		Uri.Builder builder = buildPath("makaba", name + ".fcgi").buildUpon();
 		for (int i = 0; i < params.length; i += 2) builder.appendQueryParameter(params[i], params[i + 1]);
 		return builder.build();
 	}
