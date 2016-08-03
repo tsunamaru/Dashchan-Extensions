@@ -1,21 +1,19 @@
 package com.mishiranu.dashchan.chan.cirno;
 
+import android.net.Uri;
+
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import android.net.Uri;
-
-
-import chan.content.ChanLocator;
 import chan.content.model.FileAttachment;
 import chan.content.model.Post;
 import chan.content.model.Posts;
-import chan.text.GroupParser;
 import chan.text.ParseException;
+import chan.text.TemplateParser;
 import chan.util.StringUtils;
 
-public class CirnoCatalogParser implements GroupParser.Callback
+public class CirnoCatalogParser
 {
 	private final String mSource;
 	private final CirnoChanLocator mLocator;
@@ -23,122 +21,77 @@ public class CirnoCatalogParser implements GroupParser.Callback
 	private Post mPost;
 	private final ArrayList<Posts> mThreads = new ArrayList<>();
 	
-	private static final int EXPECT_NONE = 0;
-	private static final int EXPECT_SUBJECT = 1;
-	private static final int EXPECT_COMMENT = 2;
-	
-	private int mExpect = EXPECT_NONE;
-	
 	private static final Pattern LINK_TITLE = Pattern.compile("#(\\d+) \\((.*)\\)");
 	
 	public CirnoCatalogParser(String source, Object linked)
 	{
 		mSource = source;
-		mLocator = ChanLocator.get(linked);
+		mLocator = CirnoChanLocator.get(linked);
 	}
 	
 	public ArrayList<Posts> convert() throws ParseException
 	{
-		GroupParser.parse(mSource, this);
+		PARSER.parse(mSource, this);
 		return mThreads;
 	}
 	
-	@Override
-	public boolean onStartElement(GroupParser parser, String tagName, String attrs) throws ParseException
+	private static final TemplateParser<CirnoCatalogParser> PARSER = new TemplateParser<CirnoCatalogParser>()
+			.starts("a", "title", "#").open((instance, holder, tagName, attributes) ->
 	{
-		if ("a".equals(tagName))
+		Matcher matcher = LINK_TITLE.matcher(attributes.get("title"));
+		if (matcher.matches())
 		{
-			String title = parser.getAttr(attrs, "title");
-			if (title != null && title.startsWith("#"))
+			String number = matcher.group(1);
+			String date = matcher.group(2);
+			Post post = new Post();
+			post.setPostNumber(number);
+			try
 			{
-				Matcher matcher = LINK_TITLE.matcher(title);
-				if (matcher.matches())
-				{
-					String number = matcher.group(1);
-					String date = matcher.group(2);
-					Post post = new Post();
-					post.setPostNumber(number);
-					try
-					{
-						post.setTimestamp(CirnoPostsParser.DATE_FORMAT.parse(date).getTime());
-					}
-					catch (java.text.ParseException e)
-					{
-						
-					}
-					mPost = post;
-					mThreads.add(new Posts(post));
-				}
+				post.setTimestamp(CirnoPostsParser.DATE_FORMAT.parse(date).getTime());
 			}
+			catch (java.text.ParseException e)
+			{
+				
+			}
+			holder.mPost = post;
+			holder.mThreads.add(new Posts(post));
 		}
-		else if (mPost != null)
+		return false;
+		
+	}).name("img").open((instance, holder, tagName, attributes) ->
+	{
+		if (holder.mPost != null)
 		{
-			if ("img".equals(tagName))
+			String src = attributes.get("src");
+			if (src != null)
 			{
-				String src = parser.getAttr(attrs, "src");
-				if (src != null)
+				FileAttachment attachment = new FileAttachment();
+				Uri thumbnailUri = src.contains("/thumb/") ? holder.mLocator.buildPath(src) : null;
+				attachment.setThumbnailUri(holder.mLocator, thumbnailUri);
+				attachment.setSpoiler(src.contains("extras/icons/spoiler.png"));
+				if (thumbnailUri != null)
 				{
-					FileAttachment attachment = new FileAttachment();
-					Uri thumbnailUri = src.contains("/thumb/") ? mLocator.buildPath(src) : null;
-					attachment.setThumbnailUri(mLocator, thumbnailUri);
-					attachment.setSpoiler(src.contains("extras/icons/spoiler.png"));
-					if (thumbnailUri != null)
-					{
-						Uri fileUri = mLocator.buildPath(src.replace("/thumb/", "/src/").replace("s.", "."));
-						attachment.setFileUri(mLocator, fileUri);
-					}
-					mPost.setAttachments(attachment);
+					Uri fileUri = holder.mLocator.buildPath(src.replace("/thumb/", "/src/").replace("s.", "."));
+					attachment.setFileUri(holder.mLocator, fileUri);
 				}
-			}
-			else if ("span".equals(tagName))
-			{
-				String cssClass = parser.getAttr(attrs, "class");
-				if ("filetitle".equals(cssClass))
-				{
-					mExpect = EXPECT_SUBJECT;
-					return true;
-				}
-				else if ("cattext".equals(cssClass))
-				{
-					mExpect = EXPECT_COMMENT;
-					return true;
-				}
+				holder.mPost.setAttachments(attachment);
 			}
 		}
 		return false;
-	}
-	
-	@Override
-	public void onEndElement(GroupParser parser, String tagName)
-	{
 		
-	}
-	
-	@Override
-	public void onText(GroupParser parser, String source, int start, int end)
+	}).equals("span", "class", "filetitle").content((instance, holder, text) ->
 	{
+		if (holder.mPost != null) holder.mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
 		
-	}
-	
-	@Override
-	public void onGroupComplete(GroupParser parser, String text)
+	}).equals("span", "class", "cattext").content((instance, holder, text) ->
 	{
-		switch (mExpect)
+		if (holder.mPost != null)
 		{
-			case EXPECT_SUBJECT:
-			{
-				mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-				break;
-			}
-			case EXPECT_COMMENT:
-			{
-				text = StringUtils.nullIfEmpty(text);
-				if (text != null) text = text.trim() + '\u2026';
-				mPost.setComment(text);
-				mPost = null;
-				break;
-			}
+			text = StringUtils.nullIfEmpty(text);
+			if (text != null) text = text.trim() + '\u2026';
+			holder.mPost.setComment(text);
+			holder.mPost = null;
 		}
-		mExpect = EXPECT_NONE;
-	}
+		
+	}).prepare();
 }

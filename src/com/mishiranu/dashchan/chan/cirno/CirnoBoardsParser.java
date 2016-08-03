@@ -12,9 +12,10 @@ import chan.content.model.Board;
 import chan.content.model.BoardCategory;
 import chan.text.GroupParser;
 import chan.text.ParseException;
+import chan.text.TemplateParser;
 import chan.util.StringUtils;
 
-public class CirnoBoardsParser implements GroupParser.Callback
+public class CirnoBoardsParser
 {
 	private final String mSource;
 	
@@ -24,12 +25,6 @@ public class CirnoBoardsParser implements GroupParser.Callback
 	private String mBoardCategoryTitle;
 	private String mBoardName;
 
-	private static final int EXPECT_NONE = 0;
-	private static final int EXPECT_CATEGORY = 1;
-	private static final int EXPECT_BOARD = 2;
-	
-	private int mExpect = EXPECT_NONE;
-	
 	private static final Pattern BOARD_NAME_PATTERN = Pattern.compile("/(\\w+)/");
 	
 	private static final HashMap<String, String> VALID_BOARD_TITLES = new HashMap<>();
@@ -54,7 +49,7 @@ public class CirnoBoardsParser implements GroupParser.Callback
 	
 	public ArrayList<BoardCategory> convert() throws ParseException
 	{
-		GroupParser.parse(mSource, this);
+		PARSER.parse(mSource, this);
 		closeCategory();
 		for (BoardCategory boardCategory : mBoardCategories.values()) Arrays.sort(boardCategory.getBoards());
 		BoardCategory boardCategory = mBoardCategories.remove("Обсуждения");
@@ -75,72 +70,6 @@ public class CirnoBoardsParser implements GroupParser.Callback
 		}
 	}
 	
-	@Override
-	public boolean onStartElement(GroupParser parser, String tagName, String attrs)
-	{
-		if ("td".equals(tagName))
-		{
-			String cssClass = parser.getAttr(attrs, "class");
-			if ("header".equals(cssClass))
-			{
-				closeCategory();
-				mExpect = EXPECT_CATEGORY;
-				return true;
-			}
-		}
-		else if (mBoardCategoryTitle != null)
-		{
-			if ("a".equals(tagName))
-			{
-				String href = parser.getAttr(attrs, "href");
-				Matcher matcher = BOARD_NAME_PATTERN.matcher(href);
-				if (matcher.matches())
-				{
-					mBoardName = matcher.group(1);
-					String title = VALID_BOARD_TITLES.get(mBoardName);
-					if (title != null) mBoards.add(new Board(mBoardName, title)); else
-					{
-						mExpect = EXPECT_BOARD;
-						return true;
-					}
-				}
-			}
-		}
-		return false;
-	}
-	
-	@Override
-	public void onEndElement(GroupParser parser, String tagName)
-	{
-		
-	}
-	
-	@Override
-	public void onText(GroupParser parser, String source, int start, int end)
-	{
-		
-	}
-	
-	@Override
-	public void onGroupComplete(GroupParser parser, String text)
-	{
-		switch (mExpect)
-		{
-			case EXPECT_CATEGORY:
-			{
-				mBoardCategoryTitle = StringUtils.clearHtml(text);
-				break;
-			}
-			case EXPECT_BOARD:
-			{
-				text = transform(StringUtils.clearHtml(text));
-				mBoards.add(new Board(mBoardName, text));
-				break;
-			}
-		}
-		mExpect = EXPECT_NONE;
-	}
-	
 	private static String transform(String string)
 	{
 		if (string.length() > 0)
@@ -150,4 +79,33 @@ public class CirnoBoardsParser implements GroupParser.Callback
 		}
 		return string;
 	}
+	
+	private static final TemplateParser<CirnoBoardsParser> PARSER = new TemplateParser<CirnoBoardsParser>()
+			.equals("td", "class", "header").content((instance, holder, text) ->
+	{
+		holder.closeCategory();
+		holder.mBoardCategoryTitle = StringUtils.clearHtml(text);
+		
+	}).name("a").open((instance, holder, tagName, attributes) ->
+	{
+		if (holder.mBoardCategoryTitle != null)
+		{
+			String href = attributes.get("href");
+			Matcher matcher = BOARD_NAME_PATTERN.matcher(href);
+			if (matcher.matches())
+			{
+				String boardName = matcher.group(1);
+				String title = VALID_BOARD_TITLES.get(boardName);
+				holder.mBoardName = boardName;
+				if (title != null) holder.mBoards.add(new Board(boardName, title)); else return true;
+			}
+		}
+		return false;
+		
+	}).content((instance, holder, text) ->
+	{
+		text = transform(StringUtils.clearHtml(text));
+		holder.mBoards.add(new Board(holder.mBoardName, text));
+		
+	}).prepare();
 }
