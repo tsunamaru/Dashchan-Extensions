@@ -26,15 +26,14 @@ public class ChanStatReader
 		Collections.addAll(mBoardNames, boardNames);
 	}
 	
-	public int readBoardSpeed(String boardName, ChanLocator locator, HttpHolder holder, HttpRequest.Preset preset)
-			throws HttpException
+	public int readBoardSpeed(String boardName, ChanLocator locator, HttpHolder holder) throws HttpException
 	{
 		if (!mBoardNames.contains(boardName)) return -1;
 		Uri uri = locator.buildPathWithSchemeHost(true, "chanstat.ru");
 		String responseText;
 		try
 		{
-			responseText = new HttpRequest(uri, holder, preset).setValidator(mValidator).setTimeouts(5000, 5000)
+			responseText = new HttpRequest(uri, holder).setValidator(mValidator).setTimeouts(5000, 5000)
 					.read().getString();
 			HttpValidator validator = holder.getValidator();
 			if (validator != null)

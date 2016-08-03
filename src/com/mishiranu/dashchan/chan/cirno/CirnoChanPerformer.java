@@ -2,7 +2,7 @@ package com.mishiranu.dashchan.chan.cirno;
 
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,15 +14,12 @@ import android.graphics.Paint;
 import android.net.Uri;
 
 import chan.content.ApiException;
-import chan.content.ChanConfiguration;
-import chan.content.ChanLocator;
 import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
 import chan.content.model.Post;
 import chan.content.model.ThreadSummary;
 import chan.content.model.Threads;
 import chan.http.HttpException;
-import chan.http.HttpHolder;
 import chan.http.HttpRequest;
 import chan.http.HttpValidator;
 import chan.http.MultipartEntity;
@@ -37,12 +34,11 @@ public class CirnoChanPerformer extends ChanPerformer
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
-		CirnoChanLocator locator = ChanLocator.get(this);
-		CirnoChanConfiguration configuration = ChanConfiguration.get(this);
+		CirnoChanLocator locator = CirnoChanLocator.get(this);
+		CirnoChanConfiguration configuration = CirnoChanConfiguration.get(this);
 		Uri uri = data.isCatalog() ? locator.buildPath(data.boardName, "catalogue.html")
 				: locator.createBoardUri(data.boardName, data.pageNumber);
-		String responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
-				.read().getString();
+		String responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
 		try
 		{
 			Threads threads = new Threads(data.isCatalog() ? new CirnoCatalogParser(responseText, this).convert()
@@ -50,7 +46,7 @@ public class CirnoChanPerformer extends ChanPerformer
 			HttpValidator validator = data.holder.getValidator();
 			if (!data.isCatalog() && data.pageNumber == 0 && configuration.isReadChanStat())
 			{
-				int boardSpeed = mChanStatReader.readBoardSpeed(data.boardName, locator, data.holder, data);
+				int boardSpeed = mChanStatReader.readBoardSpeed(data.boardName, locator, data.holder);
 				if (boardSpeed >= 0) threads.setBoardSpeed(boardSpeed);
 			}
 			return new ReadThreadsResult(threads).setValidator(validator);
@@ -64,23 +60,20 @@ public class CirnoChanPerformer extends ChanPerformer
 	@Override
 	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException
 	{
-		CirnoChanLocator locator = ChanLocator.get(this);
+		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = locator.createThreadUri(data.boardName, data.threadNumber);
 		String responseText;
-		final boolean[] archived = {false};
+		boolean[] archived = {false};
 		try
 		{
-			responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
-					.setRedirectHandler(new HttpRequest.RedirectHandler()
+			responseText = new HttpRequest(uri, data).setValidator(data.validator)
+					.setRedirectHandler((responseCode, requestedUri, redirectedUri, holder) ->
 			{
-				@Override
-				public Action onRedirectReached(int responseCode, Uri requestedUri, Uri redirectedUri,
-						HttpHolder holder) throws HttpException
-				{
-					String path = redirectedUri.getPath();
-					if (path != null && path.contains("/arch/")) archived[0] = true;
-					return BROWSER.onRedirectReached(responseCode, requestedUri, redirectedUri, holder);
-				}
+				String path = redirectedUri.getPath();
+				if (path != null && path.contains("/arch/")) archived[0] = true;
+				return HttpRequest.RedirectHandler.BROWSER.onRedirectReached(responseCode,
+						requestedUri, redirectedUri, holder);
+				
 			}).read().getString();
 		}
 		catch (HttpException e)
@@ -88,7 +81,7 @@ public class CirnoChanPerformer extends ChanPerformer
 			if (e.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND)
 			{
 				uri = locator.createThreadArchiveUri(data.boardName, data.threadNumber);
-				responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator).read().getString();
+				responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
 				archived[0] = true;
 			}
 			else throw e;
@@ -109,9 +102,9 @@ public class CirnoChanPerformer extends ChanPerformer
 	@Override
 	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException
 	{
-		CirnoChanLocator locator = ChanLocator.get(this);
+		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = locator.buildPath("n", "list_ru.html");
-		String responseText = new HttpRequest(uri, data.holder, data).read().getString();
+		String responseText = new HttpRequest(uri, data).read().getString();
 		try
 		{
 			return new ReadBoardsResult(new CirnoBoardsParser(responseText).convert());
@@ -129,9 +122,9 @@ public class CirnoChanPerformer extends ChanPerformer
 	public ReadThreadSummariesResult onReadThreadSummaries(ReadThreadSummariesData data) throws HttpException,
 			InvalidResponseException
 	{
-		CirnoChanLocator locator = ChanLocator.get(this);
+		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = locator.createBoardUri(data.boardName, 0).buildUpon().appendEncodedPath("arch/res").build();
-		String responseText = new HttpRequest(uri, data.holder, data).read().getString();
+		String responseText = new HttpRequest(uri, data).read().getString();
 		ArrayList<ThreadSummary> threadSummaries = new ArrayList<>();
 		Matcher matcher = PATTERN_ARCHIVED_THREAD.matcher(responseText);
 		while (matcher.find())
@@ -145,14 +138,10 @@ public class CirnoChanPerformer extends ChanPerformer
 	@Override
 	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException
 	{
-		CirnoChanLocator locator = ChanLocator.get(this);
+		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = locator.createThreadUri(data.boardName, data.threadNumber);
-		String responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator).read().getString();
-		if (!responseText.contains("<form id=\"delform\" action=\"/cgi-bin/wakaba.pl/" + data.boardName + "/\" "
-				+ "method=\"post\">"))
-		{
-			throw new InvalidResponseException();
-		}
+		String responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
+		if (!responseText.contains("<form id=\"delform\"")) throw new InvalidResponseException();
 		int count = 0;
 		int index = 0;
 		while (index != -1)
@@ -163,12 +152,8 @@ public class CirnoChanPerformer extends ChanPerformer
 		return new ReadPostsCountResult(count);
 	}
 	
-	private static final HashSet<String> NO_CAPTCHA_BOARDS = new HashSet<String>();
-	
-	static
-	{
-		Collections.addAll(NO_CAPTCHA_BOARDS, "mu", "o", "ph", "tv", "vg", "a", "tan", "to");
-	}
+	private final HashSet<String> mNoCaptchaBoards = new HashSet<>(Arrays
+			.asList("mu", "o", "ph", "tv", "vg", "a", "tan", "to"));
 	
 	private static final ColorMatrixColorFilter CAPTCHA_FILTER = new ColorMatrixColorFilter(new float[]
 			{0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f});
@@ -176,15 +161,15 @@ public class CirnoChanPerformer extends ChanPerformer
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
-		synchronized (NO_CAPTCHA_BOARDS)
+		synchronized (mNoCaptchaBoards)
 		{
-			if (NO_CAPTCHA_BOARDS.contains(data.boardName)) return new ReadCaptchaResult(CaptchaState.SKIP, null);
+			if (mNoCaptchaBoards.contains(data.boardName)) return new ReadCaptchaResult(CaptchaState.SKIP, null);
 		}
-		CirnoChanLocator locator = ChanLocator.get(this);
+		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		String script = "a".equals(data.boardName) || "b".equals(data.boardName) ? "captcha1.pl" : "captcha.pl";
 		Uri uri = locator.buildQuery("cgi-bin/" + script + "/" + data.boardName + "/", "key",
 				data.threadNumber == null ? "mainpage" : "res" + data.threadNumber);
-		Bitmap image = new HttpRequest(uri, data.holder, data).read().getBitmap();
+		Bitmap image = new HttpRequest(uri, data).read().getBitmap();
 		if (image != null)
 		{
 			Bitmap newImage = Bitmap.createBitmap(image.getWidth(), 32, Bitmap.Config.ARGB_8888);
@@ -222,12 +207,12 @@ public class CirnoChanPerformer extends ChanPerformer
 		else entity.add("nofile", "1");
 		if (data.captchaData != null) entity.add("captcha", data.captchaData.get(CaptchaData.INPUT));
 
-		CirnoChanLocator locator = ChanLocator.get(this);
+		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = locator.buildPath("cgi-bin", "wakaba.pl", data.boardName);
 		String responseText;
 		try
 		{
-			new HttpRequest(uri, data.holder, data).setPostMethod(entity)
+			new HttpRequest(uri, data).setPostMethod(entity)
 					.setRedirectHandler(HttpRequest.RedirectHandler.NONE).execute();
 			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_SEE_OTHER)
 			{
@@ -255,9 +240,9 @@ public class CirnoChanPerformer extends ChanPerformer
 				if (errorMessage.contains("Введён неверный код подтверждения") ||
 						errorMessage.contains("Код подтверждения не найден в базе"))
 				{
-					synchronized (NO_CAPTCHA_BOARDS)
+					synchronized (mNoCaptchaBoards)
 					{
-						NO_CAPTCHA_BOARDS.remove(data.boardName);
+						mNoCaptchaBoards.remove(data.boardName);
 					}
 					errorType = ApiException.SEND_ERROR_CAPTCHA;
 				}
@@ -314,7 +299,7 @@ public class CirnoChanPerformer extends ChanPerformer
 	public SendDeletePostsResult onSendDeletePosts(SendDeletePostsData data) throws HttpException, ApiException,
 			InvalidResponseException
 	{
-		CirnoChanLocator locator = ChanLocator.get(this);
+		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = locator.buildPath("cgi-bin", "wakaba.pl", data.boardName);
 		UrlEncodedEntity entity = new UrlEncodedEntity("task", "delete", "password", data.password);
 		for (String postNumber : data.postNumbers) entity.add("delete", postNumber);
@@ -322,7 +307,7 @@ public class CirnoChanPerformer extends ChanPerformer
 		String responseText;
 		try
 		{
-			new HttpRequest(uri, data.holder, data).setPostMethod(entity)
+			new HttpRequest(uri, data).setPostMethod(entity)
 					.setRedirectHandler(HttpRequest.RedirectHandler.NONE).execute();
 			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_SEE_OTHER) return null;
 			responseText = data.holder.read().getString();
