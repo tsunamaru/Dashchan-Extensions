@@ -229,6 +229,8 @@ public class OzuchanPostsParser
 		
 	}).equals("div", "class", "message").content((instance, holder, text) ->
 	{
+		// Fix links
+		text = text.replaceAll("<a .*?href=\"(?:../)?res/", "<a href=\"/" + holder.mBoardName + "/res/");
 		holder.mPost.setComment(text);
 		holder.mPosts.add(holder.mPost);
 		holder.mPost = null;
