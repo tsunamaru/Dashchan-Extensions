@@ -6,7 +6,6 @@ import java.util.HashSet;
 
 import android.net.Uri;
 
-import chan.content.ChanLocator;
 import chan.http.HttpException;
 import chan.http.HttpHolder;
 import chan.http.HttpRequest;
@@ -15,7 +14,7 @@ import chan.http.HttpValidator;
 public class ChanStatReader
 {
 	private final String mDomainName;
-	private final HashSet<String> mBoardNames = new HashSet<String>();
+	private final HashSet<String> mBoardNames = new HashSet<>();
 	
 	private String mCachedResponseText;
 	private HttpValidator mValidator;
@@ -26,7 +25,7 @@ public class ChanStatReader
 		Collections.addAll(mBoardNames, boardNames);
 	}
 	
-	public int readBoardSpeed(String boardName, ChanLocator locator, HttpHolder holder) throws HttpException
+	public int readBoardSpeed(String boardName, CirnoChanLocator locator, HttpHolder holder) throws HttpException
 	{
 		if (!mBoardNames.contains(boardName)) return -1;
 		Uri uri = locator.buildPathWithSchemeHost(true, "chanstat.ru");

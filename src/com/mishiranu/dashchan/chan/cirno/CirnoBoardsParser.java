@@ -10,7 +10,6 @@ import java.util.regex.Pattern;
 
 import chan.content.model.Board;
 import chan.content.model.BoardCategory;
-import chan.text.GroupParser;
 import chan.text.ParseException;
 import chan.text.TemplateParser;
 import chan.util.StringUtils;
