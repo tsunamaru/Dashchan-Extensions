@@ -45,6 +45,8 @@ public class MegucaModelMapper
 		int op = jsonObject.optInt("op", 0);
 		if (op > 0) post.setParentPostNumber(Integer.toString(op));
 		post.setTimestamp(jsonObject.optLong("time"));
+		int banned = jsonObject.optInt("banned", 0);
+		if (banned != 0) post.setPosterBanned(true);
 		post.setSubject(CommonUtils.optJsonString(jsonObject, "subject"));
 		post.setName(CommonUtils.optJsonString(jsonObject, "name"));
 		post.setIdentifier(CommonUtils.optJsonString(jsonObject, "mnemonic")); // May be replaced later
