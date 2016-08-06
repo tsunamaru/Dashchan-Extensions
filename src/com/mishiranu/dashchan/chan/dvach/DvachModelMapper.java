@@ -10,7 +10,6 @@ import org.json.JSONObject;
 
 import android.net.Uri;
 
-import chan.content.ChanLocator;
 import chan.content.model.Attachment;
 import chan.content.model.EmbeddedAttachment;
 import chan.content.model.FileAttachment;
@@ -39,7 +38,7 @@ public class DvachModelMapper
 	private static final Uri URI_ICON_OPERA = Uri.parse("chan:///res/raw/raw_browser_opera");
 	private static final Uri URI_ICON_SAFARI = Uri.parse("chan:///res/raw/raw_browser_safari");
 	
-	public static FileAttachment createFileAttachment(JSONObject jsonObject, ChanLocator locator, String boardName,
+	public static FileAttachment createFileAttachment(JSONObject jsonObject, DvachChanLocator locator, String boardName,
 			String archiveStartPath) throws JSONException
 	{
 		String file = CommonUtils.getJsonString(jsonObject, "path");
@@ -55,7 +54,7 @@ public class DvachModelMapper
 				.setSize(size).setWidth(width).setHeight(height);
 	}
 	
-	public static Post createPost(JSONObject jsonObject, ChanLocator locator, String boardName,
+	public static Post createPost(JSONObject jsonObject, DvachChanLocator locator, String boardName,
 			String archiveStartPath, boolean sageEnabled) throws JSONException
 	{
 		Post post = new Post();
@@ -215,7 +214,7 @@ public class DvachModelMapper
 		return post;
 	}
 	
-	public static Post[] createPosts(JSONArray jsonArray, ChanLocator locator, String boardName,
+	public static Post[] createPosts(JSONArray jsonArray, DvachChanLocator locator, String boardName,
 			String archiveStartPath, boolean sageEnabled) throws JSONException
 	{
 		if (jsonArray.length() > 0)
@@ -231,7 +230,7 @@ public class DvachModelMapper
 		return null;
 	}
 	
-	public static Posts createThread(JSONObject jsonObject, ChanLocator locator, String boardName,
+	public static Posts createThread(JSONObject jsonObject, DvachChanLocator locator, String boardName,
 			boolean sageEnabled) throws JSONException
 	{
 		int postsCount = jsonObject.optInt("posts_count");
@@ -263,7 +262,7 @@ public class DvachModelMapper
 		return new Posts(posts).addPostsCount(postsCount).addPostsWithFilesCount(postsWithFilesCount);
 	}
 	
-	public static Post createWakabaArchivePost(JSONObject jsonObject, ChanLocator locator, String boardName)
+	public static Post createWakabaArchivePost(JSONObject jsonObject, DvachChanLocator locator, String boardName)
 			throws JSONException
 	{
 		Post post = new Post();
