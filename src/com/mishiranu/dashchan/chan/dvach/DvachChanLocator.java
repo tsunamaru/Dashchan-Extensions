@@ -86,10 +86,8 @@ public class DvachChanLocator extends ChanLocator
 		return createThreadUri(boardName, threadNumber).buildUpon().fragment(postNumber).build();
 	}
 	
-	public Uri createFcgiUri(String name, String... params)
+	public Uri createFcgiUri(String name, String... alternation)
 	{
-		Uri.Builder builder = buildPath("makaba", name + ".fcgi").buildUpon();
-		for (int i = 0; i < params.length; i += 2) builder.appendQueryParameter(params[i], params[i + 1]);
-		return builder.build();
+		return buildQuery("makaba/" + name + ".fcgi", alternation);
 	}
 }

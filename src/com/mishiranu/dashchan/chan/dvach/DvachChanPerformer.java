@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -525,11 +526,44 @@ public class DvachChanPerformer extends ChanPerformer
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
-		return onReadCaptcha(data, data.captchaPass != null ? data.captchaPass[0] : null,
-				data.boardName, data.threadNumber == null, true);
+		DvachChanLocator locator = ChanLocator.get(this);
+		Uri uri = locator.buildPath("api", "captcha", "settings", data.boardName);
+		JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookies(null)).read().getJsonObject();
+		if (jsonObject == null) throw new InvalidResponseException();
+		if (jsonObject.optInt("enabled", 1) == 0) return new ReadCaptchaResult(CaptchaState.SKIP, null);
+		LinkedHashSet<String> availableCaptchaTypes = null;
+		try
+		{
+			JSONArray jsonArray = jsonObject.getJSONArray("types");
+			for (int i = 0; i < jsonArray.length(); i++)
+			{
+				String captchaType = CommonUtils.getJsonString(jsonArray.getJSONObject(i), "id");
+				if (availableCaptchaTypes == null) availableCaptchaTypes = new LinkedHashSet<>();
+				availableCaptchaTypes.add(captchaType);
+			}
+		}
+		catch (JSONException e)
+		{
+			
+		}
+		String captchaType = data.captchaType;
+		boolean overrideCaptchaType = false;
+		if (availableCaptchaTypes != null && !availableCaptchaTypes.contains(data.captchaType))
+		{
+			if (availableCaptchaTypes.contains(DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA))
+			{
+				captchaType = DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA;
+			}
+			else captchaType = availableCaptchaTypes.iterator().next();
+			overrideCaptchaType = true;
+		}
+		return onReadCaptcha(data, captchaType, overrideCaptchaType, data.captchaPass != null
+				? data.captchaPass[0] : null, true);
 	}
 	
-	private ReadCaptchaResult makeCaptchaPassResult(String captchaPassCookie)
+	private static final String ANIMECAPTCHA_VALUE = "animecaptcha_value";
+	
+	private static ReadCaptchaResult makeCaptchaPassResult(String captchaPassCookie)
 	{
 		CaptchaData captchaData = new CaptchaData();
 		captchaData.put(CAPTCHA_PASS_COOKIE, captchaPassCookie);
@@ -537,9 +571,8 @@ public class DvachChanPerformer extends ChanPerformer
 				.setValidity(ChanConfiguration.Captcha.Validity.LONG_LIFETIME);
 	}
 	
-	private ReadCaptchaResult onReadCaptcha(HttpRequest.Preset preset, String captchaPassData,
-			String boardName, boolean newThread, boolean mayUseLastCaptchaPassCookie) throws HttpException,
-			InvalidResponseException
+	private ReadCaptchaResult onReadCaptcha(ReadCaptchaData data, String captchaType, boolean overrideCaptchaType,
+			String captchaPassData, boolean mayUseLastCaptchaPassCookie) throws HttpException, InvalidResponseException
 	{
 		DvachChanLocator locator = ChanLocator.get(this);
 		String captchaPassCookie = null;
@@ -551,69 +584,139 @@ public class DvachChanPerformer extends ChanPerformer
 				captchaPassCookie = mLastCaptchaPassCookie;
 				mayRelogin = true;
 			}
-			else captchaPassCookie = readCaptchaPass(preset, captchaPassData);
+			else captchaPassCookie = readCaptchaPass(data, captchaPassData);
 		}
-		Uri uri = locator.createFcgiUri("captcha", "type", "2chaptcha", "board", boardName);
-		if (!newThread) uri = uri.buildUpon().appendQueryParameter("action", "thread").build();
-		String responseText;
+		Uri.Builder uriBuilder = locator.buildPath("api", "captcha", captchaType, "id").buildUpon();
+		uriBuilder.appendQueryParameter("board", data.boardName);
+		if (data.threadNumber != null) uriBuilder.appendQueryParameter("thread", data.threadNumber);
+		Uri uri = uriBuilder.build();
+		JSONObject jsonObject = null;
 		HttpException exception = null;
 		try
 		{
-			responseText = new HttpRequest(uri, preset).addCookie(buildCookies(captchaPassCookie)).read().getString();
+			jsonObject = new HttpRequest(uri, data).addCookie(buildCookies(captchaPassCookie)).read().getJsonObject();
 		}
 		catch (HttpException e)
 		{
-			if (e.getResponseCode() == 0) throw e;
-			responseText = null;
+			if (!e.isHttpException()) throw e;
 			exception = e;
 		}
-		if (responseText != null)
+		String apiResult = jsonObject != null ? CommonUtils.optJsonString(jsonObject, "result") : null;
+		if ("3".equals(apiResult))
 		{
-			if (responseText.equals("OK"))
+			return new ReadCaptchaResult(CaptchaState.SKIP, null);
+		}
+		else if ("2".equals(apiResult))
+		{
+			return makeCaptchaPassResult(captchaPassCookie);
+		}
+		else
+		{
+			if (mayRelogin) return onReadCaptcha(data, captchaType, overrideCaptchaType, captchaPassData, false);
+			if (DvachChanConfiguration.CAPTCHA_TYPE_ANIMECAPTCHA.equals(captchaType) && data.mayShowLoadButton)
 			{
-				return new ReadCaptchaResult(CaptchaState.SKIP, null)
-						.setValidity(ChanConfiguration.Captcha.Validity.LONG_LIFETIME);
-			}
-			else if (responseText.equals("DISABLED"))
-			{
-				return new ReadCaptchaResult(CaptchaState.SKIP, null);
-			}
-			else if (responseText.startsWith("CHECK"))
-			{
-				String keyOrChallenge = StringUtils.nullIfEmpty(responseText.substring(responseText.indexOf('\n') + 1));
-				if (keyOrChallenge == null) throw new InvalidResponseException();
-				CaptchaData captchaData = new CaptchaData();
-				captchaData.put(CaptchaData.CHALLENGE, keyOrChallenge);
-				ReadCaptchaResult result = new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData);
-				uri = locator.createFcgiUri("captcha", "type", "2chaptcha", "action", "image",
-						"id", keyOrChallenge);
-				Bitmap image = new HttpRequest(uri, preset).read().getBitmap();
-				if (image == null) throw new InvalidResponseException();
-				Bitmap trimmed = CommonUtils.trimBitmap(image, 0xffffffff);
-				if (trimmed != null)
-				{
-					if (trimmed != image) image.recycle();
-					image = trimmed;
-				}
-				result.setImage(image);
+				ReadCaptchaResult result = new ReadCaptchaResult(CaptchaState.NEED_LOAD, null);
+				if (overrideCaptchaType) result.setCaptchaType(captchaType);
 				return result;
 			}
-			else if (responseText.equals("VIP"))
+			String id = jsonObject != null ? CommonUtils.optJsonString(jsonObject, "id") : null;
+			if (id != null)
 			{
 				CaptchaData captchaData = new CaptchaData();
-				if (captchaPassCookie != null) captchaData.put(CAPTCHA_PASS_COOKIE, captchaPassCookie);
-				return new ReadCaptchaResult(CaptchaState.PASS, captchaData)
-						.setValidity(ChanConfiguration.Captcha.Validity.LONG_LIFETIME);
+				ReadCaptchaResult result;
+				if (DvachChanConfiguration.CAPTCHA_TYPE_RECAPTCHA_1.equals(captchaType)
+						|| DvachChanConfiguration.CAPTCHA_TYPE_RECAPTCHA_2.equals(captchaType)
+						|| DvachChanConfiguration.CAPTCHA_TYPE_MAILRU.equals(captchaType))
+				{
+					result = new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData);
+					captchaData.put(CaptchaData.API_KEY, id);
+				}
+				else
+				{
+					OUTER: if (DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA.equals(captchaType))
+					{
+						result = new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData);
+						captchaData.put(CaptchaData.CHALLENGE, id);
+						uri = locator.buildPath("api", "captcha", captchaType, "image", id);
+						Bitmap image = new HttpRequest(uri, data).read().getBitmap();
+						if (image == null) throw new InvalidResponseException();
+						Bitmap trimmed = CommonUtils.trimBitmap(image, 0xffffffff);
+						if (trimmed != null)
+						{
+							if (trimmed != image) image.recycle();
+							image = trimmed;
+						}
+						result.setImage(image);
+					}
+					else if (DvachChanConfiguration.CAPTCHA_TYPE_ANIMECAPTCHA.equals(captchaType))
+					{
+						String[] ids;
+						String[] items;
+						try
+						{
+							JSONArray jsonArray = jsonObject.getJSONArray("values");
+							ids = new String[jsonArray.length()];
+							items = new String[jsonArray.length()];
+							for (int i = 0; i < jsonArray.length(); i++)
+							{
+								jsonObject = jsonArray.getJSONObject(i);
+								ids[i] = CommonUtils.getJsonString(jsonObject, "id");
+								items[i] = CommonUtils.getJsonString(jsonObject, "name");
+							}
+						}
+						catch (JSONException e)
+						{
+							throw new InvalidResponseException(e);
+						}
+						uri = locator.buildPath("api", "captcha", captchaType, "image", id);
+						Bitmap image = new HttpRequest(uri, data).read().getBitmap();
+						Integer index;
+						while (true)
+						{
+							index = requireUserItemSingleChoice(-1, items, null, image);
+							if (index == null)
+							{
+								result = new ReadCaptchaResult(CaptchaState.NEED_LOAD, null);
+								break OUTER;
+							}
+							if (index != -1) break;
+						}
+						uri = locator.buildPath("api", "captcha", captchaType, "check", id).buildUpon()
+								.appendQueryParameter("value", ids[index]).build();
+						jsonObject = new HttpRequest(uri, data).addCookie(buildCookies(captchaPassCookie))
+								.read().getJsonObject();
+						try
+						{
+							apiResult = CommonUtils.getJsonString(jsonObject, "result");
+						}
+						catch (JSONException e)
+						{
+							throw new InvalidResponseException();
+						}
+						if ("1".equals(apiResult))
+						{
+							result = new ReadCaptchaResult(CaptchaState.SKIP, captchaData);
+							captchaData.put(CaptchaData.CHALLENGE, id);
+							captchaData.put(ANIMECAPTCHA_VALUE, ids[index]);
+							break OUTER;
+						}
+						// Read new captcha
+						return onReadCaptcha(data, captchaType, overrideCaptchaType, captchaPassData,
+								mayUseLastCaptchaPassCookie);
+					}
+					else throw new RuntimeException();
+				}
+				if (overrideCaptchaType) result.setCaptchaType(captchaType);
+				return result;
 			}
-			else if (responseText.equals("VIPFAIL"))
+			else
 			{
-				return onReadCaptcha(preset, mayRelogin ? captchaPassData : null, boardName, newThread, false);
+				// If wakaba is swaying, but passcode is verified, let's try to use it
+				if (captchaPassCookie != null) return makeCaptchaPassResult(captchaPassCookie);
+				if (exception != null) throw exception;
+				throw new InvalidResponseException();
 			}
 		}
-		// If wakaba is swaying, but passcode is verified, let's try to use it
-		if (captchaPassCookie != null) return makeCaptchaPassResult(captchaPassCookie);
-		if (exception != null) throw exception;
-		throw new InvalidResponseException();
 	}
 	
 	private static final Pattern PATTERN_TAG = Pattern.compile("(.*) /([^/]*)/");
@@ -667,9 +770,37 @@ public class DvachChanPerformer extends ChanPerformer
 		DvachChanLocator locator = ChanLocator.get(this);
 		if (data.captchaData != null)
 		{
-			entity.add("captcha_type", "2chaptcha");
-			entity.add("2chaptcha_id", data.captchaData.get(CaptchaData.CHALLENGE));
-			entity.add("2chaptcha_value", StringUtils.nullIfEmpty(data.captchaData.get(CaptchaData.INPUT)));
+			String challenge = data.captchaData.get(CaptchaData.CHALLENGE);
+			String input = StringUtils.emptyIfNull(data.captchaData.get(CaptchaData.INPUT));
+			if (DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA.equals(data.captchaType))
+			{
+				entity.add("captcha_type", "2chaptcha");
+				entity.add("2chaptcha_id", challenge);
+				entity.add("2chaptcha_value", input);
+			}
+			else if (DvachChanConfiguration.CAPTCHA_TYPE_ANIMECAPTCHA.equals(data.captchaType))
+			{
+				entity.add("captcha_type", "animecaptcha");
+				entity.add("animecaptcha_id", challenge);
+				entity.add("animecaptcha_value", data.captchaData.get(ANIMECAPTCHA_VALUE));
+			}
+			else if (DvachChanConfiguration.CAPTCHA_TYPE_RECAPTCHA_2.equals(data.captchaType))
+			{
+				entity.add("captcha_type", "recaptcha");
+				entity.add("g-recaptcha-response", input);
+			}
+			else if (DvachChanConfiguration.CAPTCHA_TYPE_RECAPTCHA_1.equals(data.captchaType))
+			{
+				entity.add("captcha_type", "recaptchav1");
+				entity.add("recaptcha_challenge_field", challenge);
+				entity.add("recaptcha_response_field", input);
+			}
+			else if (DvachChanConfiguration.CAPTCHA_TYPE_MAILRU.equals(data.captchaType))
+			{
+				entity.add("captcha_type", "mailru");
+				entity.add("captcha_id", challenge);
+				entity.add("captcha_value", input);
+			}
 			captchaPassCookie = data.captchaData.get(CAPTCHA_PASS_COOKIE);
 		}
 		

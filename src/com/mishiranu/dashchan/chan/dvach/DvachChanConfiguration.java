@@ -15,6 +15,7 @@ import chan.util.StringUtils;
 public class DvachChanConfiguration extends ChanConfiguration
 {
 	public static final String CAPTCHA_TYPE_2CHAPTCHA = "2chaptcha";
+	public static final String CAPTCHA_TYPE_ANIMECAPTCHA = "animecaptcha";
 	
 	private static final String KEY_ICONS = "icons";
 	private static final String KEY_IMAGES_COUNT = "images_count";
@@ -35,6 +36,10 @@ public class DvachChanConfiguration extends ChanConfiguration
 		setDefaultName("Аноним");
 		setBumpLimit(500);
 		addCaptchaType(CAPTCHA_TYPE_2CHAPTCHA);
+		addCaptchaType(CAPTCHA_TYPE_ANIMECAPTCHA);
+		addCaptchaType(CAPTCHA_TYPE_RECAPTCHA_1);
+		addCaptchaType(CAPTCHA_TYPE_RECAPTCHA_2);
+		addCaptchaType(CAPTCHA_TYPE_MAILRU);
 	}
 	
 	@Override
@@ -58,6 +63,14 @@ public class DvachChanConfiguration extends ChanConfiguration
 			captcha.title = "2chaptcha";
 			captcha.input = Captcha.Input.NUMERIC;
 			captcha.validity = Captcha.Validity.IN_BOARD_SEPARATELY;
+			return captcha;
+		}
+		else if (CAPTCHA_TYPE_ANIMECAPTCHA.equals(captchaType))
+		{
+			Captcha captcha = new Captcha();
+			captcha.title = "Animecaptcha";
+			captcha.input = Captcha.Input.ALL;
+			captcha.validity = Captcha.Validity.SHORT_LIFETIME;
 			return captcha;
 		}
 		return null;
