@@ -18,10 +18,8 @@ import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
 import chan.content.model.Post;
 import chan.content.model.ThreadSummary;
-import chan.content.model.Threads;
 import chan.http.HttpException;
 import chan.http.HttpRequest;
-import chan.http.HttpValidator;
 import chan.http.MultipartEntity;
 import chan.http.UrlEncodedEntity;
 import chan.text.ParseException;
@@ -29,27 +27,17 @@ import chan.util.CommonUtils;
 
 public class CirnoChanPerformer extends ChanPerformer
 {
-	private final ChanStatReader mChanStatReader = new ChanStatReader("iichan.hk", "b", "a", "vg");
-	
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
 		CirnoChanLocator locator = CirnoChanLocator.get(this);
-		CirnoChanConfiguration configuration = CirnoChanConfiguration.get(this);
 		Uri uri = data.isCatalog() ? locator.buildPath(data.boardName, "catalogue.html")
 				: locator.createBoardUri(data.boardName, data.pageNumber);
 		String responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
 		try
 		{
-			Threads threads = new Threads(data.isCatalog() ? new CirnoCatalogParser(responseText, this).convert()
+			return new ReadThreadsResult(data.isCatalog() ? new CirnoCatalogParser(responseText, this).convert()
 					: new CirnoPostsParser(responseText, this, data.boardName).convertThreads());
-			HttpValidator validator = data.holder.getValidator();
-			if (!data.isCatalog() && data.pageNumber == 0 && configuration.isReadChanStat())
-			{
-				int boardSpeed = mChanStatReader.readBoardSpeed(data.boardName, locator, data.holder);
-				if (boardSpeed >= 0) threads.setBoardSpeed(boardSpeed);
-			}
-			return new ReadThreadsResult(threads).setValidator(validator);
 		}
 		catch (ParseException e)
 		{
