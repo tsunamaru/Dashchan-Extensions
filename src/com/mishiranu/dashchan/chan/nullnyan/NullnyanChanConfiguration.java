@@ -8,6 +8,7 @@ public class NullnyanChanConfiguration extends ChanConfiguration
 	{
 		request(OPTION_READ_POSTS_COUNT);
 		setDefaultName("Anonymous");
+		addCaptchaType("nullnyan");
 	}
 	
 	@Override
@@ -17,6 +18,20 @@ public class NullnyanChanConfiguration extends ChanConfiguration
 		board.allowPosting = true;
 		board.allowDeleting = true;
 		return board;
+	}
+	
+	@Override
+	public Captcha obtainCustomCaptchaConfiguration(String captchaType)
+	{
+		if ("nullnyan".equals(captchaType))
+		{
+			Captcha captcha = new Captcha();
+			captcha.title = "0nyan";
+			captcha.input = Captcha.Input.ALL;
+			captcha.validity = Captcha.Validity.LONG_LIFETIME;
+			return captcha;
+		}
+		return null;
 	}
 	
 	@Override

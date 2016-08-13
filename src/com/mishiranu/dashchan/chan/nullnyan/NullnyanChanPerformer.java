@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Paint;
 import android.net.Uri;
 
 import chan.content.ApiException;
@@ -87,6 +91,30 @@ public class NullnyanChanPerformer extends ChanPerformer
 		return new ReadPostsCountResult(count);
 	}
 	
+	private static final ColorMatrixColorFilter CAPTCHA_FILTER = new ColorMatrixColorFilter(new float[]
+			{0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1f, 0f, -255f});
+	
+	@Override
+	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
+	{
+		NullnyanChanLocator locator = NullnyanChanLocator.get(this);
+		Uri uri = locator.buildPath("captcha", "captcha.php");
+		Bitmap image = new HttpRequest(uri, data).read().getBitmap();
+		if (image == null) throw new InvalidResponseException();
+		String sessionCookie = data.holder.getCookieValue("PHPSESSID");
+		Bitmap newImage = Bitmap.createBitmap(image.getWidth(), image.getHeight(), Bitmap.Config.ARGB_8888);
+		Paint paint = new Paint();
+		paint.setColorFilter(CAPTCHA_FILTER);
+		new Canvas(newImage).drawBitmap(image, 0f, 0f, paint);
+		image.recycle();
+		image = CommonUtils.trimBitmap(newImage, 0x00000000);
+		if (image != newImage) newImage.recycle();
+		if (image == null) throw new InvalidResponseException();
+		CaptchaData captchaData = new CaptchaData();
+		captchaData.put(CaptchaData.CHALLENGE, sessionCookie);
+		return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData).setImage(image);
+	}
+	
 	private static final Pattern PATTERN_POST_ERROR = Pattern.compile("<span class=\"center\">(.*?)</span>");
 	private static final Pattern PATTERN_POST_REDIRECT = Pattern.compile("<meta http-equiv=\"refresh\" content=\"0;" +
 			"url=(.*?)\">");
@@ -117,10 +145,16 @@ public class NullnyanChanPerformer extends ChanPerformer
 			SendPostData.Attachment attachment = data.attachments[0];
 			attachment.addToEntity(entity, "file");
 		}
+		String sessionCookie = null;
+		if (data.captchaData != null)
+		{
+			sessionCookie = data.captchaData.get(CaptchaData.CHALLENGE);
+			entity.add("captcha_code", data.captchaData.get(CaptchaData.INPUT));
+		}
 		
 		NullnyanChanLocator locator = NullnyanChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "imgboard.php");
-		String responseText = new HttpRequest(uri, data).setPostMethod(entity)
+		String responseText = new HttpRequest(uri, data).setPostMethod(entity).addCookie("PHPSESSID", sessionCookie)
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getString();
 		Matcher matcher = PATTERN_POST_REDIRECT.matcher(responseText);
 		if (matcher.find())
@@ -135,7 +169,11 @@ public class NullnyanChanPerformer extends ChanPerformer
 		if (!matcher.find()) throw new InvalidResponseException();
 		responseText = StringUtils.clearHtml(matcher.group(1));
 		int errorType = 0;
-		if (responseText.contains("Please enter a message and/or upload a file"))
+		if (responseText.contains("Неправильная капча") || responseText.contains("Капча неправильная"))
+		{
+			errorType = ApiException.SEND_ERROR_CAPTCHA;
+		}
+		else if (responseText.contains("Please enter a message and/or upload a file"))
 		{
 			errorType = ApiException.SEND_ERROR_EMPTY_COMMENT;
 		}
