@@ -218,6 +218,16 @@ public class NullnyanPostsParser
 			}
 		}
 		
+	}).contains("i", "class", "icon-stickied").open((instance, holder, tagName, attributes) ->
+	{
+		holder.mPost.setSticky(true);
+		return false;
+		
+	}).contains("i", "class", "icon-closed").open((instance, holder, tagName, attributes) ->
+	{
+		holder.mPost.setClosed(true);
+		return false;
+		
 	}).equals("div", "class", "message").content((instance, holder, text) ->
 	{
 		int index = text.lastIndexOf("<span class=\"red-text\">(USER WAS BANNED FOR THIS POST)</span>");
