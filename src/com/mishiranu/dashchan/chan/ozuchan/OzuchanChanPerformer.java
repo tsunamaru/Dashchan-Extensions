@@ -117,9 +117,9 @@ public class OzuchanChanPerformer extends ChanPerformer
 	{
 		MultipartEntity entity = new MultipartEntity();
 		entity.add("parent", data.threadNumber == null ? "0" : data.threadNumber);
-		entity.add("name", data.name);
-		entity.add("email", data.email);
-		entity.add("subject", data.subject);
+		entity.add("name", StringUtils.emptyIfNull(data.name));
+		entity.add("email", StringUtils.emptyIfNull(data.email));
+		entity.add("subject", StringUtils.emptyIfNull(data.subject));
 		entity.add("message", StringUtils.emptyIfNull(data.comment));
 		entity.add("dir", "thread");
 		entity.add("password", data.password);
