@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 
 import chan.content.ApiException;
@@ -71,6 +73,42 @@ public class OzuchanChanPerformer extends ChanPerformer
 		return new ReadPostsCountResult(count);
 	}
 	
+	@Override
+	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
+	{
+		OzuchanChanLocator locator = OzuchanChanLocator.get(this);
+		Uri uri = locator.buildPath(data.boardName, "inc", "captcha.php");
+		Bitmap image = new HttpRequest(uri, data).read().getBitmap();
+		if (image == null) throw new InvalidResponseException();
+		String sessionCookie = data.holder.getCookieValue("PHPSESSID");
+		Bitmap newImage = image.copy(image.getConfig(), true);
+		image.recycle();
+		if (newImage == null) throw new RuntimeException();
+		int[] pixels = new int[newImage.getWidth()];
+		for (int y = 0; y < newImage.getHeight(); y++)
+		{
+			newImage.getPixels(pixels, 0, pixels.length, 0, y, pixels.length, 1);
+			for (int x = 0; x < pixels.length; x++)
+			{
+				int r = Color.red(pixels[x]);
+				int g = Color.green(pixels[x]);
+				int b = Color.blue(pixels[x]);
+				if (r == g && r == b) pixels[x] = 0xffffffff; else
+				{
+					int c = (r + g + b) / 3;
+					pixels[x] = Color.argb(0xff, c, c, c);
+				}
+			}
+			newImage.setPixels(pixels, 0, pixels.length, 0, y, pixels.length, 1);
+		}
+		image = CommonUtils.trimBitmap(newImage, 0xffffffff);
+		if (image != newImage) newImage.recycle();
+		if (image == null) throw new InvalidResponseException();
+		CaptchaData captchaData = new CaptchaData();
+		captchaData.put(CaptchaData.CHALLENGE, sessionCookie);
+		return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData).setImage(image);
+	}
+	
 	private static final Pattern PATTERN_POST_REDIRECT = Pattern.compile("<meta http-equiv=\"refresh\" content=\"0;" +
 			"url=(.*?)\">");
 	
@@ -91,10 +129,16 @@ public class OzuchanChanPerformer extends ChanPerformer
 			SendPostData.Attachment attachment = data.attachments[0];
 			attachment.addToEntity(entity, "file");
 		}
+		String sessionCookie = null;
+		if (data.captchaData != null)
+		{
+			sessionCookie = data.captchaData.get(CaptchaData.CHALLENGE);
+			entity.add("captcha", data.captchaData.get(CaptchaData.INPUT));
+		}
 		
 		OzuchanChanLocator locator = OzuchanChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "imgboard.php");
-		String responseText = new HttpRequest(uri, data).setPostMethod(entity)
+		String responseText = new HttpRequest(uri, data).setPostMethod(entity).addCookie("PHPSESSID", sessionCookie)
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getString();
 		Matcher matcher = PATTERN_POST_REDIRECT.matcher(responseText);
 		if (matcher.find())
@@ -109,7 +153,11 @@ public class OzuchanChanPerformer extends ChanPerformer
 		if (index == -1) throw new InvalidResponseException();
 		responseText = StringUtils.clearHtml(responseText.substring(0, index));
 		int errorType = 0;
-		if (responseText.contains("Введите сообщение и/или загрузите файл"))
+		if (responseText.contains("CAPTCHA"))
+		{
+			errorType = ApiException.SEND_ERROR_CAPTCHA;
+		}
+		else if (responseText.contains("Введите сообщение и/или загрузите файл"))
 		{
 			errorType = ApiException.SEND_ERROR_EMPTY_COMMENT;
 		}

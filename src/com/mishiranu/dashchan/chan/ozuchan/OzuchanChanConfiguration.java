@@ -10,6 +10,7 @@ public class OzuchanChanConfiguration extends ChanConfiguration
 		request(OPTION_READ_POSTS_COUNT);
 		setSingleBoardName("ba");
 		setDefaultName("Аноним");
+		addCaptchaType("ozuchan");
 	}
 	
 	@Override
@@ -19,6 +20,20 @@ public class OzuchanChanConfiguration extends ChanConfiguration
 		board.allowPosting = true;
 		board.allowDeleting = true;
 		return board;
+	}
+	
+	@Override
+	public Captcha obtainCustomCaptchaConfiguration(String captchaType)
+	{
+		if ("ozuchan".equals(captchaType))
+		{
+			Captcha captcha = new Captcha();
+			captcha.title = "ozuchan";
+			captcha.input = Captcha.Input.NUMERIC;
+			captcha.validity = Captcha.Validity.IN_BOARD;
+			return captcha;
+		}
+		return null;
 	}
 	
 	@Override
