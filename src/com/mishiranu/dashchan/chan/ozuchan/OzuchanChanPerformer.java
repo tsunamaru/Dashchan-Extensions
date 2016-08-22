@@ -161,7 +161,7 @@ public class OzuchanChanPerformer extends ChanPerformer
 		{
 			errorType = ApiException.SEND_ERROR_EMPTY_COMMENT;
 		}
-		else if (responseText.contains("Вставьте file, чтобы начать тред"))
+		else if (responseText.contains("Загрузите file, чтобы начать тред"))
 		{
 			errorType = ApiException.SEND_ERROR_EMPTY_FILE;
 		}
