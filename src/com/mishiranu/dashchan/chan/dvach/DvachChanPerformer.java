@@ -770,6 +770,7 @@ public class DvachChanPerformer extends ChanPerformer
 		DvachChanLocator locator = ChanLocator.get(this);
 		if (data.captchaData != null)
 		{
+			boolean check = false;
 			String challenge = data.captchaData.get(CaptchaData.CHALLENGE);
 			String input = StringUtils.emptyIfNull(data.captchaData.get(CaptchaData.INPUT));
 			if (DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA.equals(data.captchaType))
@@ -777,6 +778,7 @@ public class DvachChanPerformer extends ChanPerformer
 				entity.add("captcha_type", "2chaptcha");
 				entity.add("2chaptcha_id", challenge);
 				entity.add("2chaptcha_value", input);
+				check = true;
 			}
 			else if (DvachChanConfiguration.CAPTCHA_TYPE_ANIMECAPTCHA.equals(data.captchaType))
 			{
@@ -802,6 +804,17 @@ public class DvachChanPerformer extends ChanPerformer
 				entity.add("captcha_value", input);
 			}
 			captchaPassCookie = data.captchaData.get(CAPTCHA_PASS_COOKIE);
+			if (check && captchaPassCookie == null)
+			{
+				Uri uri = locator.buildPath("api", "captcha", data.captchaType, "check", challenge)
+						.buildUpon().appendQueryParameter("value", input).build();
+				JSONObject jsonObject = new HttpRequest(uri, data).read().getJsonObject();
+				if (jsonObject != null)
+				{
+					String apiResult = CommonUtils.optJsonString(jsonObject, "result");
+					if ("0".equals(apiResult)) throw new ApiException(ApiException.SEND_ERROR_CAPTCHA);
+				}
+			}
 		}
 		
 		Uri uri = locator.createFcgiUri("posting", "json", "1");
