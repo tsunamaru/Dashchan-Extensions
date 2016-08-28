@@ -2,7 +2,6 @@ package com.mishiranu.dashchan.chan.infinite;
 
 import java.util.Iterator;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -149,23 +148,5 @@ public class InfiniteChanConfiguration extends ChanConfiguration
 		set(boardName, KEY_DELETE_ENABLED, deleteEnabled);
 		set(boardName, KEY_CODE_ENABLED, codeEnabled);
 		set(boardName, KEY_ICONS, userFlags != null ? userFlags.toString() : null);
-	}
-	
-	public void updateFromUserBoardsJsonA(JSONArray jsonArray)
-	{
-		try
-		{
-			for (int i = 0; i < jsonArray.length(); i++)
-			{
-				JSONObject childJsonObject = jsonArray.getJSONObject(i);
-				String boardName = CommonUtils.getJsonString(childJsonObject, "uri");
-				String description = CommonUtils.getJsonString(childJsonObject, "subtitle");
-				if (!StringUtils.isEmpty(description)) storeBoardDescription(boardName, description);
-			}
-		}
-		catch (JSONException e)
-		{
-			
-		}
 	}
 }
