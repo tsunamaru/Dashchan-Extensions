@@ -5,7 +5,6 @@ import java.util.regex.Pattern;
 
 import android.util.Pair;
 
-import chan.content.ChanConfiguration;
 import chan.content.ChanMarkup;
 import chan.text.CommentEditor;
 
@@ -48,7 +47,7 @@ public class InfiniteChanMarkup extends ChanMarkup
 	{
 		if (tag == TAG_CODE)
 		{
-			InfiniteChanConfiguration configuration = ChanConfiguration.get(this);
+			InfiniteChanConfiguration configuration = InfiniteChanConfiguration.get(this);
 			return configuration.isTagSupported(boardName, tag);
 		}
 		return (SUPPORTED_TAGS & tag) == tag;

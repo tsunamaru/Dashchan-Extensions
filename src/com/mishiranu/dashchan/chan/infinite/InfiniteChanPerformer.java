@@ -21,8 +21,6 @@ import android.net.Uri;
 import android.util.Base64;
 
 import chan.content.ApiException;
-import chan.content.ChanConfiguration;
-import chan.content.ChanLocator;
 import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
 import chan.content.model.Board;
@@ -45,7 +43,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
-		InfiniteChanLocator locator = ChanLocator.get(this);
+		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 		if (data.isCatalog())
 		{
 			Uri uri = locator.buildPath(data.boardName, "catalog.html");
@@ -109,7 +107,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 				JSONObject boardConfigObject = new HttpRequest(uri, data.holder, data).read().getJsonObject();
 				if (boardConfigObject != null)
 				{
-					InfiniteChanConfiguration configuration = ChanConfiguration.get(this);
+					InfiniteChanConfiguration configuration = InfiniteChanConfiguration.get(this);
 					configuration.updateFromBoardJson(data.boardName, boardConfigObject, true);
 				}
 			}
@@ -134,7 +132,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 	@Override
 	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException
 	{
-		InfiniteChanLocator locator = ChanLocator.get(this);
+		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "res", data.threadNumber + ".json");
 		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
 				.read().getJsonObject();
@@ -167,7 +165,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 	public ReadSearchPostsResult onReadSearchPosts(ReadSearchPostsData data) throws HttpException,
 			InvalidResponseException
 	{
-		InfiniteChanLocator locator = ChanLocator.get(this);
+		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 		Uri uri = locator.buildQuery("search.php", "board", data.boardName, "search", data.searchQuery);
 		String responseText = new HttpRequest(uri, data.holder, data).read().getString();
 		try
@@ -183,8 +181,8 @@ public class InfiniteChanPerformer extends ChanPerformer
 	@Override
 	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException
 	{
-		InfiniteChanLocator locator = ChanLocator.get(this);
-		InfiniteChanConfiguration configuration = ChanConfiguration.get(this);
+		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
+		InfiniteChanConfiguration configuration = InfiniteChanConfiguration.get(this);
 		Board[] boards = new Board[BOARDS_GENERAL.length];
 		try
 		{
@@ -209,7 +207,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 	@Override
 	public ReadUserBoardsResult onReadUserBoards(ReadUserBoardsData data) throws HttpException, InvalidResponseException
 	{
-		InfiniteChanLocator locator = ChanLocator.get(this);
+		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 		Uri uri = locator.buildPath("boards.json");
 		JSONArray jsonArray = new HttpRequest(uri, data.holder, data).read().getJsonArray();
 		if (jsonArray != null)
@@ -243,7 +241,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 	@Override
 	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException
 	{
-		InfiniteChanLocator locator = ChanLocator.get(this);
+		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "res", data.threadNumber + ".json");
 		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
 				.read().getJsonObject();
@@ -273,7 +271,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
-		InfiniteChanLocator locator = ChanLocator.get(this);
+		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 		if (!mRequireCaptcha)
 		{
 			try
@@ -308,7 +306,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 		String dnsblsCaptchaChallenge = null;
 		String sendingCaptchaChallenge = null;
 		ArrayList<Bitmap> images = new ArrayList<>();
-		ChanConfiguration.Captcha.Validity validity = null;
+		InfiniteChanConfiguration.Captcha.Validity validity = null;
 		
 		if (data.requirement != null && data.requirement.startsWith(REQUIRE_REPORT))
 		{
@@ -328,7 +326,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 					sendingCaptchaChallenge = captchaChallenge;
 					images.add(image);
 					success = true;
-					validity = ChanConfiguration.Captcha.Validity.SHORT_LIFETIME;
+					validity = InfiniteChanConfiguration.Captcha.Validity.SHORT_LIFETIME;
 				}
 			}
 			if (!success) throw new InvalidResponseException();
@@ -360,7 +358,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 						{
 							sendingCaptchaChallenge = CommonUtils.getJsonString(jsonObject, "cookie");
 							images.add(image);
-							validity = ChanConfiguration.Captcha.Validity.SHORT_LIFETIME;
+							validity = InfiniteChanConfiguration.Captcha.Validity.SHORT_LIFETIME;
 							success = true;
 						}
 					}
@@ -437,7 +435,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 		}
 		UrlEncodedEntity entity = new UrlEncodedEntity("captcha_cookie", captchaData.get(DNSBLS_CAPTCHA_CHALLENGE),
 				"captcha_text", captchaInput);
-		InfiniteChanLocator locator = ChanLocator.get(this);
+		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 		Uri uri = locator.buildPath("dnsbls_bypass.php");
 		String responseText = new HttpRequest(uri, holder, preset).setPostMethod(entity)
 				.setSuccessOnly(false).read().getString();
@@ -486,7 +484,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 		}
 		entity.add("json_response", "1");
 
-		InfiniteChanLocator locator = ChanLocator.get(this);
+		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 		Uri uri = locator.buildPath("post.php");
 		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
 				.addHeader("Referer", locator.buildPath().toString())
@@ -569,7 +567,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 	public SendDeletePostsResult onSendDeletePosts(SendDeletePostsData data) throws HttpException, ApiException,
 			InvalidResponseException
 	{
-		InfiniteChanLocator locator = ChanLocator.get(this);
+		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 		UrlEncodedEntity entity = new UrlEncodedEntity("delete", "on", "board", data.boardName,
 				"password", data.password, "json_response", "1");
 		for (String postNumber : data.postNumbers) entity.add("delete_" + postNumber, "on");
@@ -641,7 +639,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 					continue;
 				}
 			}
-			InfiniteChanLocator locator = ChanLocator.get(this);
+			InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 			UrlEncodedEntity entity = new UrlEncodedEntity("report", "1", "board", data.boardName);
 			entity.add("delete_" + postNumber, "1");
 			entity.add("reason", StringUtils.emptyIfNull(data.comment));

@@ -2,7 +2,6 @@ package com.mishiranu.dashchan.chan.infinite;
 
 import java.util.ArrayList;
 
-import chan.content.ChanLocator;
 import chan.content.model.FileAttachment;
 import chan.content.model.Post;
 import chan.content.model.Posts;
@@ -26,7 +25,7 @@ public class InfiniteCatalogParser implements GroupParser.Callback
 	public InfiniteCatalogParser(String source, Object linked)
 	{
 		mSource = source;
-		mLocator = ChanLocator.get(linked);
+		mLocator = InfiniteChanLocator.get(linked);
 	}
 	
 	public ArrayList<Posts> convertThreads() throws ParseException

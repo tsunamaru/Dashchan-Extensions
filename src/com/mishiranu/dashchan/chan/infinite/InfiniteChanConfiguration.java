@@ -9,7 +9,6 @@ import android.content.res.Resources;
 import android.util.Pair;
 
 import chan.content.ChanConfiguration;
-import chan.content.ChanMarkup;
 import chan.util.CommonUtils;
 import chan.util.StringUtils;
 
@@ -112,7 +111,7 @@ public class InfiniteChanConfiguration extends ChanConfiguration
 	
 	public boolean isTagSupported(String boardName, int tag)
 	{
-		if (tag == ChanMarkup.TAG_CODE) return get(boardName, KEY_CODE_ENABLED, false);
+		if (tag == InfiniteChanMarkup.TAG_CODE) return get(boardName, KEY_CODE_ENABLED, false);
 		return false;
 	}
 	

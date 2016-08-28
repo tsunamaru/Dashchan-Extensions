@@ -6,7 +6,6 @@ import java.util.Locale;
 
 import android.net.Uri;
 
-import chan.content.ChanLocator;
 import chan.content.model.Post;
 import chan.text.GroupParser;
 import chan.text.ParseException;
@@ -34,7 +33,7 @@ public class InfiniteSearchParser implements GroupParser.Callback
 	public InfiniteSearchParser(String source, Object linked)
 	{
 		mSource = source;
-		mLocator = ChanLocator.get(linked);
+		mLocator = InfiniteChanLocator.get(linked);
 	}
 	
 	public ArrayList<Post> convertPosts() throws ParseException
