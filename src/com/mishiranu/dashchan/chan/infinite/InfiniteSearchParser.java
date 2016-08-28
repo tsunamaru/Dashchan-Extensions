@@ -149,22 +149,23 @@ public class InfiniteSearchParser implements GroupParser.Callback
 		{
 			case EXPECT_SUBJECT:
 			{
-				mPost.setSubject(StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim()));
+				mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
 				break;
 			}
 			case EXPECT_NAME:
 			{
-				mPost.setName(StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim()));
+				mPost.setName(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
 				break;
 			}
 			case EXPECT_TRIPCODE:
 			{
-				mPost.setTripcode(StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim()));
+				mPost.setTripcode(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
 				break;
 			}
 			case EXPECT_CAPCODE:
 			{
-				mPost.setCapcode(StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim().substring(3))); // Ignore ##
+				String capcode = StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim());
+				if (capcode != null && capcode.startsWith("## ")) mPost.setCapcode(capcode.substring(3));
 				break;
 			}
 			case EXPECT_COMMENT:
