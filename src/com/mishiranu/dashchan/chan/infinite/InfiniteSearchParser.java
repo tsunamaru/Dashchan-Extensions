@@ -9,6 +9,7 @@ import android.net.Uri;
 import chan.content.model.Post;
 import chan.text.ParseException;
 import chan.text.TemplateParser;
+import chan.util.CommonUtils;
 import chan.util.StringUtils;
 
 public class InfiniteSearchParser
@@ -69,6 +70,8 @@ public class InfiniteSearchParser
 		if (email != null)
 		{
 			email = StringUtils.clearHtml(email);
+			email = CommonUtils.restoreCloudFlareProtectedEmails("<a href=\"" + email + "\"></a>");
+			email = email.substring(9, email.length() - 6);
 			if (email.startsWith("mailto:")) email = email.substring(7);
 			if (email.equalsIgnoreCase("sage")) holder.mPost.setSage(true); else holder.mPost.setEmail(email);
 		}
@@ -91,6 +94,7 @@ public class InfiniteSearchParser
 		
 	}).equals("div", "class", "body").content((instance, holder, text) ->
 	{
+		text = CommonUtils.restoreCloudFlareProtectedEmails(text);
 		holder.mPost.setComment(text);
 		holder.mPosts.add(holder.mPost);
 		holder.mPost = null;
