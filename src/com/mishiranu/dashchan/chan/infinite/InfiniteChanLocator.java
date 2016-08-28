@@ -16,6 +16,7 @@ public class InfiniteChanLocator extends ChanLocator
 	public InfiniteChanLocator()
 	{
 		addChanHost("8ch.net");
+		addConvertableChanHost("www.8ch.net");
 		addConvertableChanHost("media.8ch.net");
 		setHttpsMode(HttpsMode.CONFIGURABLE);
 	}
