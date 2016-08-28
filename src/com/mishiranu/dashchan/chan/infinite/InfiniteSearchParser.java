@@ -7,26 +7,17 @@ import java.util.Locale;
 import android.net.Uri;
 
 import chan.content.model.Post;
-import chan.text.GroupParser;
 import chan.text.ParseException;
+import chan.text.TemplateParser;
 import chan.util.StringUtils;
 
-public class InfiniteSearchParser implements GroupParser.Callback
+public class InfiniteSearchParser
 {
 	private final String mSource;
 	private final InfiniteChanLocator mLocator;
 
 	private Post mPost;
 	private final ArrayList<Post> mPosts = new ArrayList<>();
-	
-	private static final int EXPECT_NONE = 0;
-	private static final int EXPECT_SUBJECT = 1;
-	private static final int EXPECT_NAME = 2;
-	private static final int EXPECT_TRIPCODE = 3;
-	private static final int EXPECT_CAPCODE = 4;
-	private static final int EXPECT_COMMENT = 5;
-	
-	private int mExpect = EXPECT_NONE;
 	
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
 	
@@ -38,143 +29,71 @@ public class InfiniteSearchParser implements GroupParser.Callback
 	
 	public ArrayList<Post> convertPosts() throws ParseException
 	{
-		GroupParser.parse(mSource, this);
+		PARSER.parse(mSource, this);
 		return mPosts;
 	}
 	
-	@Override
-	public boolean onStartElement(GroupParser parser, String tagName, String attrs) throws ParseException
+	private static final TemplateParser<InfiniteSearchParser> PARSER = new TemplateParser<InfiniteSearchParser>()
+			.starts("div", "id", "reply_").starts("div", "id", "op_").open((instance, holder, tagName, attributes) ->
 	{
-		if ("div".equals(tagName))
+		String id = attributes.get("id");
+		holder.mPost = new Post().setPostNumber(id.substring(id.indexOf('_') + 1, id.length()));
+		return false;
+		
+	}).equals("a", "class", "post_no").open((instance, holder, tagName, attributes) ->
+	{
+		String resto = holder.mLocator.getThreadNumber(Uri.parse(attributes.get("href")));
+		if (!holder.mPost.getPostNumber().equals(resto)) holder.mPost.setParentPostNumber(resto);
+		return false;
+		
+	}).equals("span", "class", "subject").content((instance, holder, text) ->
+	{
+		holder.mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
+		
+	}).equals("span", "class", "name").content((instance, holder, text) ->
+	{
+		holder.mPost.setName(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
+		
+	}).equals("span", "class", "tripcode").content((instance, holder, text) ->
+	{
+		holder.mPost.setTripcode(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
+		
+	}).equals("span", "class", "capcode").content((instance, holder, text) ->
+	{
+		String capcode = StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim());
+		if (capcode != null && capcode.startsWith("## ")) holder.mPost.setCapcode(capcode.substring(3));
+		
+	}).equals("a", "class", "email").open((instance, holder, tagName, attributes) ->
+	{
+		String email = attributes.get("href");
+		if (email != null)
 		{
-			String id = parser.getAttr(attrs, "id");
-			if (id != null && (id.startsWith("reply_") || id.startsWith("op_")))
-			{
-				Post post = new Post();
-				post.setPostNumber(id.substring(id.indexOf('_') + 1, id.length()));
-				mPost = post;
-			}
-			else
-			{
-				String cssClass = parser.getAttr(attrs, "class");
-				if ("body".equals(cssClass))
-				{
-					mExpect = EXPECT_COMMENT;
-					return true;
-				}
-			}
+			email = StringUtils.clearHtml(email);
+			if (email.startsWith("mailto:")) email = email.substring(7);
+			if (email.equalsIgnoreCase("sage")) holder.mPost.setSage(true); else holder.mPost.setEmail(email);
 		}
-		else if ("span".equals(tagName))
+		return false;
+		
+	}).contains("time", "datetime", "").open((instance, holder, tagName, attributes) ->
+	{
+		if (holder.mPost != null)
 		{
-			String cssClass = parser.getAttr(attrs, "class");
-			if ("subject".equals(cssClass))
+			try
 			{
-				mExpect = EXPECT_SUBJECT;
-				return true;
+				holder.mPost.setTimestamp(DATE_FORMAT.parse(attributes.get("datetime")).getTime());
 			}
-			else if ("name".equals(cssClass))
+			catch (java.text.ParseException e)
 			{
-				mExpect = EXPECT_NAME;
-				return true;
-			}
-			else if ("tripcode".equals(cssClass))
-			{
-				mExpect = EXPECT_TRIPCODE;
-				return true;
-			}
-			else if ("capcode".equals(cssClass))
-			{
-				mExpect = EXPECT_CAPCODE;
-				return true;
-			}
-		}
-		else if ("a".equals(tagName))
-		{
-			String cssClass = parser.getAttr(attrs, "class");
-			if ("email".equals(cssClass))
-			{
-				String email = parser.getAttr(attrs, "href");
-				if (email != null)
-				{
-					email = StringUtils.clearHtml(email);
-					if (email.startsWith("mailto:")) email = email.substring(7);
-					if (email.equalsIgnoreCase("sage")) mPost.setSage(true); else mPost.setEmail(email);
-				}
-			}
-			else if ("post_no".equals(cssClass))
-			{
-				Uri uri = Uri.parse(parser.getAttr(attrs, "href"));
-				String resto = mLocator.getThreadNumber(uri);
-				if (!mPost.getPostNumber().equals(resto)) mPost.setParentPostNumber(resto);
-			}
-		}
-		else if ("time".equals(tagName))
-		{
-			if (mPost != null)
-			{
-				String datetime = parser.getAttr(attrs, "datetime");
-				if (datetime != null)
-				{
-					try
-					{
-						mPost.setTimestamp(DATE_FORMAT.parse(datetime).getTime());
-					}
-					catch (java.text.ParseException e)
-					{
-						
-					}
-				}
+				
 			}
 		}
 		return false;
-	}
-	
-	@Override
-	public void onEndElement(GroupParser parser, String tagName)
-	{
 		
-	}
-	
-	@Override
-	public void onText(GroupParser parser, String source, int start, int end)
+	}).equals("div", "class", "body").content((instance, holder, text) ->
 	{
+		holder.mPost.setComment(text);
+		holder.mPosts.add(holder.mPost);
+		holder.mPost = null;
 		
-	}
-	
-	@Override
-	public void onGroupComplete(GroupParser parser, String text)
-	{
-		switch (mExpect)
-		{
-			case EXPECT_SUBJECT:
-			{
-				mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-				break;
-			}
-			case EXPECT_NAME:
-			{
-				mPost.setName(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-				break;
-			}
-			case EXPECT_TRIPCODE:
-			{
-				mPost.setTripcode(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-				break;
-			}
-			case EXPECT_CAPCODE:
-			{
-				String capcode = StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim());
-				if (capcode != null && capcode.startsWith("## ")) mPost.setCapcode(capcode.substring(3));
-				break;
-			}
-			case EXPECT_COMMENT:
-			{
-				mPost.setComment(text);
-				mPosts.add(mPost);
-				mPost = null;
-				break;
-			}
-		}
-		mExpect = EXPECT_NONE;
-	}
+	}).prepare();
 }
