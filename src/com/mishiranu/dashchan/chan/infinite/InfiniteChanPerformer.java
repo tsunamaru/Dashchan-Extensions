@@ -46,54 +46,39 @@ public class InfiniteChanPerformer extends ChanPerformer
 		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 		if (data.isCatalog())
 		{
-			Uri uri = locator.buildPath(data.boardName, "catalog.html");
-			String responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
-					.read().getString();
-			ArrayList<Posts> threads;
-			try
-			{
-				threads = new InfiniteCatalogParser(responseText, this).convertThreads();
-			}
-			catch (ParseException e)
-			{
-				throw new InvalidResponseException(e);
-			}
-			if (threads.isEmpty()) return null;
-			uri = locator.buildPath(data.boardName, "catalog.json");
+			Uri uri = locator.buildPath(data.boardName, "catalog.json");
 			JSONArray jsonArray = new HttpRequest(uri, data.holder, data).read().getJsonArray();
-			JSON: if (jsonArray != null && threads.size() > 0)
+			if (jsonArray == null) throw new InvalidResponseException();
+			if (jsonArray.length() == 1)
 			{
 				try
 				{
-					if (jsonArray.length() == 1)
-					{
-						JSONObject jsonObject = jsonArray.getJSONObject(0);
-						if (!jsonObject.has("threads")) break JSON;
-					}
-					for (int i = 0; i < jsonArray.length(); i++)
-					{
-						JSONArray threadsArray = jsonArray.getJSONObject(i).getJSONArray("threads");
-						for (int j = 0; j < threadsArray.length(); j++)
-						{
-							Posts posts = InfiniteModelMapper.createThread(threadsArray.getJSONObject(j),
-									locator, data.boardName, true);
-							for (int k = 0; k < threads.size(); k++)
-							{
-								if (threads.get(k).getPosts()[0].getPostNumber()
-										.equals(posts.getPosts()[0].getPostNumber()))
-								{
-									threads.set(k, posts);
-								}
-							}
-						}
-					}
+					JSONObject jsonObject = jsonArray.getJSONObject(0);
+					if (!jsonObject.has("threads")) return null;
 				}
 				catch (JSONException e)
 				{
-					
+					throw new InvalidResponseException(e);
 				}
 			}
-			return new ReadThreadsResult(threads);
+			try
+			{
+				ArrayList<Posts> threads = new ArrayList<>();
+				for (int i = 0; i < jsonArray.length(); i++)
+				{
+					JSONArray threadsArray = jsonArray.getJSONObject(i).getJSONArray("threads");
+					for (int j = 0; j < threadsArray.length(); j++)
+					{
+						threads.add(InfiniteModelMapper.createThread(threadsArray.getJSONObject(j),
+								locator, data.boardName, true));
+					}
+				}
+				return new ReadThreadsResult(threads);
+			}
+			catch (JSONException e)
+			{
+				throw new InvalidResponseException(e);
+			}
 		}
 		else
 		{
