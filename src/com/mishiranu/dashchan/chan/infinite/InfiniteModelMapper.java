@@ -28,15 +28,24 @@ public class InfiniteModelMapper
 		if (StringUtils.isEmpty(tim)) return null;
 		String filename = CommonUtils.getJsonString(jsonObject, "filename");
 		String ext = CommonUtils.getJsonString(jsonObject, "ext");
-		// last same: 2015-01-28T07:43:34.000Z (1422431014000)
-		// first jpg: 2015-01-28T10:53:18.000Z (1422442398000)
-		boolean forceJpegThumbnail = time >= 1422442398000L;
 		attachment.setSize(jsonObject.optInt("fsize"));
 		attachment.setWidth(jsonObject.optInt("w"));
 		attachment.setHeight(jsonObject.optInt("h"));
-		attachment.setFileUri(locator, locator.buildPath(boardName, "src", tim + ext));
-		attachment.setThumbnailUri(locator, locator.buildPath(boardName, "thumb", tim +
-				(forceJpegThumbnail ? ".jpg" : ext)));
+		if (tim.length() == 64)
+		{
+			attachment.setFileUri(locator, locator.buildPath("file_store", tim + ext));
+			attachment.setThumbnailUri(locator, locator.buildPath("file_store", "thumb", tim +
+					(locator.isImageExtension(ext) ? ext : ".jpg")));
+		}
+		else
+		{
+			// last same: 2015-01-28T07:43:34.000Z (1422431014000)
+			// first jpg: 2015-01-28T10:53:18.000Z (1422442398000)
+			boolean forceJpegThumbnail = time >= 1422442398000L;
+			attachment.setFileUri(locator, locator.buildPath(boardName, "src", tim + ext));
+			attachment.setThumbnailUri(locator, locator.buildPath(boardName, "thumb", tim +
+					(forceJpegThumbnail ? ".jpg" : ext)));
+		}
 		attachment.setOriginalName(filename);
 		return attachment;
 	}
