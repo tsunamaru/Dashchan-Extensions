@@ -245,51 +245,51 @@ public class HaruhichanChanPerformer extends ChanPerformer
 		if (errorMessage != null)
 		{
 			int errorType = 0;
-			if (errorMessage.contains("Содержимое очень короткое"))
+			if (errorMessage.contains("The body was too short or empty"))
 			{
 				errorType = ApiException.SEND_ERROR_EMPTY_COMMENT;
 			}
-			else if (errorMessage.contains("загрузить изображение"))
+			else if (errorMessage.contains("You must upload an image"))
 			{
 				errorType = ApiException.SEND_ERROR_EMPTY_FILE;
 			}
-			else if (errorMessage.contains("слишком длинное"))
+			else if (errorMessage.contains("was too long"))
 			{
 				errorType = ApiException.SEND_ERROR_FIELD_TOO_LONG;
 			}
-			else if (errorMessage.contains("файл слишком большой") || errorMessage.contains("не дольше чем"))
+			else if (errorMessage.contains("The file was too big") || errorMessage.contains("is longer than"))
 			{
 				errorType = ApiException.SEND_ERROR_FILE_TOO_BIG;
 			}
-			else if (errorMessage.contains("Тред закрыт"))
+			else if (errorMessage.contains("Thread locked"))
 			{
 				errorType = ApiException.SEND_ERROR_CLOSED;
 			}
-			else if (errorMessage.contains("Неверная доска"))
+			else if (errorMessage.contains("Invalid board"))
 			{
 				errorType = ApiException.SEND_ERROR_NO_BOARD;
 			}
-			else if (errorMessage.contains("Данного треда не существует"))
+			else if (errorMessage.contains("Thread specified does not exist"))
 			{
 				errorType = ApiException.SEND_ERROR_NO_THREAD;
 			}
-			else if (errorMessage.contains("Не поддерживаемый формат изображения"))
+			else if (errorMessage.contains("Unsupported image format"))
 			{
 				errorType = ApiException.SEND_ERROR_FILE_NOT_SUPPORTED;
 			}
-			else if (errorMessage.contains("Максимальный размер файла"))
+			else if (errorMessage.contains("Maximum file size"))
 			{
 				errorType = ApiException.SEND_ERROR_FILE_TOO_BIG;
 			}
-			else if (errorMessage.contains("Ваш IP адрес") || errorMessage.contains("Ваш айпи адрес"))
+			else if (errorMessage.contains("Your IP address is"))
 			{
 				errorType = ApiException.SEND_ERROR_BANNED;
 			}
-			else if (errorMessage.contains("Этот файл"))
+			else if (errorMessage.contains("That file"))
 			{
 				errorType = ApiException.SEND_ERROR_FILE_EXISTS;
 			}
-			else if (errorMessage.contains("Обнаружен флуд"))
+			else if (errorMessage.contains("Flood detected"))
 			{
 				errorType = ApiException.SEND_ERROR_TOO_FAST;
 			}
@@ -318,11 +318,11 @@ public class HaruhichanChanPerformer extends ChanPerformer
 		if (errorMessage != null)
 		{
 			int errorType = 0;
-			if (errorMessage.contains("Ошибка пароля"))
+			if (errorMessage.contains("Wrong password"))
 			{
 				errorType = ApiException.DELETE_ERROR_PASSWORD;
 			}
-			else if (errorMessage.contains("перед удалением"))
+			else if (errorMessage.contains("You'll have to wait"))
 			{
 				errorType = ApiException.DELETE_ERROR_TOO_NEW;
 			}
