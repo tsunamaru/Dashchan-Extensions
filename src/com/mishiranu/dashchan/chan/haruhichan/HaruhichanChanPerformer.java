@@ -194,24 +194,6 @@ public class HaruhichanChanPerformer extends ChanPerformer
 		return super.onReadContent(data);
 	}
 	
-	private JSONObject getJsonObject(HttpResponse response) throws InvalidResponseException
-	{
-		String responseText = response.getString();
-		try
-		{
-			if (responseText.length() > 2 && responseText.charAt(1) == '\ufeff')
-			{
-				// Strange response
-				responseText = responseText.substring(2);
-			}
-			return new JSONObject(responseText);
-		}
-		catch (JSONException e)
-		{
-			throw new InvalidResponseException(e);
-		}
-	}
-	
 	@Override
 	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException
 	{
@@ -247,9 +229,9 @@ public class HaruhichanChanPerformer extends ChanPerformer
 			throw new InvalidResponseException();
 		}
 		Uri uri = locator.buildPath("post.php");
-		HttpResponse response = new HttpRequest(uri, data.holder, data).setPostMethod(entity).addHeader("Referer",
-				contentUri.toString()).setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read();
-		JSONObject jsonObject = getJsonObject(response);
+		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setPostMethod(entity).addHeader("Referer",
+				contentUri.toString()).setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
+		if (jsonObject == null) throw new InvalidResponseException();
 		
 		String redirect = jsonObject.optString("redirect");
 		if (!StringUtils.isEmpty(redirect))
@@ -328,9 +310,9 @@ public class HaruhichanChanPerformer extends ChanPerformer
 		for (String postNumber : data.postNumbers) entity.add("delete_" + postNumber, "1");
 		if (data.optionFilesOnly) entity.add("file", "on");
 		Uri uri = locator.buildPath("post.php");
-		HttpResponse response = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
-				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read();
-		JSONObject jsonObject = getJsonObject(response);
+		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
+				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
+		if (jsonObject == null) throw new InvalidResponseException();
 		if (jsonObject.optBoolean("success")) return null;
 		String errorMessage = jsonObject.optString("error");
 		if (errorMessage != null)
@@ -360,9 +342,9 @@ public class HaruhichanChanPerformer extends ChanPerformer
 				"reason", StringUtils.emptyIfNull(data.comment), "json_response", "1");
 		for (String postNumber : data.postNumbers) entity.add("delete_" + postNumber, "1");
 		Uri uri = locator.buildPath("post.php");
-		HttpResponse response = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
-				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read();
-		JSONObject jsonObject = getJsonObject(response);
+		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
+				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
+		if (jsonObject == null) throw new InvalidResponseException();
 		if (jsonObject.optBoolean("success")) return null;
 		String errorMessage = jsonObject.optString("error");
 		if (errorMessage != null)
