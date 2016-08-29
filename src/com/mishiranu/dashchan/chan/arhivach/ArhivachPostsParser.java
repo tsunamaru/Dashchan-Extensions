@@ -15,193 +15,55 @@ import chan.content.model.FileAttachment;
 import chan.content.model.Icon;
 import chan.content.model.Post;
 import chan.content.model.Posts;
-import chan.text.GroupParser;
 import chan.text.ParseException;
+import chan.text.TemplateParser;
 import chan.util.StringUtils;
 
-public class ArhivachPostsParser implements GroupParser.Callback
+public class ArhivachPostsParser
 {
 	private final String mSource;
 	private final ArhivachChanLocator mLocator;
-	private final String mArhivachId;
+	private final String mThreadNumber;
 	
 	private Uri mThreadUri;
 	private String mParent;
 	private Post mPost;
 	private final ArrayList<Post> mPosts = new ArrayList<>();
 	private final ArrayList<FileAttachment> mAttachments = new ArrayList<>();
+	private boolean mNextThumbnail;
+	
+	private static final Pattern PATTERN_NAME_SAGE = Pattern.compile("ID:( |\u00a0|&nbsp;?)Heaven");
+	private static final Pattern PATTERN_CAPCODE = Pattern.compile("## (.*) ##");
+	private static final Pattern PATTERN_ICON = Pattern.compile("<img.+?src=\"(.+?)\".+?(?:title=\"(.+?)\")?.+?/?>");
 
-	private static final int EXPECT_NONE = 0;
-	private static final int EXPECT_THREAD_URI = 1;
-	private static final int EXPECT_SUBJECT = 2;
-	private static final int EXPECT_NAME = 3;
-	private static final int EXPECT_TRIPCODE = 4;
-	private static final int EXPECT_DATE = 5;
-	private static final int EXPECT_THUMBNAIL = 6;
-	private static final int EXPECT_LABEL = 7;
-	private static final int EXPECT_COMMENT = 8;
+	static final TimeZone TIMEZONE_GMT = TimeZone.getTimeZone("Etc/GMT");
 	
-	private int mExpect = EXPECT_NONE;
+	private static final Pattern PATTERN_DATE_1 = Pattern.compile("(\\d{2})/(\\d{2})/(\\d{2}) \\w+ " +
+			"(\\d{2}):(\\d{2}):(\\d{2})");
+	private static final Pattern PATTERN_DATE_2 = Pattern.compile("\\w+ (\\d{2}) (\\w+) (\\d{4}) " +
+			"(\\d{2}):(\\d{2}):(\\d{2})");
 	
-	public ArhivachPostsParser(String source, Object linked, String arhivachId)
+	static final List<String> MONTHS_1 = Arrays.asList("января", "февраля", "марта", "апреля", "мая", "июня", "июля",
+			"августа", "сентября", "октября", "ноября", "декабря");
+	static final List<String> MONTHS_2 = Arrays.asList("Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг",
+			"Сен", "Окт", "Ноя", "Дек");
+	
+	public ArhivachPostsParser(String source, Object linked, String threadNumber)
 	{
 		mSource = source;
 		mLocator = ChanLocator.get(linked);
-		mArhivachId = arhivachId;
+		mThreadNumber = threadNumber;
 	}
 	
 	public Posts convert() throws ParseException
 	{
-		GroupParser.parse(mSource, this);
+		PARSER.parse(mSource, this);
 		return new Posts(mPosts).setArchivedThreadUri(mThreadUri);
 	}
 	
-	@Override
-	public boolean onStartElement(GroupParser parser, String tagName, String attrs) throws ParseException
+	static FileAttachment parseExpandImage(TemplateParser.Attributes attributes, ArhivachChanLocator locator)
 	{
-		if ("div".equals(tagName))
-		{
-			String cssClass = parser.getAttr(attrs, "class");
-			if ("post".equals(cssClass) || "post post_deleted".equals(cssClass))
-			{
-				String number = parser.getAttr(attrs, "postid");
-				if (StringUtils.isEmpty(number))
-				{
-					// Sometimes numbers can be empty if moder delete the post
-					if (mPosts.size() > 0)
-					{
-						number = mPosts.get(mPosts.size() - 1).getPostNumber();
-						int index = number.indexOf('.');
-						if (index >= 0)
-						{
-							number = number.substring(0, index) + "." + (Integer.parseInt
-									(number.substring(index + 1)) + 1);
-						}
-						else number += ".1";
-					}
-					else throw new ParseException();
-				}
-				mPost = new Post();
-				mPost.setThreadNumber(mArhivachId);
-				mPost.setPostNumber(number);
-				if (mParent == null) mParent = number;
-				else mPost.setParentPostNumber(mParent);
-				mAttachments.clear();
-			}
-			else if ("span3".equals(cssClass))
-			{
-				mExpect = EXPECT_THREAD_URI;
-				return true;
-			}
-			else if (mPost != null && "post_comment_body".equals(cssClass))
-			{
-				mExpect = EXPECT_COMMENT;
-				return true;
-			}
-		}
-		else if (mPost != null)
-		{
-			if ("h1".equals(tagName))
-			{
-				String cssClass = parser.getAttr(attrs, "class");
-				if ("post_subject".equals(cssClass))
-				{
-					mExpect = EXPECT_SUBJECT;
-					return true;
-				}
-			}
-			else if ("span".equals(tagName))
-			{
-				String cssClass = parser.getAttr(attrs, "class");
-				if ("poster_name".equals(cssClass))
-				{
-					mExpect = EXPECT_NAME;
-					return true;
-				}
-				else if ("poster_trip".equals(cssClass))
-				{
-					mExpect = EXPECT_TRIPCODE;
-					return true;
-				}
-				else if ("post_time".equals(cssClass))
-				{
-					mExpect = EXPECT_DATE;
-					return true;
-				}
-				else if ("label label-success".equals(cssClass))
-				{
-					mExpect = EXPECT_LABEL;
-					return true;
-				}
-				else if ("post_subject".equals(cssClass))
-				{
-					mExpect = EXPECT_SUBJECT;
-					return true;
-				}
-			}
-			else if ("iframe".equals(tagName))
-			{
-				if (mExpect == EXPECT_THUMBNAIL)
-				{
-					if (parseIframeThumbnail(parser, attrs, mLocator, mAttachments))
-					{
-						mExpect = EXPECT_NONE;
-					}
-				}
-			}
-			else if ("img".equals(tagName))
-			{
-				if (mExpect == EXPECT_THUMBNAIL)
-				{
-					parseImageThumbnail(parser, attrs, mLocator, mAttachments);
-					mExpect = EXPECT_NONE;
-				}
-				else
-				{
-					String cssClass = parser.getAttr(attrs, "class");
-					if ("poster_sage".equals(cssClass)) mPost.setSage(true);
-				}
-			}
-			else if ("a".equals(tagName))
-			{
-				String cssClass = parser.getAttr(attrs, "class");
-				if ("expand_image".equals(cssClass))
-				{
-					if (parseExpandImage(parser, attrs, mLocator, mAttachments))
-					{
-						mExpect = EXPECT_THUMBNAIL;
-					}
-				}
-				else if ("post_mail".equals(cssClass))
-				{
-					String email = StringUtils.nullIfEmpty(StringUtils.clearHtml(parser.getAttr(attrs, "href")));
-					if (email != null)
-					{
-						if (email.equals("mailto:sage")) mPost.setSage(true);
-						else mPost.setEmail(email);
-					}
-				}
-			}
-		}
-		return false;
-	}
-	
-	@Override
-	public void onEndElement(GroupParser parser, String tagName)
-	{
-		
-	}
-	
-	@Override
-	public void onText(GroupParser parser, String source, int start, int end)
-	{
-		
-	}
-	
-	static boolean parseExpandImage(GroupParser parser, String attrs, ArhivachChanLocator locator,
-			ArrayList<FileAttachment> attachments)
-	{
-		String onclick = parser.getAttr(attrs, "onclick");
+		String onclick = attributes.get("onclick");
 		if (onclick != null)
 		{
 			boolean relative = false;
@@ -219,24 +81,23 @@ public class ArhivachPostsParser implements GroupParser.Callback
 				if (end >= 0)
 				{
 					FileAttachment attachment = new FileAttachment();
-					attachments.add(attachment);
 					String uriString = onclick.substring(start, end);
 					if (uriString != null)
 					{
 						if (relative) attachment.setFileUri(locator, locator.buildPath(uriString));
 						else attachment.setFileUri(locator, Uri.parse(uriString));
 					}
-					return true;
+					return attachment;
 				}
 			}
 		}
-		return false;
+		return null;
 	}
 	
-	static boolean parseIframeThumbnail(GroupParser parser, String attrs, ArhivachChanLocator locator,
-			ArrayList<FileAttachment> attachments)
+	static boolean parseIframeThumbnail(TemplateParser.Attributes attributes, ArrayList<FileAttachment> attachments,
+			ArhivachChanLocator locator)
 	{
-		String script = parser.getAttr(attrs, "src");
+		String script = attributes.get("src");
 		if (script != null)
 		{
 			boolean relative = false;
@@ -267,141 +128,21 @@ public class ArhivachPostsParser implements GroupParser.Callback
 		return false;
 	}
 	
-	static void parseImageThumbnail(GroupParser parser, String attrs, ArhivachChanLocator locator,
-			ArrayList<FileAttachment> attachments)
+	static void parseImageThumbnail(TemplateParser.Attributes attributes, ArrayList<FileAttachment> attachments,
+			ArhivachChanLocator locator)
 	{
-		FileAttachment attachment = attachments.get(attachments.size() - 1);
-		String uriString = parser.getAttr(attrs, "src");
+		String uriString = attributes.get("src");
 		if (uriString != null)
 		{
+			FileAttachment attachment = attachments.get(attachments.size() - 1);
 			if (uriString.startsWith("http")) attachment.setThumbnailUri(locator, Uri.parse(uriString));
 			else attachment.setThumbnailUri(locator, locator.buildPath(uriString));
 		}
 	}
 	
-	private static final Pattern NAME_SAGE_PATTERN = Pattern.compile("ID:( |\u00a0|&nbsp;?)Heaven");
-	private static final Pattern BADGE_PATTERN = Pattern.compile("<img.+?src=\"(.+?)\".+?(?:title=\"(.+?)\")?.+?/?>");
-	
-	@Override
-	public void onGroupComplete(GroupParser parser, String text)
+	private static long parseTimestamp(String date)
 	{
-		switch (mExpect)
-		{
-			case EXPECT_THREAD_URI:
-			{
-				mThreadUri = Uri.parse(StringUtils.clearHtml(text).trim());
-				break;
-			}
-			case EXPECT_SUBJECT:
-			{
-				mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-				break;
-			}
-			case EXPECT_NAME:
-			{
-				int index = text.indexOf("<img");
-				if (index >= 0)
-				{
-					String icon = text.substring(index);
-					text = text.substring(0, index);
-					Matcher matcher = BADGE_PATTERN.matcher(icon);
-					ArrayList<Icon> icons = null;
-					while (matcher.find())
-					{
-						if (icons == null) icons = new ArrayList<>();
-						String path = matcher.group(1);
-						String title = matcher.group(2);
-						Uri uri = Uri.parse(path);
-						if (StringUtils.isEmpty(title))
-						{
-							title = uri.getLastPathSegment();
-							title = title.substring(0, title.lastIndexOf('.'));
-						}
-						title = StringUtils.clearHtml(title);
-						icons.add(new Icon(mLocator, uri, title));
-					}
-					mPost.setIcons(icons);
-				}
-				String name = StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim());
-				if (name != null)
-				{
-					if (NAME_SAGE_PATTERN.matcher(name).find()) mPost.setSage(true); else
-					{
-						index = name.indexOf(" ID: ");
-						if (index >= 0)
-						{
-							String identifier = name.substring(index + 5).replaceAll(" +", " ");
-							name = name.substring(0, index);
-							mPost.setIdentifier(identifier);
-						}
-						else if (name.endsWith(" ID:")) name = name.substring(0, name.length() - 4);
-						mPost.setName(name);
-					}
-				}
-				break;
-			}
-			case EXPECT_TRIPCODE:
-			{
-				String tripcode = StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim());
-				if (tripcode != null)
-				{
-					if ("## Abu ##".equals(tripcode)) mPost.setCapcode("Abu");
-					else if ("## Mod ##".equals(tripcode)) mPost.setCapcode("Mod");
-					else if (tripcode.startsWith("!")) mPost.setTripcode(tripcode);
-					else if (mPost.getIdentifier() == null) mPost.setIdentifier(tripcode);
-				}
-				break;
-			}
-			case EXPECT_DATE:
-			{
-				mPost.setTimestamp(parseTimestamp(text.trim()));
-				break;
-			}
-			case EXPECT_LABEL:
-			{
-				if ("OP".equals(text)) mPost.setOriginalPoster(true);
-				break;
-			}
-			case EXPECT_COMMENT:
-			{
-				if (text != null)
-				{
-					int index = text.indexOf("<span class=\"pomyanem\"");
-					if (index >= 0)
-					{
-						boolean banned = text.indexOf("Помянем", index) >= 0;
-						if (banned) mPost.setPosterBanned(true); else mPost.setPosterWarned(true);
-						text = text.substring(0, index);
-					}
-					text = text.replace(" (OP)</a>", "</a>");
-				}
-				mPost.setComment(text);
-				if (mAttachments.size() > 0) mPost.setAttachments(mAttachments);
-				mPosts.add(mPost);
-				mPost = null;
-				break;
-			}
-		}
-		mExpect = EXPECT_NONE;
-	}
-	
-	private static final Pattern DATE_1 = Pattern.compile("(\\d{2})/(\\d{2})/(\\d{2}) \\w+ " +
-			"(\\d{2}):(\\d{2}):(\\d{2})");
-	
-	private static final Pattern DATE_2 = Pattern.compile("\\w+ (\\d{2}) (\\w+) (\\d{4}) " +
-			"(\\d{2}):(\\d{2}):(\\d{2})");
-	
-	public static final TimeZone TIMEZONE_GMT = TimeZone.getTimeZone("Etc/GMT");
-	
-	public static final List<String> MONTHS_1 = Arrays.asList(new String[] {"января", "февраля", "марта",
-			"апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"});
-	
-	public static final List<String> MONTHS_2 = Arrays.asList(new String[] {"Янв", "Фев", "Мар",
-			"Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"});
-	
-	private long parseTimestamp(String date)
-	{
-		Matcher matcher = DATE_1.matcher(date);
+		Matcher matcher = PATTERN_DATE_1.matcher(date);
 		if (matcher.find())
 		{
 			int day = Integer.parseInt(matcher.group(1));
@@ -417,7 +158,7 @@ public class ArhivachPostsParser implements GroupParser.Callback
 		}
 		else
 		{
-			matcher = DATE_2.matcher(date);
+			matcher = PATTERN_DATE_2.matcher(date);
 			if (matcher.find())
 			{
 				int day = Integer.parseInt(matcher.group(1));
@@ -437,4 +178,161 @@ public class ArhivachPostsParser implements GroupParser.Callback
 		}
 		return 0L;
 	}
+	
+	private static final TemplateParser<ArhivachPostsParser> PARSER = new TemplateParser<ArhivachPostsParser>()
+			.equals("div", "class", "span3").content((instance, holder, text) ->
+	{
+		holder.mThreadUri = Uri.parse(StringUtils.clearHtml(text).trim());
+		
+	}).equals("div", "class", "post").equals("div", "class", "post post_deleted")
+			.open((instance, holder, tagName, attributes) ->
+	{
+		String number = attributes.get("postid");
+		if (StringUtils.isEmpty(number))
+		{
+			// Sometimes numbers can be empty if moder delete the post
+			if (holder.mPosts.size() > 0)
+			{
+				number = holder.mPosts.get(holder.mPosts.size() - 1).getPostNumber();
+				int index = number.indexOf('.');
+				if (index >= 0)
+				{
+					number = number.substring(0, index) + "." + (Integer.parseInt
+							(number.substring(index + 1)) + 1);
+				}
+				else number += ".1";
+			}
+			else throw new ParseException();
+		}
+		holder.mPost = new Post().setThreadNumber(holder.mThreadNumber).setPostNumber(number);
+		if (holder.mParent == null) holder.mParent = number;
+		else holder.mPost.setParentPostNumber(holder.mParent);
+		holder.mAttachments.clear();
+		return false;
+		
+	}).equals("a", "class", "expand_image").open((instance, holder, tagName, attributes) ->
+	{
+		FileAttachment attachment = ArhivachPostsParser.parseExpandImage(attributes, holder.mLocator);
+		if (attachment != null)
+		{
+			holder.mAttachments.add(attachment);
+			holder.mNextThumbnail = true;
+		}
+		return false;
+		
+	}).name("img").open((instance, holder, tagName, attributes) ->
+	{
+		if (holder.mPost != null && holder.mNextThumbnail)
+		{
+			parseImageThumbnail(attributes, holder.mAttachments, holder.mLocator);
+			holder.mNextThumbnail = false;
+		}
+		return false;
+		
+	}).name("iframe").open((instance, holder, tagName, attributes) ->
+	{
+		if (holder.mPost != null && holder.mNextThumbnail)
+		{
+			parseIframeThumbnail(attributes, holder.mAttachments, holder.mLocator);
+			holder.mNextThumbnail = false;
+		}
+		return false;
+		
+	}).equals("h1", "class", "post_subject").equals("span", "class", "post_subject").content((instance, holder, text) ->
+	{
+		holder.mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
+		
+	}).equals("span", "class", "poster_name").content((instance, holder, text) ->
+	{
+		int index = text.indexOf("<img");
+		if (index >= 0)
+		{
+			String icon = text.substring(index);
+			text = text.substring(0, index);
+			Matcher matcher = PATTERN_ICON.matcher(icon);
+			ArrayList<Icon> icons = null;
+			while (matcher.find())
+			{
+				if (icons == null) icons = new ArrayList<>();
+				String path = matcher.group(1);
+				String title = matcher.group(2);
+				Uri uri = Uri.parse(path);
+				if (StringUtils.isEmpty(title))
+				{
+					title = uri.getLastPathSegment();
+					title = title.substring(0, title.lastIndexOf('.'));
+				}
+				title = StringUtils.clearHtml(title);
+				icons.add(new Icon(holder.mLocator, uri, title));
+			}
+			holder.mPost.setIcons(icons);
+		}
+		String name = StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim());
+		if (name != null)
+		{
+			if (PATTERN_NAME_SAGE.matcher(name).find()) holder.mPost.setSage(true); else
+			{
+				index = name.indexOf(" ID: ");
+				if (index >= 0)
+				{
+					String identifier = name.substring(index + 5).replaceAll(" +", " ");
+					name = name.substring(0, index);
+					holder.mPost.setIdentifier(identifier);
+				}
+				else if (name.endsWith(" ID:")) name = name.substring(0, name.length() - 4);
+				holder.mPost.setName(name);
+			}
+		}
+		
+	}).equals("span", "class", "poster_trip").content((instance, holder, text) ->
+	{
+		String tripcode = StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim());
+		if (tripcode != null)
+		{
+			Matcher matcher = PATTERN_CAPCODE.matcher(tripcode);
+			if (matcher.matches()) holder.mPost.setCapcode(matcher.group(1));
+			else if (tripcode.startsWith("!")) holder.mPost.setTripcode(tripcode);
+			else if (holder.mPost.getIdentifier() == null) holder.mPost.setIdentifier(tripcode);
+		}
+		
+	}).equals("a", "class", "post_mail").open((instance, holder, tagName, attributes) ->
+	{
+		String email = StringUtils.nullIfEmpty(StringUtils.clearHtml(attributes.get("href")));
+		if (email != null)
+		{
+			if (email.equals("mailto:sage")) holder.mPost.setSage(true);
+			else holder.mPost.setEmail(email);
+		}
+		return false;
+		
+	}).equals("img", "class", "poster_sage").open((instance, holder, tagName, attributes) ->
+	{
+		holder.mPost.setSage(true);
+		return false;
+		
+	}).equals("span", "class", "post_time").content((instance, holder, text) ->
+	{
+		holder.mPost.setTimestamp(parseTimestamp(text.trim()));
+		
+	}).equals("span", "class", "label label-success").content((instance, holder, text) ->
+	{
+		if ("OP".equals(text)) holder.mPost.setOriginalPoster(true);
+		
+	}).equals("div", "class", "post_comment_body").content((instance, holder, text) ->
+	{
+		holder.mNextThumbnail = false;
+		int index = text.indexOf("<span class=\"pomyanem\"");
+		if (index >= 0)
+		{
+			boolean banned = text.indexOf("Помянем", index) >= 0;
+			if (banned) holder.mPost.setPosterBanned(true); else holder.mPost.setPosterWarned(true);
+			text = text.substring(0, index);
+		}
+		text = text.replace(" (OP)</a>", "</a>");
+		holder.mPost.setComment(text);
+		if (holder.mAttachments.size() > 0) holder.mPost.setAttachments(holder.mAttachments);
+		holder.mPosts.add(holder.mPost);
+		holder.mPost = null;
+		
+	}).prepare();
 }
