@@ -68,10 +68,16 @@ public class ArhivachPostsParser implements GroupParser.Callback
 				if (StringUtils.isEmpty(number))
 				{
 					// Sometimes numbers can be empty if moder delete the post
-					if (mPost != null)
+					if (mPosts.size() > 0)
 					{
-						int oldNumber = Integer.parseInt(mPost.getPostNumber());
-						number = Integer.toString(oldNumber + 1);
+						number = mPosts.get(mPosts.size() - 1).getPostNumber();
+						int index = number.indexOf('.');
+						if (index >= 0)
+						{
+							number = number.substring(0, index) + "." + (Integer.parseInt
+									(number.substring(index + 1)) + 1);
+						}
+						else number += ".1";
 					}
 					else throw new ParseException();
 				}
