@@ -17,6 +17,7 @@ public class HaruhichanChanLocator extends ChanLocator
 	{
 		addChanHost("haruhichan.ovh");
 		addConvertableChanHost("haruhichan.ru");
+		setHttpsMode(HttpsMode.CONFIGURABLE);
 	}
 	
 	@Override
