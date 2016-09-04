@@ -30,7 +30,6 @@ import chan.content.model.BoardCategory;
 import chan.content.model.Post;
 import chan.content.model.Posts;
 import chan.content.model.ThreadSummary;
-import chan.content.model.Threads;
 import chan.http.CookieBuilder;
 import chan.http.HttpException;
 import chan.http.HttpRequest;
@@ -89,7 +88,7 @@ public class DvachChanPerformer extends ChanPerformer
 					}
 				}
 				int boardSpeed = jsonObject.optInt("board_speed");
-				return new ReadThreadsResult(new Threads(threads).setBoardSpeed(boardSpeed));
+				return new ReadThreadsResult(threads).setBoardSpeed(boardSpeed);
 			}
 			catch (JSONException e)
 			{
