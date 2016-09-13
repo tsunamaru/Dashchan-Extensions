@@ -16,7 +16,7 @@ public class NullnyanBoardsParser
 	
 	private final ArrayList<Board> mBoards = new ArrayList<>();
 	
-	private static final Pattern PATTERN_BOARD = Pattern.compile("/(\\w+)");
+	private static final Pattern PATTERN_BOARD = Pattern.compile("/(\\w+)/");
 	
 	public NullnyanBoardsParser(String source)
 	{
