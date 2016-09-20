@@ -1,5 +1,6 @@
 package com.mishiranu.dashchan.chan.dvach;
 
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.text.DateFormatSymbols;
 import java.text.SimpleDateFormat;
@@ -521,11 +522,29 @@ public class DvachChanPerformer extends ChanPerformer
 	}
 	
 	private static final String CAPTCHA_PASS_COOKIE = "captchaPassCookie";
+	private static final String USE_APP_CAPTCHA = "appCaptchaValue";
 	
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
 		DvachChanLocator locator = ChanLocator.get(this);
+		DvachChanConfiguration configuration = ChanConfiguration.get(this);
+		if (data.threadNumber != null && configuration.isCaptchaBypassEnabled())
+		{
+			DvachAppCaptcha appCaptcha = DvachAppCaptcha.getInstance();
+			if (appCaptcha != null)
+			{
+				Uri uri = locator.buildPath("api", "captcha", "app", "check", appCaptcha.getPublicKey());
+				JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookies(null)).read().getJsonObject();
+				if (jsonObject != null && jsonObject.optInt("result") == 1)
+				{
+					CaptchaData captchaData = new CaptchaData();
+					captchaData.put(USE_APP_CAPTCHA, "true");
+					return new ReadCaptchaResult(CaptchaState.SKIP, captchaData)
+							.setValidity(ChanConfiguration.Captcha.Validity.IN_BOARD_SEPARATELY);
+				}
+			}
+		}
 		Uri uri = locator.buildPath("api", "captcha", "settings", data.boardName);
 		JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookies(null)).read().getJsonObject();
 		if (jsonObject == null) throw new InvalidResponseException();
@@ -772,7 +791,29 @@ public class DvachChanPerformer extends ChanPerformer
 			boolean check = false;
 			String challenge = data.captchaData.get(CaptchaData.CHALLENGE);
 			String input = StringUtils.emptyIfNull(data.captchaData.get(CaptchaData.INPUT));
-			if (DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA.equals(data.captchaType))
+			if (data.captchaData.get(USE_APP_CAPTCHA) != null)
+			{
+				DvachAppCaptcha appCaptcha = DvachAppCaptcha.getInstance();
+				Uri uri = locator.buildPath("api", "captcha", "app", "id", appCaptcha.getPublicKey());
+				JSONObject jsonObject = new HttpRequest(uri, data.holder).addCookie(buildCookies(null))
+						.read().getJsonObject();
+				if (jsonObject == null) throw new InvalidResponseException();
+				String id = CommonUtils.optJsonString(jsonObject, "id");
+				if (!StringUtils.isEmpty(id))
+				{
+					entity.add("captcha_type", "app");
+					entity.add("app_response_id", id);
+					try
+					{
+						entity.add("app_response", appCaptcha.getCaptchaValue(id.getBytes("US-ASCII")));
+					}
+					catch (UnsupportedEncodingException e)
+					{
+						throw new RuntimeException(e);
+					}
+				}
+			}
+			else if (DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA.equals(data.captchaType))
 			{
 				entity.add("captcha_type", "2chaptcha");
 				entity.add("2chaptcha_id", challenge);
