@@ -37,10 +37,10 @@ import chan.util.StringUtils;
 public class MakabaPaidChanPerformer extends ChanPerformer
 {
 	private static final String COOKIE_AUTH = "usercode_auth";
-	
+
 	private String mLastUserAuthorizationData;
 	private String mLastUserAuthorizationCookie;
-	
+
 	private HttpResponse readResponse(HttpRequest request, HttpHolder holder, boolean mayRetry) throws HttpException,
 			InvalidResponseException
 	{
@@ -73,13 +73,13 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 		}
 		return response;
 	}
-	
+
 	private HttpResponse readResponse(HttpRequest request, HttpHolder holder) throws HttpException,
 			InvalidResponseException
 	{
 		return readResponse(request, holder, true);
 	}
-	
+
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
@@ -115,7 +115,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, ThreadRedirectException,
 			InvalidResponseException
@@ -143,7 +143,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadSearchPostsResult onReadSearchPosts(ReadSearchPostsData data) throws HttpException,
 			InvalidResponseException
@@ -171,7 +171,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException
 	{
@@ -182,7 +182,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 		if (index == -1) throw new InvalidResponseException();
 		responseText = responseText.substring(index, responseText.indexOf("</span>", index));
 		Matcher matcher = Pattern.compile("href=\"/(.*?)/\"").matcher(responseText);
-		ArrayList<Board> boards = new ArrayList<Board>();
+		ArrayList<Board> boards = new ArrayList<>();
 		while (matcher.find())
 		{
 			String boardName = matcher.group(1);
@@ -202,7 +202,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 		}
 		return new ReadBoardsResult(new BoardCategory(null, boards));
 	}
-	
+
 	@Override
 	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException
 	{
@@ -224,7 +224,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadContentResult onReadContent(ReadContentData data) throws HttpException, InvalidResponseException
 	{
@@ -237,14 +237,14 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 		}
 		return new ReadContentResult(readResponse(new HttpRequest(uri, data.holder, data), data.holder));
 	}
-	
+
 	@Override
 	public CheckAuthorizationResult onCheckAuthorization(CheckAuthorizationData data) throws HttpException,
 			InvalidResponseException
 	{
 		return new CheckAuthorizationResult(readUserAuthorization(data.holder, data, data.authorizationData[0]));
 	}
-	
+
 	private boolean readUserAuthorization(HttpHolder holder, HttpRequest.Preset preset, String userAuthorizationData)
 			throws HttpException, InvalidResponseException
 	{
@@ -276,12 +276,12 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 			return false;
 		}
 	}
-	
+
 	private static final Pattern PATTERN_TAG = Pattern.compile("(.*) /([^/]*)/");
 	private static final Pattern PATTERN_BAN = Pattern.compile("([^ ]*?): (.*?)(?:\\.|$)");
-	
+
 	static final SimpleDateFormat DATE_FORMAT_BAN;
-	
+
 	static
 	{
 		DateFormatSymbols symbols = new DateFormatSymbols();
@@ -290,7 +290,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 		DATE_FORMAT_BAN = new SimpleDateFormat("MMM dd HH:mm:ss yyyy", symbols);
 		DATE_FORMAT_BAN.setTimeZone(TimeZone.getTimeZone("GMT+3"));
 	}
-	
+
 	@Override
 	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException
 	{
@@ -323,12 +323,12 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 			}
 		}
 		entity.add("icon", data.userIcon);
-		
+
 		MakabaPaidChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createApiUri("posting.fcgi", "json", "1");
 		String responseText = readResponse(new HttpRequest(uri, data.holder, data).setPostMethod(entity)
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT), data.holder).getString();
-		
+
 		JSONObject jsonObject;
 		try
 		{
@@ -405,7 +405,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 					}
 					catch (java.text.ParseException e)
 					{
-						
+
 					}
 				}
 			}
@@ -415,7 +415,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 		if (!StringUtils.isEmpty(reason)) throw new ApiException(reason);
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public SendReportPostsResult onSendReportPosts(SendReportPostsData data) throws HttpException, ApiException,
 			InvalidResponseException

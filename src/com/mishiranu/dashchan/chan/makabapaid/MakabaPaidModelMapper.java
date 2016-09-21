@@ -22,7 +22,7 @@ import chan.util.StringUtils;
 public class MakabaPaidModelMapper
 {
 	private static final Pattern BADGE_PATTERN = Pattern.compile("<img.+?src=\"(.+?)\".+?(?:title=\"(.+?)\")?.+?/?>");
-	
+
 	public static FileAttachment createFileAttachment(JSONObject jsonObject, ChanLocator locator, String boardName,
 			boolean archive) throws JSONException
 	{
@@ -38,7 +38,7 @@ public class MakabaPaidModelMapper
 		return new FileAttachment().setFileUri(locator, fileUri).setThumbnailUri(locator, thumbnailUri)
 				.setSize(size).setWidth(width).setHeight(height);
 	}
-	
+
 	public static Post createPost(JSONObject jsonObject, ChanLocator locator, String boardName, boolean archive,
 			boolean sageEnabled) throws JSONException
 	{
@@ -84,7 +84,7 @@ public class MakabaPaidModelMapper
 			comment = comment.replace("&#47;", "/");
 		}
 		comment = fixApiEscapeCharacters(comment);
-		
+
 		boolean sage = sageEnabled && !StringUtils.isEmpty(email) && email.equals("mailto:sage");
 		if (sage)
 		{
@@ -115,7 +115,7 @@ public class MakabaPaidModelMapper
 			if (capcode != null) tripcode = null;
 			else tripcode = StringUtils.nullIfEmpty(StringUtils.clearHtml(tripcode).trim());
 		}
-		
+
 		String icon = CommonUtils.optJsonString(jsonObject, "icon");
 		ArrayList<Icon> icons = null;
 		if (!StringUtils.isEmpty(icon))
@@ -136,12 +136,12 @@ public class MakabaPaidModelMapper
 				icons.add(new Icon(locator, uri, title));
 			}
 		}
-		
+
 		return post.setTimestamp(timestamp).setSubject(subject).setComment(comment).setName(name)
 				.setIdentifier(identifier).setTripcode(tripcode).setCapcode(capcode).setEmail(email)
 				.setAttachments(attachments).setIcons(icons);
 	}
-	
+
 	public static Post[] createPosts(JSONArray jsonArray, ChanLocator locator, String boardName, boolean archive,
 			boolean sageEnabled) throws JSONException
 	{
@@ -157,7 +157,7 @@ public class MakabaPaidModelMapper
 		}
 		return null;
 	}
-	
+
 	public static Posts createThread(JSONObject jsonObject, ChanLocator locator, String boardName,
 			boolean sageEnabled) throws JSONException
 	{
@@ -173,7 +173,7 @@ public class MakabaPaidModelMapper
 			}
 			catch (JSONException e)
 			{
-				
+
 			}
 			posts = new Post[jsonArray.length()];
 			for (int i = 0; i < posts.length; i++)
@@ -189,7 +189,7 @@ public class MakabaPaidModelMapper
 		postsCount += posts.length;
 		return new Posts(posts).addPostsCount(postsCount).addPostsWithFilesCount(postsWithFilesCount);
 	}
-	
+
 	public static String fixApiEscapeCharacters(String text)
 	{
 		if (text != null)

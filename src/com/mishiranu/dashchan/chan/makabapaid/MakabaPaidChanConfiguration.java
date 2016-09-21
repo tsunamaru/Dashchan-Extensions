@@ -22,7 +22,7 @@ public class MakabaPaidChanConfiguration extends ChanConfiguration
 	private static final String KEY_SAGE_ENABLED = "sage_enabled";
 	private static final String KEY_FLAGS_ENABLED = "flags_enabled";
 	private static final String KEY_MAX_COMMENT_LENGTH = "max_comment_length";
-	
+
 	public MakabaPaidChanConfiguration()
 	{
 		request(OPTION_READ_POSTS_COUNT);
@@ -30,7 +30,7 @@ public class MakabaPaidChanConfiguration extends ChanConfiguration
 		setDefaultName("Аноним");
 		setBumpLimit(500);
 	}
-	
+
 	@Override
 	public Board obtainBoardConfiguration(String boardName)
 	{
@@ -41,7 +41,7 @@ public class MakabaPaidChanConfiguration extends ChanConfiguration
 		board.allowReporting = true;
 		return board;
 	}
-	
+
 	@Override
 	public Posting obtainPostingConfiguration(String boardName, boolean newThread)
 	{
@@ -70,12 +70,12 @@ public class MakabaPaidChanConfiguration extends ChanConfiguration
 		}
 		catch (Exception e)
 		{
-			
+
 		}
 		posting.hasCountryFlags = get(boardName, KEY_FLAGS_ENABLED, false);
 		return posting;
 	}
-	
+
 	@Override
 	public Reporting obtainReportingConfiguration(String boardName)
 	{
@@ -84,12 +84,12 @@ public class MakabaPaidChanConfiguration extends ChanConfiguration
 		reporting.multiplePosts = true;
 		return reporting;
 	}
-	
+
 	public boolean isSageEnabled(String boardName)
 	{
 		return get(boardName, KEY_SAGE_ENABLED, true);
 	}
-	
+
 	public void updateFromBoardsJson(JSONArray jsonArray)
 	{
 		try
@@ -106,10 +106,10 @@ public class MakabaPaidChanConfiguration extends ChanConfiguration
 		}
 		catch (JSONException e)
 		{
-			
+
 		}
 	}
-	
+
 	public void updateFromThreadsPostsJson(String boardName, JSONObject jsonObject)
 	{
 		String title = CommonUtils.optJsonString(jsonObject, "BoardName");
@@ -134,7 +134,7 @@ public class MakabaPaidChanConfiguration extends ChanConfiguration
 		JSONArray iconsArray = jsonObject.optJSONArray("icons");
 		set(boardName, KEY_ICONS, iconsArray != null ? iconsArray.toString() : null);
 	}
-	
+
 	private void editBoards(String boardName, JSONObject jsonObject, String key, String name)
 	{
 		if (jsonObject.has(name))
@@ -143,7 +143,7 @@ public class MakabaPaidChanConfiguration extends ChanConfiguration
 			set(boardName, key, value);
 		}
 	}
-	
+
 	public String transformBoardDescription(String description)
 	{
 		description = StringUtils.nullIfEmpty(StringUtils.clearHtml(description).trim());
