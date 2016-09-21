@@ -495,30 +495,17 @@ public class DvachChanPerformer extends ChanPerformer
 		UrlEncodedEntity entity = new UrlEncodedEntity("task", "auth", "usercode", captchaPassData, "json", "1");
 		JSONObject jsonObject = new HttpRequest(uri, preset).addCookie(buildCookies(null)).setPostMethod(entity)
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
-		if (jsonObject != null)
+		if (jsonObject == null) throw new InvalidResponseException();
+		if (jsonObject.optInt("result") != 1) return null;
+		String captchaPassCookie = CommonUtils.optJsonString(jsonObject, "hash");
+		if (StringUtils.isEmpty(captchaPassCookie)) throw new InvalidResponseException();
+		mLastCaptchaPassData = captchaPassData;
+		mLastCaptchaPassCookie = captchaPassCookie;
+		if (captchaPassCookie != null)
 		{
-			try
-			{
-				String captchaPassCookie = StringUtils.nullIfEmpty(CommonUtils.getJsonString(jsonObject, "Hash"));
-				mLastCaptchaPassData = captchaPassData;
-				mLastCaptchaPassCookie = captchaPassCookie;
-				if (captchaPassCookie != null)
-				{
-					configuration.storeCookie(COOKIE_NOCAPTCHA, captchaPassCookie, "Usercode No Captcha");
-				}
-				return captchaPassCookie;
-			}
-			catch (JSONException e)
-			{
-				String message = CommonUtils.optJsonString(jsonObject, "message");
-				if (!StringUtils.isEmpty(message) && !message.contains("не существует"))
-				{
-					throw new HttpException(0, message);
-				}
-				return null;
-			}
+			configuration.storeCookie(COOKIE_NOCAPTCHA, captchaPassCookie, "Usercode No Captcha");
 		}
-		throw new InvalidResponseException();
+		return captchaPassCookie;
 	}
 
 	private static final String CAPTCHA_PASS_COOKIE = "captchaPassCookie";
