@@ -43,7 +43,7 @@ public class MakabaPaidChanConfiguration extends ChanConfiguration
 	}
 	
 	@Override
-	public Posting obtainPostingConfiguration(String boardName, boolean replying)
+	public Posting obtainPostingConfiguration(String boardName, boolean newThread)
 	{
 		Posting posting = new Posting();
 		posting.allowName = get(boardName, KEY_NAMES_ENABLED, true);
