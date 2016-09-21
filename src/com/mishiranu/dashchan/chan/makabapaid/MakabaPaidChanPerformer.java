@@ -24,7 +24,6 @@ import chan.content.ThreadRedirectException;
 import chan.content.model.Board;
 import chan.content.model.BoardCategory;
 import chan.content.model.Posts;
-import chan.content.model.Threads;
 import chan.http.HttpException;
 import chan.http.HttpHolder;
 import chan.http.HttpRequest;
@@ -107,7 +106,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 					}
 				}
 				int boardSpeed = jsonObject.optInt("board_speed");
-				return new ReadThreadsResult(new Threads(threads).setBoardSpeed(boardSpeed));
+				return new ReadThreadsResult(threads).setBoardSpeed(boardSpeed);
 			}
 			catch (JSONException e)
 			{
