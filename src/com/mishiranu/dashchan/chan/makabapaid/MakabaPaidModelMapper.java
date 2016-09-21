@@ -10,7 +10,6 @@ import org.json.JSONObject;
 
 import android.net.Uri;
 
-import chan.content.ChanLocator;
 import chan.content.model.Attachment;
 import chan.content.model.FileAttachment;
 import chan.content.model.Icon;
@@ -23,8 +22,8 @@ public class MakabaPaidModelMapper
 {
 	private static final Pattern BADGE_PATTERN = Pattern.compile("<img.+?src=\"(.+?)\".+?(?:title=\"(.+?)\")?.+?/?>");
 
-	public static FileAttachment createFileAttachment(JSONObject jsonObject, ChanLocator locator, String boardName,
-			boolean archive) throws JSONException
+	public static FileAttachment createFileAttachment(JSONObject jsonObject, MakabaPaidChanLocator locator,
+			String boardName, boolean archive) throws JSONException
 	{
 		String file = CommonUtils.getJsonString(jsonObject, "path");
 		String thumbnail = CommonUtils.optJsonString(jsonObject, "thumbnail");
@@ -39,8 +38,8 @@ public class MakabaPaidModelMapper
 				.setSize(size).setWidth(width).setHeight(height);
 	}
 
-	public static Post createPost(JSONObject jsonObject, ChanLocator locator, String boardName, boolean archive,
-			boolean sageEnabled) throws JSONException
+	public static Post createPost(JSONObject jsonObject, MakabaPaidChanLocator locator, String boardName,
+			boolean archive, boolean sageEnabled) throws JSONException
 	{
 		Post post = new Post();
 		String num = CommonUtils.getJsonString(jsonObject, "num");
@@ -142,8 +141,8 @@ public class MakabaPaidModelMapper
 				.setAttachments(attachments).setIcons(icons);
 	}
 
-	public static Post[] createPosts(JSONArray jsonArray, ChanLocator locator, String boardName, boolean archive,
-			boolean sageEnabled) throws JSONException
+	public static Post[] createPosts(JSONArray jsonArray, MakabaPaidChanLocator locator, String boardName,
+			boolean archive, boolean sageEnabled) throws JSONException
 	{
 		if (jsonArray.length() > 0)
 		{
@@ -158,7 +157,7 @@ public class MakabaPaidModelMapper
 		return null;
 	}
 
-	public static Posts createThread(JSONObject jsonObject, ChanLocator locator, String boardName,
+	public static Posts createThread(JSONObject jsonObject, MakabaPaidChanLocator locator, String boardName,
 			boolean sageEnabled) throws JSONException
 	{
 		int postsCount = jsonObject.optInt("posts_count");
