@@ -256,25 +256,12 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 		JSONObject jsonObject = new HttpRequest(uri, holder, preset).setPostMethod(entity)
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
 		if (jsonObject == null) throw new InvalidResponseException();
-		try
-		{
-			String userAuthorizationCookie = StringUtils.nullIfEmpty(CommonUtils.getJsonString(jsonObject, "Hash"));
-			if (userAuthorizationCookie != null)
-			{
-				mLastUserAuthorizationData = userAuthorizationData;
-				mLastUserAuthorizationCookie = userAuthorizationCookie;
-			}
-			return true;
-		}
-		catch (JSONException e)
-		{
-			String message = CommonUtils.optJsonString(jsonObject, "message");
-			if (!StringUtils.isEmpty(message) && !message.contains("не существует"))
-			{
-				throw new HttpException(0, message);
-			}
-			return false;
-		}
+		if (jsonObject.optInt("result") != 1) return false;
+		String userAuthorizationCookie = CommonUtils.optJsonString(jsonObject, "hash");
+		if (StringUtils.isEmpty(userAuthorizationCookie)) throw new InvalidResponseException();
+		mLastUserAuthorizationData = userAuthorizationData;
+		mLastUserAuthorizationCookie = userAuthorizationCookie;
+		return true;
 	}
 
 	private static final Pattern PATTERN_TAG = Pattern.compile("(.*) /([^/]*)/");
