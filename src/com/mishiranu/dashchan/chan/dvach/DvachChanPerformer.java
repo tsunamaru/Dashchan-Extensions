@@ -658,6 +658,38 @@ public class DvachChanPerformer extends ChanPerformer
 						uri = locator.buildPath("api", "captcha", captchaType, "image", id);
 						Bitmap image = new HttpRequest(uri, data).read().getBitmap();
 						if (image == null) throw new InvalidResponseException();
+						int width = image.getWidth();
+						int height = image.getHeight();
+						int[] pixels = new int[width * height];
+						image.getPixels(pixels, 0, width, 0, 0, width, height);
+						image.recycle();
+						for (int j = 0; j < height; j++)
+						{
+							for (int i = 0; i < width; i++)
+							{
+								boolean replace = false;
+								if (i == 0 || j == 0 || i == width - 1 || j == height - 1) replace = true;
+								else if (pixels[j * width + i] != 0xffffffff)
+								{
+									int count = 0;
+									if (pixels[(j - 1) * width + i - 1] != 0xffffffff) count++;
+									if (pixels[(j - 1) * width + i] != 0xffffffff) count++;
+									if (pixels[(j - 1) * width + i + 1] != 0xffffffff) count++;
+									if (pixels[j * width + i - 1] != 0xffffffff) count++;
+									if (pixels[j * width + i + 1] != 0xffffffff) count++;
+									if (pixels[(j + 1) * width + i - 1] != 0xffffffff) count++;
+									if (pixels[(j + 1) * width + i] != 0xffffffff) count++;
+									if (pixels[(j + 1) * width + i + 1] != 0xffffffff) count++;
+									if (count < 5) replace = true;
+								}
+								if (replace) pixels[j * width + i] = 0x00000000;
+							}
+						}
+						for (int i = 0; i < pixels.length; i++)
+						{
+							if (pixels[i] == 0x00000000) pixels[i] = 0xffffffff;
+						}
+						image = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888);
 						Bitmap trimmed = CommonUtils.trimBitmap(image, 0xffffffff);
 						if (trimmed != null)
 						{
