@@ -4,7 +4,7 @@ public class DvachAppCaptcha
 {
 	private static DvachAppCaptcha sDvachAppCaptcha;
 	private static boolean sReady = false;
-	
+
 	public static synchronized DvachAppCaptcha getInstance()
 	{
 		if (!sReady)
@@ -17,12 +17,12 @@ public class DvachAppCaptcha
 			}
 			catch (LinkageError e)
 			{
-				
+
 			}
 		}
 		return sDvachAppCaptcha;
 	}
-	
+
 	public native String getPublicKey();
 	public native String getCaptchaValue(byte[] data);
 }

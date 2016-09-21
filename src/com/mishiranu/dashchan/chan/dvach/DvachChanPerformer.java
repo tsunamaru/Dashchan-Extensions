@@ -45,10 +45,10 @@ public class DvachChanPerformer extends ChanPerformer
 {
 	private static final String COOKIE_AUTH = "usercode_auth";
 	private static final String COOKIE_NOCAPTCHA = "usercode_nocaptcha";
-	
+
 	private static final String[] PREFERRED_BOARDS_ORDER = {"Разное", "Тематика", "Творчество", "Политика",
 		"Техника и софт", "Игры", "Японская культура", "Взрослым", "Пробное"};
-	
+
 	private CookieBuilder buildCookies(String captchaPassCookie)
 	{
 		DvachChanConfiguration configuration = ChanConfiguration.get(this);
@@ -57,12 +57,12 @@ public class DvachChanPerformer extends ChanPerformer
 		builder.append(COOKIE_NOCAPTCHA, captchaPassCookie);
 		return builder;
 	}
-	
+
 	private CookieBuilder buildCookiesWithCaptchaPass()
 	{
 		return buildCookies(ChanConfiguration.get(this).getCookie(COOKIE_NOCAPTCHA));
 	}
-	
+
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
@@ -98,7 +98,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, ThreadRedirectException,
 			InvalidResponseException
@@ -128,7 +128,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		return new ReadPostsResult(onReadPosts(data, false, true)).setFullThread(true);
 	}
-	
+
 	private Posts onReadPosts(ReadPostsData data, boolean usePartialApi, boolean archive) throws HttpException,
 			ThreadRedirectException, InvalidResponseException
 	{
@@ -238,7 +238,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadSinglePostResult onReadSinglePost(ReadSinglePostData data) throws HttpException, InvalidResponseException
 	{
@@ -267,7 +267,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	private void handleMobileApiError(JSONObject jsonObject) throws HttpException
 	{
 		int code = Math.abs(jsonObject.optInt("Code"));
@@ -278,7 +278,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		else if (code != 0) throw new HttpException(code, CommonUtils.optJsonString(jsonObject, "Error"));
 	}
-	
+
 	@Override
 	public ReadSearchPostsResult onReadSearchPosts(ReadSearchPostsData data) throws HttpException,
 			InvalidResponseException
@@ -307,7 +307,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException
 	{
@@ -362,7 +362,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadUserBoardsResult onReadUserBoards(ReadUserBoardsData data) throws HttpException, InvalidResponseException
 	{
@@ -395,7 +395,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadThreadSummariesResult onReadThreadSummaries(ReadThreadSummariesData data) throws HttpException,
 			InvalidResponseException
@@ -443,7 +443,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		else return super.onReadThreadSummaries(data);
 	}
-	
+
 	@Override
 	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException
 	{
@@ -459,7 +459,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadContentResult onReadContent(ReadContentData data) throws HttpException
 	{
@@ -472,17 +472,17 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		return new ReadContentResult(new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass()).read());
 	}
-	
+
 	@Override
 	public CheckAuthorizationResult onCheckAuthorization(CheckAuthorizationData data) throws HttpException,
 			InvalidResponseException
 	{
 		return new CheckAuthorizationResult(readCaptchaPass(data, data.authorizationData[0]) != null);
 	}
-	
+
 	private String mLastCaptchaPassData;
 	private String mLastCaptchaPassCookie;
-	
+
 	private String readCaptchaPass(HttpRequest.Preset preset, String captchaPassData) throws HttpException,
 			InvalidResponseException
 	{
@@ -520,10 +520,10 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	private static final String CAPTCHA_PASS_COOKIE = "captchaPassCookie";
 	private static final String USE_APP_CAPTCHA = "appCaptchaValue";
-	
+
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
@@ -562,7 +562,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		catch (JSONException e)
 		{
-			
+
 		}
 		String captchaType = data.captchaType;
 		boolean overrideCaptchaType = false;
@@ -578,9 +578,9 @@ public class DvachChanPerformer extends ChanPerformer
 		return onReadCaptcha(data, captchaType, overrideCaptchaType, data.captchaPass != null
 				? data.captchaPass[0] : null, true);
 	}
-	
+
 	private static final String ANIMECAPTCHA_VALUE = "animecaptcha_value";
-	
+
 	private static ReadCaptchaResult makeCaptchaPassResult(String captchaPassCookie)
 	{
 		CaptchaData captchaData = new CaptchaData();
@@ -588,7 +588,7 @@ public class DvachChanPerformer extends ChanPerformer
 		return new ReadCaptchaResult(CaptchaState.PASS, captchaData)
 				.setValidity(ChanConfiguration.Captcha.Validity.LONG_LIFETIME);
 	}
-	
+
 	private ReadCaptchaResult onReadCaptcha(ReadCaptchaData data, String captchaType, boolean overrideCaptchaType,
 			String captchaPassData, boolean mayUseLastCaptchaPassCookie) throws HttpException, InvalidResponseException
 	{
@@ -768,12 +768,12 @@ public class DvachChanPerformer extends ChanPerformer
 			}
 		}
 	}
-	
+
 	private static final Pattern PATTERN_TAG = Pattern.compile("(.*) /([^/]*)/");
 	private static final Pattern PATTERN_BAN = Pattern.compile("([^ ]*?): (.*?)(?:\\.|$)");
-	
+
 	static final SimpleDateFormat DATE_FORMAT_BAN;
-	
+
 	static
 	{
 		DateFormatSymbols symbols = new DateFormatSymbols();
@@ -782,7 +782,7 @@ public class DvachChanPerformer extends ChanPerformer
 		DATE_FORMAT_BAN = new SimpleDateFormat("MMM dd HH:mm:ss yyyy", symbols);
 		DATE_FORMAT_BAN.setTimeZone(TimeZone.getTimeZone("GMT+3"));
 	}
-	
+
 	@Override
 	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException
 	{
@@ -816,7 +816,7 @@ public class DvachChanPerformer extends ChanPerformer
 		}
 		entity.add("icon", data.userIcon);
 		String captchaPassCookie = null;
-		
+
 		DvachChanLocator locator = ChanLocator.get(this);
 		if (data.captchaData != null)
 		{
@@ -888,12 +888,12 @@ public class DvachChanPerformer extends ChanPerformer
 				}
 			}
 		}
-		
+
 		Uri uri = locator.createFcgiUri("posting", "json", "1");
 		String responseText = new HttpRequest(uri, data).setPostMethod(entity)
 				.addCookie(buildCookies(captchaPassCookie)).setRedirectHandler(HttpRequest.RedirectHandler.STRICT)
 				.read().getString();
-		
+
 		JSONObject jsonObject;
 		try
 		{
@@ -970,7 +970,7 @@ public class DvachChanPerformer extends ChanPerformer
 					}
 					catch (java.text.ParseException e)
 					{
-						
+
 					}
 				}
 			}
@@ -985,7 +985,7 @@ public class DvachChanPerformer extends ChanPerformer
 		if (!StringUtils.isEmpty(reason)) throw new ApiException(reason);
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public SendReportPostsResult onSendReportPosts(SendReportPostsData data) throws HttpException, ApiException,
 			InvalidResponseException

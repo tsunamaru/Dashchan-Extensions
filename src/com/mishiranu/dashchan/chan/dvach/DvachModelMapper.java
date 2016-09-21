@@ -24,20 +24,20 @@ public class DvachModelMapper
 	private static final Pattern BADGE_PATTERN = Pattern.compile("<img.+?src=\"(.+?)\".+?(?:title=\"(.+?)\")?.+?/?>");
 	private static final Pattern CODE_PATTERN = Pattern.compile("\\[code(?:\\s+lang=.+?)?\\](?:<br ?/?>)*(.+?)" +
 			"(?:<br ?/?>)*\\[/code\\]", Pattern.CASE_INSENSITIVE);
-	
+
 	private static final Uri URI_ICON_OS = Uri.parse("chan:///res/raw/raw_os");
 	private static final Uri URI_ICON_ANDROID = Uri.parse("chan:///res/raw/raw_os_android");
 	private static final Uri URI_ICON_APPLE = Uri.parse("chan:///res/raw/raw_os_apple");
 	private static final Uri URI_ICON_LINUX = Uri.parse("chan:///res/raw/raw_os_linux");
 	private static final Uri URI_ICON_WINDOWS = Uri.parse("chan:///res/raw/raw_os_windows");
-	
+
 	private static final Uri URI_ICON_BROWSER = Uri.parse("chan:///res/raw/raw_browser");
 	private static final Uri URI_ICON_CHROME = Uri.parse("chan:///res/raw/raw_browser_chrome");
 	private static final Uri URI_ICON_EDGE = Uri.parse("chan:///res/raw/raw_browser_edge");
 	private static final Uri URI_ICON_FIREFOX = Uri.parse("chan:///res/raw/raw_browser_firefox");
 	private static final Uri URI_ICON_OPERA = Uri.parse("chan:///res/raw/raw_browser_opera");
 	private static final Uri URI_ICON_SAFARI = Uri.parse("chan:///res/raw/raw_browser_safari");
-	
+
 	public static FileAttachment createFileAttachment(JSONObject jsonObject, DvachChanLocator locator, String boardName,
 			String archiveStartPath) throws JSONException
 	{
@@ -53,7 +53,7 @@ public class DvachModelMapper
 		return new FileAttachment().setFileUri(locator, fileUri).setThumbnailUri(locator, thumbnailUri)
 				.setSize(size).setWidth(width).setHeight(height);
 	}
-	
+
 	public static Post createPost(JSONObject jsonObject, DvachChanLocator locator, String boardName,
 			String archiveStartPath, boolean sageEnabled) throws JSONException
 	{
@@ -105,7 +105,7 @@ public class DvachModelMapper
 			attachments = null;
 		}
 		post.setAttachments(attachments);
-		
+
 		String name = CommonUtils.optJsonString(jsonObject, "name");
 		String tripcode = CommonUtils.optJsonString(jsonObject, "trip");
 		String email = CommonUtils.optJsonString(jsonObject, "email");
@@ -151,7 +151,7 @@ public class DvachModelMapper
 		post.setTripcode(tripcode);
 		post.setCapcode(capcode);
 		post.setEmail(email);
-		
+
 		String icon = CommonUtils.optJsonString(jsonObject, "icon");
 		ArrayList<Icon> icons = null;
 		if (!StringUtils.isEmpty(icon))
@@ -213,7 +213,7 @@ public class DvachModelMapper
 		post.setIcons(icons);
 		return post;
 	}
-	
+
 	public static Post[] createPosts(JSONArray jsonArray, DvachChanLocator locator, String boardName,
 			String archiveStartPath, boolean sageEnabled) throws JSONException
 	{
@@ -229,7 +229,7 @@ public class DvachModelMapper
 		}
 		return null;
 	}
-	
+
 	public static Posts createThread(JSONObject jsonObject, DvachChanLocator locator, String boardName,
 			boolean sageEnabled) throws JSONException
 	{
@@ -245,7 +245,7 @@ public class DvachModelMapper
 			}
 			catch (JSONException e)
 			{
-				
+
 			}
 			posts = new Post[jsonArray.length()];
 			for (int i = 0; i < posts.length; i++)
@@ -261,7 +261,7 @@ public class DvachModelMapper
 		postsCount += posts.length;
 		return new Posts(posts).addPostsCount(postsCount).addPostsWithFilesCount(postsWithFilesCount);
 	}
-	
+
 	public static Post createWakabaArchivePost(JSONObject jsonObject, DvachChanLocator locator, String boardName)
 			throws JSONException
 	{
@@ -319,7 +319,7 @@ public class DvachModelMapper
 		if (mAttachments != null) post.setAttachments(mAttachments);
 		return post;
 	}
-	
+
 	public static String fixApiEscapeCharacters(String text)
 	{
 		if (text != null)

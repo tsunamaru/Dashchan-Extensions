@@ -17,7 +17,7 @@ public class DvachChanConfiguration extends ChanConfiguration
 {
 	public static final String CAPTCHA_TYPE_2CHAPTCHA = "2chaptcha";
 	public static final String CAPTCHA_TYPE_ANIMECAPTCHA = "animecaptcha";
-	
+
 	private static final String KEY_ICONS = "icons";
 	private static final String KEY_IMAGES_COUNT = "images_count";
 	private static final String KEY_NAMES_ENABLED = "names_enabled";
@@ -26,9 +26,9 @@ public class DvachChanConfiguration extends ChanConfiguration
 	private static final String KEY_SAGE_ENABLED = "sage_enabled";
 	private static final String KEY_FLAGS_ENABLED = "flags_enabled";
 	private static final String KEY_MAX_COMMENT_LENGTH = "max_comment_length";
-	
+
 	private static final String KEY_CAPTCHA_BYPASS = "captcha_bypass";
-	
+
 	public DvachChanConfiguration()
 	{
 		request(OPTION_READ_THREAD_PARTIALLY);
@@ -45,7 +45,7 @@ public class DvachChanConfiguration extends ChanConfiguration
 		addCaptchaType(CAPTCHA_TYPE_MAILRU);
 		addCustomPreference(KEY_CAPTCHA_BYPASS, true);
 	}
-	
+
 	@Override
 	public Board obtainBoardConfiguration(String boardName)
 	{
@@ -57,7 +57,7 @@ public class DvachChanConfiguration extends ChanConfiguration
 		board.allowReporting = true;
 		return board;
 	}
-	
+
 	@Override
 	public Captcha obtainCustomCaptchaConfiguration(String captchaType)
 	{
@@ -79,7 +79,7 @@ public class DvachChanConfiguration extends ChanConfiguration
 		}
 		return null;
 	}
-	
+
 	@Override
 	public Posting obtainPostingConfiguration(String boardName, boolean newThread)
 	{
@@ -108,12 +108,12 @@ public class DvachChanConfiguration extends ChanConfiguration
 		}
 		catch (Exception e)
 		{
-			
+
 		}
 		posting.hasCountryFlags = get(boardName, KEY_FLAGS_ENABLED, false);
 		return posting;
 	}
-	
+
 	@Override
 	public Reporting obtainReportingConfiguration(String boardName)
 	{
@@ -122,7 +122,7 @@ public class DvachChanConfiguration extends ChanConfiguration
 		reporting.multiplePosts = true;
 		return reporting;
 	}
-	
+
 	@Override
 	public CustomPreference obtainCustomPreferenceConfiguration(String key)
 	{
@@ -136,17 +136,17 @@ public class DvachChanConfiguration extends ChanConfiguration
 		}
 		return null;
 	}
-	
+
 	public boolean isSageEnabled(String boardName)
 	{
 		return get(boardName, KEY_SAGE_ENABLED, true);
 	}
-	
+
 	public boolean isCaptchaBypassEnabled()
 	{
 		return get(null, KEY_CAPTCHA_BYPASS, true);
 	}
-	
+
 	public void updateFromBoardsJson(JSONArray jsonArray)
 	{
 		try
@@ -163,10 +163,10 @@ public class DvachChanConfiguration extends ChanConfiguration
 		}
 		catch (JSONException e)
 		{
-			
+
 		}
 	}
-	
+
 	public void updateFromThreadsPostsJson(String boardName, JSONObject jsonObject)
 	{
 		String title = CommonUtils.optJsonString(jsonObject, "BoardName");
@@ -192,7 +192,7 @@ public class DvachChanConfiguration extends ChanConfiguration
 		JSONArray iconsArray = jsonObject.optJSONArray("icons");
 		set(boardName, KEY_ICONS, iconsArray != null ? iconsArray.toString() : null);
 	}
-	
+
 	private void editBoards(String boardName, JSONObject jsonObject, String key, String name)
 	{
 		if (jsonObject.has(name))
@@ -201,7 +201,7 @@ public class DvachChanConfiguration extends ChanConfiguration
 			set(boardName, key, value);
 		}
 	}
-	
+
 	public String transformBoardDescription(String description)
 	{
 		description = StringUtils.nullIfEmpty(StringUtils.clearHtml(description).trim());
