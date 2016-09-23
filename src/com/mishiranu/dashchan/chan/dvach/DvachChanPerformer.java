@@ -513,23 +513,6 @@ public class DvachChanPerformer extends ChanPerformer
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
 		DvachChanLocator locator = DvachChanLocator.get(this);
-		DvachChanConfiguration configuration = DvachChanConfiguration.get(this);
-		if (data.threadNumber != null && configuration.isCaptchaBypassEnabled())
-		{
-			DvachAppCaptcha appCaptcha = DvachAppCaptcha.getInstance();
-			if (appCaptcha != null)
-			{
-				Uri uri = locator.buildPath("api", "captcha", "app", "check", appCaptcha.getPublicKey());
-				JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookies(null)).read().getJsonObject();
-				if (jsonObject != null && jsonObject.optInt("result") == 1)
-				{
-					CaptchaData captchaData = new CaptchaData();
-					captchaData.put(USE_APP_CAPTCHA, "true");
-					return new ReadCaptchaResult(CaptchaState.SKIP, captchaData)
-							.setValidity(DvachChanConfiguration.Captcha.Validity.IN_BOARD_SEPARATELY);
-				}
-			}
-		}
 		Uri uri = locator.buildPath("api", "captcha", "settings", data.boardName);
 		JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookies(null)).read().getJsonObject();
 		if (jsonObject == null) throw new InvalidResponseException();
@@ -616,6 +599,23 @@ public class DvachChanPerformer extends ChanPerformer
 		else
 		{
 			if (mayRelogin) return onReadCaptcha(data, captchaType, overrideCaptchaType, captchaPassData, false);
+			DvachChanConfiguration configuration = DvachChanConfiguration.get(this);
+			if (data.threadNumber != null && configuration.isCaptchaBypassEnabled())
+			{
+				DvachAppCaptcha appCaptcha = DvachAppCaptcha.getInstance();
+				if (appCaptcha != null)
+				{
+					uri = locator.buildPath("api", "captcha", "app", "check", appCaptcha.getPublicKey());
+					jsonObject = new HttpRequest(uri, data).addCookie(buildCookies(null)).read().getJsonObject();
+					if (jsonObject != null && jsonObject.optInt("result") == 1)
+					{
+						CaptchaData captchaData = new CaptchaData();
+						captchaData.put(USE_APP_CAPTCHA, "true");
+						return new ReadCaptchaResult(CaptchaState.SKIP, captchaData)
+								.setValidity(DvachChanConfiguration.Captcha.Validity.IN_BOARD_SEPARATELY);
+					}
+				}
+			}
 			if (DvachChanConfiguration.CAPTCHA_TYPE_ANIMECAPTCHA.equals(captchaType) && data.mayShowLoadButton)
 			{
 				ReadCaptchaResult result = new ReadCaptchaResult(CaptchaState.NEED_LOAD, null);
