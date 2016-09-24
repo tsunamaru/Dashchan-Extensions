@@ -12,7 +12,7 @@ public class NullnyanChanMarkup extends ChanMarkup
 {
 	private static final int SUPPORTED_TAGS = TAG_BOLD | TAG_ITALIC | TAG_UNDERLINE | TAG_STRIKE |
 			TAG_SUBSCRIPT | TAG_SUPERSCRIPT | TAG_SPOILER | TAG_CODE;
-	
+
 	public NullnyanChanMarkup()
 	{
 		addTag("b", TAG_BOLD);
@@ -25,21 +25,21 @@ public class NullnyanChanMarkup extends ChanMarkup
 		addTag("span", "unkfunc", TAG_QUOTE);
 		addTag("span", "spoiler", TAG_SPOILER);
 	}
-	
+
 	@Override
 	public CommentEditor obtainCommentEditor(String boardName)
 	{
 		return new CommentEditor.BulletinBoardCodeCommentEditor();
 	}
-	
+
 	@Override
 	public boolean isTagSupported(String boardName, int tag)
 	{
 		return (SUPPORTED_TAGS & tag) == tag;
 	}
-	
+
 	private static final Pattern THREAD_LINK = Pattern.compile("(\\d+).html(?:#[pq]?(\\d+))?$");
-	
+
 	@Override
 	public Pair<String, String> obtainPostLinkThreadPostNumbers(String uriString)
 	{

@@ -24,18 +24,18 @@ public class NullnyanPostsParser
 	private final NullnyanChanConfiguration mConfiguration;
 	private final NullnyanChanLocator mLocator;
 	private final String mBoardName;
-	
+
 	private String mParent;
 	private Posts mThread;
 	private Post mPost;
 	private FileAttachment mAttachment;
 	private ArrayList<Posts> mThreads;
 	private final ArrayList<Post> mPosts = new ArrayList<>();
-	
+
 	private boolean mHeaderHandling = false;
-	
+
 	private static final SimpleDateFormat[] DATE_FORMATS;
-	
+
 	static
 	{
 		DATE_FORMATS = new SimpleDateFormat[2];
@@ -44,10 +44,10 @@ public class NullnyanPostsParser
 		DATE_FORMATS[1] = new SimpleDateFormat("dd/MM/yy HH:mm:ss", Locale.US);
 		DATE_FORMATS[1].setTimeZone(TimeZone.getTimeZone("GMT+3"));
 	}
-	
+
 	private static final Pattern FILE_SIZE = Pattern.compile("\\[([\\d\\.]+)(\\w+), (\\d+)x(\\d+)(?:, (.+))?\\]");
 	private static final Pattern NUMBER = Pattern.compile("\\d+");
-	
+
 	public NullnyanPostsParser(String source, Object linked, String boardName)
 	{
 		mSource = source;
@@ -55,7 +55,7 @@ public class NullnyanPostsParser
 		mLocator = NullnyanChanLocator.get(linked);
 		mBoardName = boardName;
 	}
-	
+
 	private void closeThread()
 	{
 		if (mThread != null)
@@ -66,7 +66,7 @@ public class NullnyanPostsParser
 			mPosts.clear();
 		}
 	}
-	
+
 	public ArrayList<Posts> convertThreads() throws ParseException
 	{
 		mThreads = new ArrayList<>();
@@ -74,13 +74,13 @@ public class NullnyanPostsParser
 		closeThread();
 		return mThreads;
 	}
-	
+
 	public ArrayList<Post> convertPosts() throws ParseException
 	{
 		PARSER.parse(mSource, this);
 		return mPosts;
 	}
-	
+
 	private static final TemplateParser<NullnyanPostsParser> PARSER = new TemplateParser<NullnyanPostsParser>()
 			.starts("div", "id", "p").open((instance, holder, tagName, attributes) ->
 	{
@@ -98,17 +98,17 @@ public class NullnyanPostsParser
 		}
 		else holder.mPost.setParentPostNumber(holder.mParent);
 		return false;
-		
+
 	}).equals("i", "class", "label-checkbox").open((instance, holder, tagName, attributes) ->
 	{
 		holder.mHeaderHandling = true;
 		return true; // Skip content
-		
+
 	}).equals("span", "class", "filesize").open((instance, nullnyanPostsParser, s, attributes) ->
 	{
 		String id = attributes.get("id");
 		return id == null || !id.startsWith("exembed");
-		
+
 	}).content((instance, holder, text) ->
 	{
 		holder.mAttachment = new FileAttachment();
@@ -128,7 +128,7 @@ public class NullnyanPostsParser
 			holder.mAttachment.setHeight(height);
 			holder.mAttachment.setOriginalName(StringUtils.isEmptyOrWhitespace(originalName) ? null : originalName);
 		}
-		
+
 	}).name("a").open((instance, holder, tagName, attributes) ->
 	{
 		if (holder.mAttachment != null)
@@ -154,7 +154,7 @@ public class NullnyanPostsParser
 			}
 		}
 		return false;
-		
+
 	}).name("img").open((instance, holder, tagName, attributes) ->
 	{
 		if (holder.mAttachment != null)
@@ -168,11 +168,11 @@ public class NullnyanPostsParser
 			}
 		}
 		return false;
-		
+
 	}).equals("span", "class", "filetitle").content((instance, holder, text) ->
 	{
 		holder.mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-		
+
 	}).name("a").open((instance, holder, tagName, attributes) ->
 	{
 		if (holder.mHeaderHandling)
@@ -185,15 +185,15 @@ public class NullnyanPostsParser
 			}
 		}
 		return false;
-		
+
 	}).equals("span", "class", "postername").content((instance, holder, text) ->
 	{
 		holder.mPost.setName(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-		
+
 	}).equals("span", "class", "postertrip").content((instance, holder, text) ->
 	{
 		holder.mPost.setTripcode(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-		
+
 	}).text((instance, holder, source, start, end) ->
 	{
 		if (holder.mHeaderHandling)
@@ -211,23 +211,23 @@ public class NullnyanPostsParser
 					}
 					catch (java.text.ParseException e)
 					{
-						
+
 					}
 				}
 				holder.mHeaderHandling = false;
 			}
 		}
-		
+
 	}).contains("i", "class", "icon-stickied").open((instance, holder, tagName, attributes) ->
 	{
 		holder.mPost.setSticky(true);
 		return false;
-		
+
 	}).contains("i", "class", "icon-closed").open((instance, holder, tagName, attributes) ->
 	{
 		holder.mPost.setClosed(true);
 		return false;
-		
+
 	}).equals("div", "class", "message").content((instance, holder, text) ->
 	{
 		int index = text.lastIndexOf("<span class=\"red-text\">(USER WAS BANNED FOR THIS POST)</span>");
@@ -245,7 +245,7 @@ public class NullnyanPostsParser
 		holder.mPosts.add(holder.mPost);
 		holder.mPost = null;
 		holder.mAttachment = null;
-		
+
 	}).equals("span", "class", "omittedposts").content((instance, holder, text) ->
 	{
 		if (holder.mThreads != null)
@@ -253,14 +253,14 @@ public class NullnyanPostsParser
 			Matcher matcher = NUMBER.matcher(text);
 			if (matcher.find()) holder.mThread.addPostsCount(Integer.parseInt(matcher.group()));
 		}
-		
+
 	}).equals("span", "class", "logo center").content((instance, holder, text) ->
 	{
 		text = StringUtils.clearHtml(text);
 		int index = text.indexOf("- ");
 		if (index >= 0) text = text.substring(index + 2);
 		holder.mConfiguration.storeBoardTitle(holder.mBoardName, text);
-		
+
 	}).equals("nav", "class", "pagenavigator").content((instance, holder, text) ->
 	{
 		text = StringUtils.clearHtml(text.replace("><", "> <"));
@@ -271,6 +271,6 @@ public class NullnyanPostsParser
 		{
 			holder.mConfiguration.storePagesCount(holder.mBoardName, Integer.parseInt(pagesCount) + 1);
 		}
-		
+
 	}).prepare();
 }

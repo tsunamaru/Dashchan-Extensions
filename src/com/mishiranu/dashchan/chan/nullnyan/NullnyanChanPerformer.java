@@ -39,7 +39,7 @@ public class NullnyanChanPerformer extends ChanPerformer
 			throw new InvalidResponseException(e);
 		}
 	}
-	
+
 	@Override
 	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException
 	{
@@ -57,7 +57,7 @@ public class NullnyanChanPerformer extends ChanPerformer
 			throw new InvalidResponseException(e);
 		}
 	}
-	
+
 	@Override
 	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException
 	{
@@ -73,7 +73,7 @@ public class NullnyanChanPerformer extends ChanPerformer
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	@Override
 	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException
 	{
@@ -90,10 +90,10 @@ public class NullnyanChanPerformer extends ChanPerformer
 		}
 		return new ReadPostsCountResult(count);
 	}
-	
+
 	private static final ColorMatrixColorFilter CAPTCHA_FILTER = new ColorMatrixColorFilter(new float[]
 			{0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1f, 0f, -255f});
-	
+
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
@@ -114,11 +114,11 @@ public class NullnyanChanPerformer extends ChanPerformer
 		captchaData.put(CaptchaData.CHALLENGE, sessionCookie);
 		return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData).setImage(image);
 	}
-	
+
 	private static final Pattern PATTERN_POST_ERROR = Pattern.compile("<span class=\"center\">(.*?)</span>");
 	private static final Pattern PATTERN_POST_REDIRECT = Pattern.compile("<meta http-equiv=\"refresh\" content=\"0;" +
 			"url=(.*?)\">");
-	
+
 	@Override
 	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException
 	{
@@ -151,7 +151,7 @@ public class NullnyanChanPerformer extends ChanPerformer
 			sessionCookie = data.captchaData.get(CaptchaData.CHALLENGE);
 			entity.add("captcha_code", data.captchaData.get(CaptchaData.INPUT));
 		}
-		
+
 		NullnyanChanLocator locator = NullnyanChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "imgboard.php");
 		String responseText = new HttpRequest(uri, data).setPostMethod(entity).addCookie("PHPSESSID", sessionCookie)
@@ -164,7 +164,7 @@ public class NullnyanChanPerformer extends ChanPerformer
 			String postNumber = locator.getPostNumber(uri);
 			return new SendPostResult(threadNumber, postNumber);
 		}
-		
+
 		matcher = PATTERN_POST_ERROR.matcher(responseText);
 		if (!matcher.find()) throw new InvalidResponseException();
 		responseText = StringUtils.clearHtml(matcher.group(1));
@@ -193,7 +193,7 @@ public class NullnyanChanPerformer extends ChanPerformer
 		CommonUtils.writeLog("Nullnyan send message", responseText);
 		throw new ApiException(responseText);
 	}
-	
+
 	@Override
 	public SendDeletePostsResult onSendDeletePosts(SendDeletePostsData data) throws HttpException, ApiException,
 			InvalidResponseException

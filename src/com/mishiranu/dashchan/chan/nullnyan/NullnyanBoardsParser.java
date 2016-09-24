@@ -13,22 +13,22 @@ import chan.util.StringUtils;
 public class NullnyanBoardsParser
 {
 	private final String mSource;
-	
+
 	private final ArrayList<Board> mBoards = new ArrayList<>();
-	
+
 	private static final Pattern PATTERN_BOARD = Pattern.compile("/(\\w+)/");
-	
+
 	public NullnyanBoardsParser(String source)
 	{
 		mSource = source;
 	}
-	
+
 	public BoardCategory convert() throws ParseException
 	{
 		PARSER.parse(mSource, this);
 		return new BoardCategory(null, mBoards);
 	}
-	
+
 	private static final TemplateParser<NullnyanBoardsParser> PARSER = new TemplateParser<NullnyanBoardsParser>()
 			.contains("a", "title", "").open((instance, holder, tagName, attributes) ->
 	{
@@ -40,6 +40,6 @@ public class NullnyanBoardsParser
 			holder.mBoards.add(new Board(matcher.group(1), title));
 		}
 		return false;
-		
+
 	}).name("nav").close((instance, holder, tagName) -> instance.finish()).prepare();
 }

@@ -10,7 +10,7 @@ public class NullnyanChanConfiguration extends ChanConfiguration
 		setDefaultName("Anonymous");
 		addCaptchaType("nullnyan");
 	}
-	
+
 	@Override
 	public Board obtainBoardConfiguration(String boardName)
 	{
@@ -19,7 +19,7 @@ public class NullnyanChanConfiguration extends ChanConfiguration
 		board.allowDeleting = true;
 		return board;
 	}
-	
+
 	@Override
 	public Captcha obtainCustomCaptchaConfiguration(String captchaType)
 	{
@@ -33,7 +33,7 @@ public class NullnyanChanConfiguration extends ChanConfiguration
 		}
 		return null;
 	}
-	
+
 	@Override
 	public Posting obtainPostingConfiguration(String boardName, boolean newThread)
 	{
@@ -49,7 +49,7 @@ public class NullnyanChanConfiguration extends ChanConfiguration
 		posting.attachmentMimeTypes.add("video/webm");
 		return posting;
 	}
-	
+
 	@Override
 	public Deleting obtainDeletingConfiguration(String boardName)
 	{
