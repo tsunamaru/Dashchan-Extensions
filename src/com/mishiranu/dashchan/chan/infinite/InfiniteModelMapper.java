@@ -48,14 +48,14 @@ public class InfiniteModelMapper
 		attachment.setOriginalName(filename);
 		return attachment;
 	}
-	
+
 	public static String fixCommentLineBreaks(String comment)
 	{
 		// Paragraphs has "min-height: 1.16em;" in css: this weird trick allows browsers to make empty lines
 		// Dashchan can't handle it because it doesn't work with any css, so I replace these paragraphs with brs
 		return comment.replace("<p class=\"body-line empty \"></p>", "<br />");
 	}
-	
+
 	public static Post createPost(JSONObject jsonObject, InfiniteChanLocator locator, String boardName)
 			throws JSONException
 	{
@@ -130,12 +130,12 @@ public class InfiniteModelMapper
 			}
 			catch (JSONException e)
 			{
-				
+
 			}
 		}
 		return post;
 	}
-	
+
 	public static Posts createThread(JSONObject jsonObject, InfiniteChanLocator locator, String boardName,
 			boolean fromCatalog) throws JSONException
 	{

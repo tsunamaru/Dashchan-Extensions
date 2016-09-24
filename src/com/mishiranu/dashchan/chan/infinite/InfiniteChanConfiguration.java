@@ -20,7 +20,7 @@ public class InfiniteChanConfiguration extends ChanConfiguration
 	private static final String KEY_FLAGS_ENABLED = "flags_enabled";
 	private static final String KEY_DELETE_ENABLED = "delete_enabled";
 	private static final String KEY_CODE_ENABLED = "code_enabled";
-	
+
 	public InfiniteChanConfiguration()
 	{
 		request(OPTION_READ_POSTS_COUNT);
@@ -30,7 +30,7 @@ public class InfiniteChanConfiguration extends ChanConfiguration
 		setBumpLimitMode(BumpLimitMode.AFTER_REPLY);
 		addCaptchaType("infinite");
 	}
-	
+
 	@Override
 	public Board obtainBoardConfiguration(String boardName)
 	{
@@ -42,7 +42,7 @@ public class InfiniteChanConfiguration extends ChanConfiguration
 		board.allowReporting = true;
 		return board;
 	}
-	
+
 	@Override
 	public Captcha obtainCustomCaptchaConfiguration(String captchaType)
 	{
@@ -56,7 +56,7 @@ public class InfiniteChanConfiguration extends ChanConfiguration
 		}
 		return null;
 	}
-	
+
 	@Override
 	public Posting obtainPostingConfiguration(String boardName, boolean newThread)
 	{
@@ -83,12 +83,12 @@ public class InfiniteChanConfiguration extends ChanConfiguration
 		}
 		catch (Exception e)
 		{
-			
+
 		}
 		posting.hasCountryFlags = get(boardName, KEY_FLAGS_ENABLED, false);
 		return posting;
 	}
-	
+
 	@Override
 	public Deleting obtainDeletingConfiguration(String boardName)
 	{
@@ -98,7 +98,7 @@ public class InfiniteChanConfiguration extends ChanConfiguration
 		deleting.optionFilesOnly = true;
 		return deleting;
 	}
-	
+
 	@Override
 	public Reporting obtainReportingConfiguration(String boardName)
 	{
@@ -108,13 +108,13 @@ public class InfiniteChanConfiguration extends ChanConfiguration
 		reporting.options.add(new Pair<>("global", resources.getString(R.string.text_global_report)));
 		return reporting;
 	}
-	
+
 	public boolean isTagSupported(String boardName, int tag)
 	{
 		if (tag == InfiniteChanMarkup.TAG_CODE) return get(boardName, KEY_CODE_ENABLED, false);
 		return false;
 	}
-	
+
 	public void updateFromBoardJson(String boardName, JSONObject jsonObject, boolean updateTitle)
 	{
 		if (updateTitle)
@@ -128,7 +128,7 @@ public class InfiniteChanConfiguration extends ChanConfiguration
 			}
 			catch (JSONException e)
 			{
-				
+
 			}
 		}
 		String defaultName = CommonUtils.optJsonString(jsonObject, "anonymous");

@@ -39,7 +39,7 @@ import chan.util.StringUtils;
 public class InfiniteChanPerformer extends ChanPerformer
 {
 	private static final String[] BOARDS_GENERAL = {"b", "boards", "meta", "n", "operate"};
-	
+
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
@@ -113,7 +113,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 			}
 		}
 	}
-	
+
 	@Override
 	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException
 	{
@@ -145,7 +145,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadSearchPostsResult onReadSearchPosts(ReadSearchPostsData data) throws HttpException,
 			InvalidResponseException
@@ -162,7 +162,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 			throw new InvalidResponseException(e);
 		}
 	}
-	
+
 	@Override
 	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException
 	{
@@ -188,7 +188,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 		}
 		return new ReadBoardsResult(new BoardCategory("General", boards));
 	}
-	
+
 	@Override
 	public ReadUserBoardsResult onReadUserBoards(ReadUserBoardsData data) throws HttpException, InvalidResponseException
 	{
@@ -222,7 +222,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException
 	{
@@ -243,16 +243,16 @@ public class InfiniteChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	private boolean mRequireCaptcha = false;
-	
+
 	private static final Pattern PATTERN_CAPTCHA = Pattern.compile("<image src=\"data:image/png;base64,(.*?)\">" +
 			"(?:.*?value=['\"]([^'\"]+?)['\"])?");
-	
+
 	private static final String DNSBLS_CAPTCHA_CHALLENGE = "dnsbls";
-	
+
 	private static final String REQUIRE_REPORT = "report";
-	
+
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
@@ -287,12 +287,12 @@ public class InfiniteChanPerformer extends ChanPerformer
 			}
 		}
 		if (mRequireCaptcha && data.mayShowLoadButton) return new ReadCaptchaResult(CaptchaState.NEED_LOAD, null);
-		
+
 		String dnsblsCaptchaChallenge = null;
 		String sendingCaptchaChallenge = null;
 		ArrayList<Bitmap> images = new ArrayList<>();
 		InfiniteChanConfiguration.Captcha.Validity validity = null;
-		
+
 		if (data.requirement != null && data.requirement.startsWith(REQUIRE_REPORT))
 		{
 			String postNumber = data.requirement.substring(REQUIRE_REPORT.length());
@@ -355,7 +355,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 				throw new InvalidResponseException(e);
 			}
 		}
-		
+
 		if (mRequireCaptcha)
 		{
 			String responseText = new HttpRequest(locator.buildPath("dnsbls_bypass.php"), data.holder, data)
@@ -377,10 +377,10 @@ public class InfiniteChanPerformer extends ChanPerformer
 			}
 			if (!success) throw new InvalidResponseException();
 		}
-		
+
 		if (images.isEmpty()) return new ReadCaptchaResult(CaptchaState.SKIP, null);
 		else if (data.mayShowLoadButton) return new ReadCaptchaResult(CaptchaState.NEED_LOAD, null);
-		
+
 		int width = 0, height = 0;
 		for (Bitmap bitmap : images)
 		{
@@ -400,13 +400,13 @@ public class InfiniteChanPerformer extends ChanPerformer
 			left += bitmap.getWidth();
 			bitmap.recycle();
 		}
-		
+
 		CaptchaData captchaData = new CaptchaData();
 		if (sendingCaptchaChallenge != null) captchaData.put(CaptchaData.CHALLENGE, sendingCaptchaChallenge);
 		if (dnsblsCaptchaChallenge != null) captchaData.put(DNSBLS_CAPTCHA_CHALLENGE, dnsblsCaptchaChallenge);
 		return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData).setImage(image).setValidity(validity);
 	}
-	
+
 	private boolean checkCaptcha(CaptchaData captchaData, HttpHolder holder) throws HttpException
 	{
 		String captchaInput = captchaData.get(CaptchaData.INPUT);
@@ -431,7 +431,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 		mRequireCaptcha = false;
 		return true;
 	}
-	
+
 	@Override
 	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException
 	{
@@ -474,7 +474,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 				.addHeader("Referer", locator.buildPath().toString())
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
 		if (jsonObject == null) throw new InvalidResponseException();
-		
+
 		String redirect = jsonObject.optString("redirect");
 		if (!StringUtils.isEmpty(redirect))
 		{
@@ -546,7 +546,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public SendDeletePostsResult onSendDeletePosts(SendDeletePostsData data) throws HttpException, ApiException,
 			InvalidResponseException
@@ -600,9 +600,9 @@ public class InfiniteChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	private static final Pattern PATTERN_REPORT = Pattern.compile("<strong>(.*?)</strong>");
-	
+
 	@Override
 	public SendReportPostsResult onSendReportPosts(SendReportPostsData data) throws HttpException, ApiException,
 			InvalidResponseException
