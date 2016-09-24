@@ -263,7 +263,7 @@ public class NullnyanPostsParser
 		
 	}).equals("nav", "class", "pagenavigator").content((instance, holder, text) ->
 	{
-		text = StringUtils.clearHtml(text);
+		text = StringUtils.clearHtml(text.replace("><", "> <"));
 		String pagesCount = null;
 		Matcher matcher = NUMBER.matcher(text);
 		while (matcher.find()) pagesCount = matcher.group();
