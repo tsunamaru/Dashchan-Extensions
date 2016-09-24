@@ -407,8 +407,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 		return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData).setImage(image).setValidity(validity);
 	}
 	
-	private boolean checkCaptcha(CaptchaData captchaData, HttpHolder holder, HttpRequest.Preset preset)
-			throws HttpException
+	private boolean checkCaptcha(CaptchaData captchaData, HttpHolder holder) throws HttpException
 	{
 		String captchaInput = captchaData.get(CaptchaData.INPUT);
 		int index = captchaInput.indexOf(' ');
@@ -422,7 +421,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 				"captcha_text", captchaInput);
 		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 		Uri uri = locator.buildPath("dnsbls_bypass.php");
-		String responseText = new HttpRequest(uri, holder, preset).setPostMethod(entity)
+		String responseText = new HttpRequest(uri, holder).setPostMethod(entity)
 				.setSuccessOnly(false).read().getString();
 		if (holder.getResponseCode() != HttpURLConnection.HTTP_BAD_REQUEST) holder.checkResponseCode();
 		if (responseText == null || !responseText.contains("<h1>Success!</h1>"))
@@ -438,7 +437,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 	{
 		if (mRequireCaptcha && data.captchaData != null && data.captchaData.get(DNSBLS_CAPTCHA_CHALLENGE) != null)
 		{
-			checkCaptcha(data.captchaData, data.holder, data);
+			checkCaptcha(data.captchaData, data.holder);
 		}
 		MultipartEntity entity = new MultipartEntity();
 		entity.add("post", "on");
@@ -573,10 +572,10 @@ public class InfiniteChanPerformer extends ChanPerformer
 				boolean first = true;
 				while (true)
 				{
-					CaptchaData captchaData = requireUserCaptcha("delete", null, null, !first);
+					CaptchaData captchaData = requireUserCaptcha("delete", data.boardName, data.threadNumber, !first);
 					if (captchaData == null) throw new ApiException(ApiException.DELETE_ERROR_NO_ACCESS);
 					if (Thread.currentThread().isInterrupted()) return null;
-					boolean success = checkCaptcha(captchaData, data.holder, data);
+					boolean success = checkCaptcha(captchaData, data.holder);
 					if (success) break;
 					first = false;
 				}
@@ -612,12 +611,13 @@ public class InfiniteChanPerformer extends ChanPerformer
 		boolean first = true;
 		while (true)
 		{
-			CaptchaData captchaData = requireUserCaptcha(REQUIRE_REPORT + postNumber, null, null, !first);
+			CaptchaData captchaData = requireUserCaptcha(REQUIRE_REPORT + postNumber,
+					data.boardName, data.threadNumber, !first);
 			if (captchaData == null) throw new ApiException(ApiException.REPORT_ERROR_NO_ACCESS);
 			if (Thread.currentThread().isInterrupted()) return null;
 			if (captchaData.get(DNSBLS_CAPTCHA_CHALLENGE) != null)
 			{
-				boolean success = checkCaptcha(captchaData, data.holder, data);
+				boolean success = checkCaptcha(captchaData, data.holder);
 				if (!success)
 				{
 					first = false;
