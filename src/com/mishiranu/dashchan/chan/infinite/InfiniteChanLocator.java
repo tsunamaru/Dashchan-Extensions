@@ -11,7 +11,7 @@ public class InfiniteChanLocator extends ChanLocator
 {
 	private static final Pattern BOARD_PATH = Pattern.compile("/\\w+(?:/(?:(?:catalog|index|\\d+)\\.html)?)?");
 	private static final Pattern THREAD_PATH = Pattern.compile("/\\w+/res/(\\d+)\\.html");
-	private static final Pattern ATTACHMENT_PATH = Pattern.compile("/\\w+/src/\\d+\\.\\w+");
+	private static final Pattern ATTACHMENT_PATH = Pattern.compile("/\\w+/(?:src/\\d+\\.\\w+|file_store/\\w+\\.\\w+)");
 	
 	public InfiniteChanLocator()
 	{
@@ -42,18 +42,15 @@ public class InfiniteChanLocator extends ChanLocator
 	@Override
 	public String getBoardName(Uri uri)
 	{
-		if (uri != null)
-		{
-			List<String> segments = uri.getPathSegments();
-			if (segments.size() > 0) return segments.get(0);
-		}
+		List<String> segments = uri.getPathSegments();
+		if (segments.size() > 0) return segments.get(0);
 		return null;
 	}
 	
 	@Override
 	public String getThreadNumber(Uri uri)
 	{
-		return uri != null ? getGroupValue(uri.getPath(), THREAD_PATH, 1) : null;
+		return getGroupValue(uri.getPath(), THREAD_PATH, 1);
 	}
 	
 	@Override
