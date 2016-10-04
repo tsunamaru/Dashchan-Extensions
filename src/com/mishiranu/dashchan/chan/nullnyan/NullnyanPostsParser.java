@@ -148,7 +148,10 @@ public class NullnyanPostsParser
 			if (id != null && id.startsWith("tiembed"))
 			{
 				String href = attributes.get("href");
-				if (href.contains("youtube")) href = href.replace("/embed/", "/watch?v=");
+				if (href.contains("youtube"))
+				{
+					href = href.replace("youtube-nocookie.com", "youtube.com").replace("/embed/", "/watch?v=");
+				}
 				EmbeddedAttachment attachment = EmbeddedAttachment.obtain(href);
 				if (attachment != null) holder.mPost.setAttachments(attachment);
 			}
