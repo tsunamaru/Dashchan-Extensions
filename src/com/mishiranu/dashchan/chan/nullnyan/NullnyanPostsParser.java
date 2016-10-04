@@ -257,7 +257,7 @@ public class NullnyanPostsParser
 			if (matcher.find()) holder.mThread.addPostsCount(Integer.parseInt(matcher.group()));
 		}
 
-	}).equals("span", "class", "logo center").content((instance, holder, text) ->
+	}).equals("span", "class", "center").content((instance, holder, text) ->
 	{
 		text = StringUtils.clearHtml(text);
 		int index = text.indexOf("- ");
