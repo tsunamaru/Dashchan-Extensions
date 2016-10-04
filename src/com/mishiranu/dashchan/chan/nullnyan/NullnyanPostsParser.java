@@ -104,7 +104,7 @@ public class NullnyanPostsParser
 		holder.mHeaderHandling = true;
 		return true; // Skip content
 
-	}).equals("span", "class", "filesize").open((instance, nullnyanPostsParser, s, attributes) ->
+	}).contains("span", "class", "filesize").open((instance, nullnyanPostsParser, s, attributes) ->
 	{
 		String id = attributes.get("id");
 		return id == null || !id.startsWith("exembed");
