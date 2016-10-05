@@ -14,7 +14,6 @@ import org.json.JSONObject;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.net.Uri;
@@ -244,90 +243,60 @@ public class InfiniteChanPerformer extends ChanPerformer
 		throw new InvalidResponseException();
 	}
 
-	private boolean mRequireCaptcha = false;
-
 	private static final Pattern PATTERN_CAPTCHA = Pattern.compile("<image src=\"data:image/png;base64,(.*?)\">" +
 			"(?:.*?value=['\"]([^'\"]+?)['\"])?");
 
-	private static final String DNSBLS_CAPTCHA_CHALLENGE = "dnsbls";
+	private static final String COOKIE_TOR = "tor";
 
-	private static final String REQUIRE_REPORT = "report";
+	private static final String REQUIREMENT_REPORT = "report";
+	private static final String REQUIREMENT_DNSBLS = "dnsbls";
 
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
 		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
-		if (!mRequireCaptcha)
+		String challenge = null;
+		Bitmap image = null;
+		if (data.requirement != null && data.requirement.startsWith(REQUIREMENT_REPORT))
 		{
-			try
-			{
-				// on fake post request to check DNSBLS bypass necessity
-				UrlEncodedEntity entity = new UrlEncodedEntity("post", "1", "board", "b", "body", "",
-						"json_response", "1");
-				new HttpRequest(locator.buildPath("post.php"), data.holder, data).setPostMethod(entity)
-						.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).setSuccessOnly(false).execute();
-				int responseCode = data.holder.getResponseCode();
-				if (responseCode == HttpURLConnection.HTTP_BAD_REQUEST || responseCode == HttpURLConnection.HTTP_OK)
-				{
-					JSONObject jsonObject = data.holder.read().getJsonObject();
-					if (jsonObject != null)
-					{
-						String message = CommonUtils.optJsonString(jsonObject, "error");
-						if (message != null && message.contains("dnsbls_bypass"))
-						{
-							mRequireCaptcha = true;
-						}
-					}
-				}
-				else data.holder.checkResponseCode();
-			}
-			finally
-			{
-				data.holder.disconnect();
-			}
-		}
-		if (mRequireCaptcha && data.mayShowLoadButton) return new ReadCaptchaResult(CaptchaState.NEED_LOAD, null);
-
-		String dnsblsCaptchaChallenge = null;
-		String sendingCaptchaChallenge = null;
-		ArrayList<Bitmap> images = new ArrayList<>();
-		InfiniteChanConfiguration.Captcha.Validity validity = null;
-
-		if (data.requirement != null && data.requirement.startsWith(REQUIRE_REPORT))
-		{
-			String postNumber = data.requirement.substring(REQUIRE_REPORT.length());
+			String postNumber = data.requirement.substring(REQUIREMENT_REPORT.length());
 			Uri uri = locator.buildQuery("report.php", "board", data.boardName, "post", "delete_" + postNumber);
 			String responseText = new HttpRequest(uri, data.holder, data).read().getString();
 			Matcher matcher = PATTERN_CAPTCHA.matcher(responseText);
-			boolean success = false;
 			if (matcher.find())
 			{
 				String base64 = matcher.group(1);
-				String captchaChallenge = matcher.group(2);
+				challenge = matcher.group(2);
 				byte[] imageArray = Base64.decode(base64, Base64.DEFAULT);
-				Bitmap image = BitmapFactory.decodeByteArray(imageArray, 0, imageArray.length);
-				if (image != null)
-				{
-					sendingCaptchaChallenge = captchaChallenge;
-					images.add(image);
-					success = true;
-					validity = InfiniteChanConfiguration.Captcha.Validity.SHORT_LIFETIME;
-				}
+				image = BitmapFactory.decodeByteArray(imageArray, 0, imageArray.length);
 			}
-			if (!success) throw new InvalidResponseException();
+			if (image == null) throw new InvalidResponseException();
+		}
+		else if (REQUIREMENT_DNSBLS.equals(data.requirement))
+		{
+			String responseText = new HttpRequest(locator.buildPath("dnsbls_bypass.php"), data.holder, data)
+					.read().getString();
+			Matcher matcher = PATTERN_CAPTCHA.matcher(responseText);
+			if (matcher.find())
+			{
+				String base64 = matcher.group(1);
+				challenge = matcher.group(2);
+				byte[] imageArray = Base64.decode(base64, Base64.DEFAULT);
+				image = BitmapFactory.decodeByteArray(imageArray, 0, imageArray.length);
+			}
+			if (image == null) throw new InvalidResponseException();
 		}
 		else
 		{
 			Uri uri = locator.buildQuery("settings.php", "board", data.boardName);
 			JSONObject jsonObject = new HttpRequest(uri, data.holder, data).read().getJsonObject();
 			if (jsonObject == null) throw new InvalidResponseException();
-			boolean success = false;
 			try
 			{
+				boolean newThreadCaptcha = jsonObject.optBoolean("new_thread_capt");
 				jsonObject = jsonObject.getJSONObject("captcha");
-				if (jsonObject.getBoolean("enabled"))
+				if (jsonObject.getBoolean("enabled") || data.threadNumber == null && newThreadCaptcha)
 				{
-					if (data.mayShowLoadButton) return new ReadCaptchaResult(CaptchaState.NEED_LOAD, null);
 					String extra = CommonUtils.getJsonString(jsonObject, "extra");
 					Uri providerUri = Uri.parse(CommonUtils.getJsonString(jsonObject, "provider_get"));
 					uri = providerUri.buildUpon().scheme(uri.getScheme()).authority(uri.getAuthority())
@@ -338,16 +307,10 @@ public class InfiniteChanPerformer extends ChanPerformer
 					{
 						String base64 = matcher.group(1);
 						byte[] imageArray = Base64.decode(base64, Base64.DEFAULT);
-						Bitmap image = BitmapFactory.decodeByteArray(imageArray, 0, imageArray.length);
-						if (image != null)
-						{
-							sendingCaptchaChallenge = CommonUtils.getJsonString(jsonObject, "cookie");
-							images.add(image);
-							validity = InfiniteChanConfiguration.Captcha.Validity.SHORT_LIFETIME;
-							success = true;
-						}
+						image = BitmapFactory.decodeByteArray(imageArray, 0, imageArray.length);
+						challenge = CommonUtils.getJsonString(jsonObject, "cookie");
 					}
-					if (!success) throw new InvalidResponseException();
+					if (image == null) throw new InvalidResponseException();
 				}
 			}
 			catch (JSONException e)
@@ -355,90 +318,47 @@ public class InfiniteChanPerformer extends ChanPerformer
 				throw new InvalidResponseException(e);
 			}
 		}
-
-		if (mRequireCaptcha)
-		{
-			String responseText = new HttpRequest(locator.buildPath("dnsbls_bypass.php"), data.holder, data)
-					.read().getString();
-			Matcher matcher = PATTERN_CAPTCHA.matcher(responseText);
-			boolean success = false;
-			if (matcher.find())
-			{
-				String base64 = matcher.group(1);
-				String captchaChallenge = matcher.group(2);
-				byte[] imageArray = Base64.decode(base64, Base64.DEFAULT);
-				Bitmap image = BitmapFactory.decodeByteArray(imageArray, 0, imageArray.length);
-				if (image != null)
-				{
-					dnsblsCaptchaChallenge = captchaChallenge;
-					images.add(image);
-					success = true;
-				}
-			}
-			if (!success) throw new InvalidResponseException();
-		}
-
-		if (images.isEmpty()) return new ReadCaptchaResult(CaptchaState.SKIP, null);
-		else if (data.mayShowLoadButton) return new ReadCaptchaResult(CaptchaState.NEED_LOAD, null);
-
-		int width = 0, height = 0;
-		for (Bitmap bitmap : images)
-		{
-			width += bitmap.getWidth();
-			height = Math.max(height, bitmap.getHeight());
-		}
-		Bitmap image = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+		if (challenge == null) return new ReadCaptchaResult(CaptchaState.SKIP, null);
+		Bitmap newImage = Bitmap.createBitmap(image.getWidth(), image.getHeight(), Bitmap.Config.ARGB_8888);
 		Paint paint = new Paint();
-		ColorMatrix colorMatrix = new ColorMatrix();
-		colorMatrix.setSaturation(0f);
-		paint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
-		Canvas canvas = new Canvas(image);
-		int left = 0;
-		for (Bitmap bitmap : images)
-		{
-			canvas.drawBitmap(bitmap, left, 0f, paint);
-			left += bitmap.getWidth();
-			bitmap.recycle();
-		}
-
+		float[] colorMatrixArray = {0.3f, 0.3f, 0.3f, 0f, 48f, 0.3f, 0.3f, 0.3f, 0f, 48f,
+				0.3f, 0.3f, 0.3f, 0f, 48f, 0f, 0f, 0f, 1f, 0f};
+		paint.setColorFilter(new ColorMatrixColorFilter(colorMatrixArray));
+		new Canvas(newImage).drawBitmap(image, 0f, 0f, paint);
+		image.recycle();
 		CaptchaData captchaData = new CaptchaData();
-		if (sendingCaptchaChallenge != null) captchaData.put(CaptchaData.CHALLENGE, sendingCaptchaChallenge);
-		if (dnsblsCaptchaChallenge != null) captchaData.put(DNSBLS_CAPTCHA_CHALLENGE, dnsblsCaptchaChallenge);
-		return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData).setImage(image).setValidity(validity);
+		captchaData.put(CaptchaData.CHALLENGE, challenge);
+		return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData).setImage(newImage);
 	}
 
-	private boolean checkCaptcha(CaptchaData captchaData, HttpHolder holder) throws HttpException
+	private boolean checkDnsBlsCaptcha(HttpHolder holder) throws HttpException
 	{
-		String captchaInput = captchaData.get(CaptchaData.INPUT);
-		int index = captchaInput.indexOf(' ');
-		if (index >= 0)
-		{
-			String first = captchaInput.substring(0, index);
-			captchaInput = captchaInput.substring(index + 1);
-			captchaData.put(CaptchaData.INPUT, first);
-		}
-		UrlEncodedEntity entity = new UrlEncodedEntity("captcha_cookie", captchaData.get(DNSBLS_CAPTCHA_CHALLENGE),
-				"captcha_text", captchaInput);
 		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 		Uri uri = locator.buildPath("dnsbls_bypass.php");
-		String responseText = new HttpRequest(uri, holder).setPostMethod(entity)
-				.setSuccessOnly(false).read().getString();
-		if (holder.getResponseCode() != HttpURLConnection.HTTP_BAD_REQUEST) holder.checkResponseCode();
-		if (responseText == null || !responseText.contains("<h1>Success!</h1>"))
+		boolean retry = false;
+		while (true)
 		{
-			return false;
+			CaptchaData captchaData = requireUserCaptcha(REQUIREMENT_DNSBLS, null, null, retry);
+			if (captchaData == null) return false;
+			retry = true;
+			String responseText = new HttpRequest(uri, holder).setPostMethod(new UrlEncodedEntity("captcha_cookie",
+					captchaData.get(CaptchaData.CHALLENGE), "captcha_text", captchaData.get(CaptchaData.INPUT)))
+					.setSuccessOnly(false).read().getString();
+			if (holder.getResponseCode() != HttpURLConnection.HTTP_BAD_REQUEST) holder.checkResponseCode();
+			if (responseText == null || !responseText.contains("<h1>Success!</h1>")) continue;
+			String torCookie = holder.getCookieValue("tor");
+			if (torCookie != null)
+			{
+				InfiniteChanConfiguration configuration = InfiniteChanConfiguration.get(this);
+				configuration.storeCookie(COOKIE_TOR, torCookie, "Tor");
+			}
+			return true;
 		}
-		mRequireCaptcha = false;
-		return true;
 	}
 
 	@Override
 	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException
 	{
-		if (mRequireCaptcha && data.captchaData != null && data.captchaData.get(DNSBLS_CAPTCHA_CHALLENGE) != null)
-		{
-			checkCaptcha(data.captchaData, data.holder);
-		}
 		MultipartEntity entity = new MultipartEntity();
 		entity.add("post", "on");
 		entity.add("board", data.boardName);
@@ -468,13 +388,14 @@ public class InfiniteChanPerformer extends ChanPerformer
 		}
 		entity.add("json_response", "1");
 
+		InfiniteChanConfiguration configuration = InfiniteChanConfiguration.get(this);
+		String torCookie = configuration.getCookie(COOKIE_TOR);
 		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 		Uri uri = locator.buildPath("post.php");
 		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
-				.addHeader("Referer", locator.buildPath().toString())
+				.addCookie(COOKIE_TOR, torCookie).addHeader("Referer", locator.buildPath().toString())
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
 		if (jsonObject == null) throw new InvalidResponseException();
-
 		String redirect = jsonObject.optString("redirect");
 		if (!StringUtils.isEmpty(redirect))
 		{
@@ -483,14 +404,16 @@ public class InfiniteChanPerformer extends ChanPerformer
 			String postNumber = locator.getPostNumber(uri);
 			return new SendPostResult(threadNumber, postNumber);
 		}
+
 		String errorMessage = jsonObject.optString("error");
 		if (errorMessage != null)
 		{
 			int errorType = 0;
 			if (errorMessage.contains("dnsbls_bypass"))
 			{
-				mRequireCaptcha = true;
-				errorType = ApiException.SEND_ERROR_CAPTCHA;
+				boolean success = checkDnsBlsCaptcha(data.holder);
+				if (success) return onSendPost(data);
+				else errorType = ApiException.SEND_ERROR_NO_ACCESS;
 			}
 			else if (errorMessage.contains("CAPTCHA expired"))
 			{
@@ -568,19 +491,9 @@ public class InfiniteChanPerformer extends ChanPerformer
 			int errorType = 0;
 			if (errorMessage.contains("dnsbls_bypass"))
 			{
-				mRequireCaptcha = true;
-				boolean first = true;
-				while (true)
-				{
-					CaptchaData captchaData = requireUserCaptcha("delete", data.boardName, data.threadNumber, !first);
-					if (captchaData == null) throw new ApiException(ApiException.DELETE_ERROR_NO_ACCESS);
-					if (Thread.currentThread().isInterrupted()) return null;
-					boolean success = checkCaptcha(captchaData, data.holder);
-					if (success) break;
-					first = false;
-				}
-				onSendDeletePosts(data);
-				return null;
+				boolean success = checkDnsBlsCaptcha(data.holder);
+				if (success) return onSendDeletePosts(data);
+				else errorType = ApiException.DELETE_ERROR_NO_ACCESS;
 			}
 			else if (errorMessage.contains("Wrong password"))
 			{
@@ -608,22 +521,14 @@ public class InfiniteChanPerformer extends ChanPerformer
 			InvalidResponseException
 	{
 		String postNumber = data.postNumbers.get(0);
-		boolean first = true;
+		boolean retry = false;
 		while (true)
 		{
-			CaptchaData captchaData = requireUserCaptcha(REQUIRE_REPORT + postNumber,
-					data.boardName, data.threadNumber, !first);
+			CaptchaData captchaData = requireUserCaptcha(REQUIREMENT_REPORT + postNumber,
+					data.boardName, data.threadNumber, retry);
 			if (captchaData == null) throw new ApiException(ApiException.REPORT_ERROR_NO_ACCESS);
+			retry = true;
 			if (Thread.currentThread().isInterrupted()) return null;
-			if (captchaData.get(DNSBLS_CAPTCHA_CHALLENGE) != null)
-			{
-				boolean success = checkCaptcha(captchaData, data.holder);
-				if (!success)
-				{
-					first = false;
-					continue;
-				}
-			}
 			InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 			UrlEncodedEntity entity = new UrlEncodedEntity("report", "1", "board", data.boardName);
 			entity.add("delete_" + postNumber, "1");
@@ -631,30 +536,42 @@ public class InfiniteChanPerformer extends ChanPerformer
 			if (data.options.contains("global")) entity.add("global", "1");
 			entity.add("captcha_cookie", StringUtils.emptyIfNull(captchaData.get(CaptchaData.CHALLENGE)));
 			entity.add("captcha_text", StringUtils.emptyIfNull(captchaData.get(CaptchaData.INPUT)));
+			entity.add("json_response", "1");
 			Uri uri = locator.buildPath("post.php");
 			String responseText = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
 					.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).setSuccessOnly(false)
 					.read().getString();
-			Matcher matcher = PATTERN_REPORT.matcher(responseText);
-			if (matcher.find())
+			String errorMessage;
+			try
 			{
-				String errorMessage = matcher.group(1);
-				if (errorMessage != null)
-				{
-					int errorType = 0;
-					if (errorMessage.contains("CAPTCHA expired"))
-					{
-						first = false;
-						continue;
-					}
-					if (errorType != 0) throw new ApiException(errorType);
-					CommonUtils.writeLog("8chan report message", errorMessage);
-					throw new ApiException(errorMessage);
-				}
-				throw new InvalidResponseException();
+				JSONObject jsonObject = new JSONObject(responseText);
+				if (jsonObject.optBoolean("success")) return null;
+				errorMessage = jsonObject.optString("error");
 			}
-			break;
+			catch (JSONException e)
+			{
+				Matcher matcher = PATTERN_REPORT.matcher(responseText);
+				if (!matcher.find()) throw new InvalidResponseException();
+				errorMessage = matcher.group(1);
+			}
+			if (errorMessage != null)
+			{
+				int errorType = 0;
+				if (errorMessage.contains("dnsbls_bypass"))
+				{
+					boolean success = checkDnsBlsCaptcha(data.holder);
+					if (success) return onSendReportPosts(data);
+					else errorType = ApiException.REPORT_ERROR_NO_ACCESS;
+				}
+				else if (errorMessage.contains("CAPTCHA expired"))
+				{
+					continue;
+				}
+				if (errorType != 0) throw new ApiException(errorType);
+				CommonUtils.writeLog("8chan report message", errorMessage);
+				throw new ApiException(errorMessage);
+			}
+			throw new InvalidResponseException();
 		}
-		return null;
 	}
 }

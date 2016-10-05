@@ -31,6 +31,7 @@
 				<data android:host="8ch.net" />
 				<data android:host="www.8ch.net" />
 				<data android:host="media.8ch.net" />
+				<data android:host="oxwugzccvk3dk6tj.onion" />
 			</intent-filter>
 
 		</activity>

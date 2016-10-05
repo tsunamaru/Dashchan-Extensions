@@ -50,8 +50,8 @@ public class InfiniteChanConfiguration extends ChanConfiguration
 		{
 			Captcha captcha = new Captcha();
 			captcha.title = "8chan";
-			captcha.input = Captcha.Input.ALL;
-			captcha.validity = Captcha.Validity.IN_BOARD;
+			captcha.input = Captcha.Input.LATIN;
+			captcha.validity = Captcha.Validity.IN_BOARD_SEPARATELY;
 			return captcha;
 		}
 		return null;
