@@ -356,6 +356,8 @@ public class InfiniteChanPerformer extends ChanPerformer
 		}
 	}
 
+	private static final Pattern PATTERN_ERROR = Pattern.compile("<(?:strong|h2).*?>(.*?)</(?:strong|h2)>");
+
 	@Override
 	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException
 	{
@@ -392,20 +394,30 @@ public class InfiniteChanPerformer extends ChanPerformer
 		String torCookie = configuration.getCookie(COOKIE_TOR);
 		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
 		Uri uri = locator.buildPath("post.php");
-		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
+		String responseText = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
 				.addCookie(COOKIE_TOR, torCookie).addHeader("Referer", locator.buildPath().toString())
-				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
-		if (jsonObject == null) throw new InvalidResponseException();
-		String redirect = jsonObject.optString("redirect");
-		if (!StringUtils.isEmpty(redirect))
+				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getString();
+		String errorMessage;
+		try
 		{
-			uri = locator.buildPath(redirect);
-			String threadNumber = locator.getThreadNumber(uri);
-			String postNumber = locator.getPostNumber(uri);
-			return new SendPostResult(threadNumber, postNumber);
+			JSONObject jsonObject = new JSONObject(responseText);
+			String redirect = jsonObject.optString("redirect");
+			if (!StringUtils.isEmpty(redirect))
+			{
+				uri = locator.buildPath(redirect);
+				String threadNumber = locator.getThreadNumber(uri);
+				String postNumber = locator.getPostNumber(uri);
+				return new SendPostResult(threadNumber, postNumber);
+			}
+			errorMessage = jsonObject.optString("error");
+		}
+		catch (JSONException e)
+		{
+			Matcher matcher = PATTERN_ERROR.matcher(responseText);
+			if (!matcher.find()) throw new InvalidResponseException();
+			errorMessage = matcher.group(1);
 		}
 
-		String errorMessage = jsonObject.optString("error");
 		if (errorMessage != null)
 		{
 			int errorType = 0;
@@ -480,12 +492,22 @@ public class InfiniteChanPerformer extends ChanPerformer
 		for (String postNumber : data.postNumbers) entity.add("delete_" + postNumber, "on");
 		if (data.optionFilesOnly) entity.add("file", "on");
 		Uri uri = locator.buildPath("post.php");
-		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
+		String responseText = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).setSuccessOnly(false)
-				.read().getJsonObject();
-		if (jsonObject == null) throw new InvalidResponseException();
-		if (jsonObject.optBoolean("success")) return null;
-		String errorMessage = jsonObject.optString("error");
+				.read().getString();
+		String errorMessage;
+		try
+		{
+			JSONObject jsonObject = new JSONObject(responseText);
+			if (jsonObject.optBoolean("success")) return null;
+			errorMessage = jsonObject.optString("error");
+		}
+		catch (JSONException e)
+		{
+			Matcher matcher = PATTERN_ERROR.matcher(responseText);
+			if (!matcher.find()) throw new InvalidResponseException();
+			errorMessage = matcher.group(1);
+		}
 		if (errorMessage != null)
 		{
 			int errorType = 0;
@@ -513,8 +535,6 @@ public class InfiniteChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-
-	private static final Pattern PATTERN_REPORT = Pattern.compile("<strong>(.*?)</strong>");
 
 	@Override
 	public SendReportPostsResult onSendReportPosts(SendReportPostsData data) throws HttpException, ApiException,
@@ -550,7 +570,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 			}
 			catch (JSONException e)
 			{
-				Matcher matcher = PATTERN_REPORT.matcher(responseText);
+				Matcher matcher = PATTERN_ERROR.matcher(responseText);
 				if (!matcher.find()) throw new InvalidResponseException();
 				errorMessage = matcher.group(1);
 			}
