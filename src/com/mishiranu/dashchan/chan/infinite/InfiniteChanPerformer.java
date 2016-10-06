@@ -400,6 +400,7 @@ public class InfiniteChanPerformer extends ChanPerformer
 		String errorMessage;
 		try
 		{
+			responseText = responseText.replace("|\"_m\"", ",\"error\""); // Fix broken JSON
 			JSONObject jsonObject = new JSONObject(responseText);
 			String redirect = jsonObject.optString("redirect");
 			if (!StringUtils.isEmpty(redirect))
