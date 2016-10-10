@@ -11,7 +11,7 @@ import chan.text.CommentEditor;
 public class DobrochanChanMarkup extends ChanMarkup
 {
 	private static final int SUPPORTED_TAGS = TAG_BOLD | TAG_ITALIC | TAG_STRIKE | TAG_SPOILER | TAG_CODE;
-	
+
 	public DobrochanChanMarkup()
 	{
 		addTag("strong", TAG_BOLD);
@@ -23,7 +23,7 @@ public class DobrochanChanMarkup extends ChanMarkup
 		addBlock("blockquote", true, false); // Blockquotes are not spaced on dobrochan
 		addBlock("ul", true, false); // Lists are not spaced on dobrochan
 	}
-	
+
 	@Override
 	public CommentEditor obtainCommentEditor(String boardName)
 	{
@@ -31,15 +31,15 @@ public class DobrochanChanMarkup extends ChanMarkup
 		commentEditor.setUnorderedListMark("* ");
 		return commentEditor;
 	}
-	
+
 	@Override
 	public boolean isTagSupported(String boardName, int tag)
 	{
 		return (SUPPORTED_TAGS & tag) == tag;
 	}
-	
+
 	private static final Pattern THREAD_LINK = Pattern.compile("(\\d+).xhtml(?:#i(\\d+))?$");
-	
+
 	@Override
 	public Pair<String, String> obtainPostLinkThreadPostNumbers(String uriString)
 	{

@@ -14,28 +14,28 @@ import chan.util.StringUtils;
 public class DobrochanBoardsParser implements GroupParser.Callback
 {
 	private static final String[] PREFERRED_BOARDS_ORDER = {"Общее", "Доброчан", "Аниме", "На пробу"};
-	
+
 	private final String mSource;
-	
+
 	private final ArrayList<BoardCategory> mBoardCategories = new ArrayList<>();
 	private final ArrayList<Board> mBoards = new ArrayList<>();
-	
+
 	private String mBoardCategoryTitle;
 	private String mBoardName;
 
 	private static final int EXPECT_NONE = 0;
 	private static final int EXPECT_CATEGORY = 1;
 	private static final int EXPECT_BOARD = 2;
-	
+
 	private int mExpect = EXPECT_NONE;
-	
+
 	private static final Pattern BOARD_NAME_PATTERN = Pattern.compile("/(\\w+)/index.xhtml");
-	
+
 	public DobrochanBoardsParser(String source)
 	{
 		mSource = source;
 	}
-	
+
 	public ArrayList<BoardCategory> convert() throws ParseException
 	{
 		GroupParser.parse(mSource, this);
@@ -55,7 +55,7 @@ public class DobrochanBoardsParser implements GroupParser.Callback
 		}
 		return boardCategories;
 	}
-	
+
 	private void closeCategory()
 	{
 		if (mBoardCategoryTitle != null)
@@ -65,7 +65,7 @@ public class DobrochanBoardsParser implements GroupParser.Callback
 			mBoards.clear();
 		}
 	}
-	
+
 	@Override
 	public boolean onStartElement(GroupParser parser, String tagName, String attrs)
 	{
@@ -95,19 +95,19 @@ public class DobrochanBoardsParser implements GroupParser.Callback
 		}
 		return false;
 	}
-	
+
 	@Override
 	public void onEndElement(GroupParser parser, String tagName)
 	{
-		
+
 	}
-	
+
 	@Override
 	public void onText(GroupParser parser, String source, int start, int end)
 	{
-		
+
 	}
-	
+
 	@Override
 	public void onGroupComplete(GroupParser parser, String text)
 	{

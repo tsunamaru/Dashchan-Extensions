@@ -19,7 +19,7 @@ import chan.util.StringUtils;
 public class DobrochanModelMapper
 {
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
-	
+
 	public static FileAttachment createFileAttachment(JSONObject jsonObject, ChanLocator locator) throws JSONException
 	{
 		FileAttachment attachment = new FileAttachment();
@@ -51,7 +51,7 @@ public class DobrochanModelMapper
 		}
 		return attachment;
 	}
-	
+
 	public static Post createPost(JSONObject jsonObject, ChanLocator locator, String threadId) throws JSONException
 	{
 		Post post = new Post();
@@ -86,7 +86,7 @@ public class DobrochanModelMapper
 		}
 		catch (ParseException e)
 		{
-			
+
 		}
 		try
 		{
@@ -103,11 +103,11 @@ public class DobrochanModelMapper
 		}
 		catch (JSONException e)
 		{
-			
+
 		}
 		return post;
 	}
-	
+
 	public static Post[] createPosts(JSONArray jsonArray, ChanLocator locator, String threadId) throws JSONException
 	{
 		if (jsonArray.length() > 0)
@@ -138,7 +138,7 @@ public class DobrochanModelMapper
 		}
 		return null;
 	}
-	
+
 	public static Posts createThread(JSONObject jsonObject, ChanLocator locator) throws JSONException
 	{
 		String threadId = CommonUtils.getJsonString(jsonObject, "display_id");

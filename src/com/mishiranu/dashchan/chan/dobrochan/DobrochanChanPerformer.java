@@ -36,7 +36,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 	private static final int DELAY = 1000;
 	private static final String COOKIE_HANABIRA = "hanabira";
 	private static final String COOKIE_HANABIRA_TEMP = "hanabira_temp";
-	
+
 	private HttpResponse readResponseRepeatable(HttpRequest request) throws HttpException
 	{
 		HttpException exception = null;
@@ -54,14 +54,14 @@ public class DobrochanChanPerformer extends ChanPerformer
 		}
 		throw exception;
 	}
-	
+
 	private CookieBuilder buildCookies()
 	{
 		DobrochanChanConfiguration configuration = ChanConfiguration.get(this);
 		return new CookieBuilder().append(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA))
 				.append(COOKIE_HANABIRA_TEMP, configuration.getCookie(COOKIE_HANABIRA_TEMP));
 	}
-	
+
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
@@ -95,7 +95,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException
 	{
@@ -129,7 +129,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 			throw new InvalidResponseException(e);
 		}
 	}
-	
+
 	@Override
 	public ReadSinglePostResult onReadSinglePost(ReadSinglePostData data) throws HttpException, InvalidResponseException
 	{
@@ -151,7 +151,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 			throw new InvalidResponseException(e);
 		}
 	}
-	
+
 	@Override
 	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException
 	{
@@ -167,7 +167,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 			throw new InvalidResponseException(e);
 		}
 	}
-	
+
 	@Override
 	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException
 	{
@@ -186,7 +186,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 			throw new InvalidResponseException(e);
 		}
 	}
-	
+
 	private void handleMobileApiError(JSONObject jsonObject) throws HttpException, InvalidResponseException
 	{
 		if (jsonObject == null) throw new InvalidResponseException();
@@ -205,23 +205,23 @@ public class DobrochanChanPerformer extends ChanPerformer
 			throw new InvalidResponseException();
 		}
 	}
-	
+
 	private static final ColorMatrixColorFilter CAPTCHA_FILTER = new ColorMatrixColorFilter(new float[]
 			{0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f});
-	
+
 	private final HashSet<String> mForceCaptcha = new HashSet<>();
-	
+
 	private boolean isForceCaptcha(String boardName, String threadNumber)
 	{
 		return mForceCaptcha.contains(boardName + "," + threadNumber);
 	}
-	
+
 	private void setForceCaptcha(String boardName, String threadNumber, boolean forceCaptcha)
 	{
 		String key = boardName + "," + threadNumber;
 		if (forceCaptcha) mForceCaptcha.add(key); else mForceCaptcha.remove(key);
 	}
-	
+
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
@@ -276,7 +276,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 		if (hanabiraTemp != null) configuration.storeCookie(COOKIE_HANABIRA_TEMP, hanabiraTemp, "Hanabira Temp");
 		return new ReadCaptchaResult(CaptchaState.CAPTCHA, new CaptchaData()).setImage(newImage);
 	}
-	
+
 	public String readThreadId(String boardName, String threadNumber, HttpHolder holder, HttpRequest.Preset preset)
 			throws HttpException, InvalidResponseException
 	{
@@ -298,7 +298,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 
 	private static final Pattern PATTERN_POST_ERROR_UNCOMMON = Pattern.compile("<h2>(.*?)</h2>");
 	private static final Pattern PATTERN_POST_ERROR = Pattern.compile("<td.*?class='post-error'>(.*?)</td>");
-	
+
 	@Override
 	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException
 	{
@@ -321,7 +321,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 			entity.add("post_files_count", Integer.toString(data.attachments.length));
 		}
 		if (data.captchaData != null) entity.add("captcha", data.captchaData.get(CaptchaData.INPUT));
-		
+
 		DobrochanChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "post", "new.xhtml");
 		String responseText;
@@ -348,7 +348,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 		{
 			data.holder.disconnect();
 		}
-		
+
 		String errorMessage = null;
 		Matcher matcher = PATTERN_POST_ERROR.matcher(responseText);
 		if (matcher.find()) errorMessage = matcher.group(1); else
@@ -394,7 +394,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public SendDeletePostsResult onSendDeletePosts(SendDeletePostsData data) throws HttpException, ApiException,
 			InvalidResponseException

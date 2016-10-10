@@ -1,9 +1,9 @@
 <resources>
-	
+
 	<string name="text_app_name">Dashchan for dobrochan.com</string>
 	<string name="text_activity_name">Dashchan</string>
-	
+
 	<string name="pref_always_load_captcha">Always load a captcha</string>
 	<string name="pref_always_load_captcha_summary">Load and show a captcha even when it isn\'t required to be solved</string>
-	
+
 </resources>

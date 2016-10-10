@@ -10,11 +10,11 @@ import chan.content.ChanConfiguration;
 public class DobrochanChanConfiguration extends ChanConfiguration
 {
 	private static final String KEY_ALWAYS_LOAD_CAPTCHA = "always_load_captcha";
-	
+
 	private static final String KEY_NAMES_ENABLED = "names_enabled";
 	private static final String KEY_TRIPCODES_ENABLED = "tripcodes_enabled";
 	private static final String KEY_ATTACHMENTS_COUNT = "attachments_count";
-	
+
 	public DobrochanChanConfiguration()
 	{
 		request(OPTION_READ_THREAD_PARTIALLY);
@@ -29,7 +29,7 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 		addCaptchaType("dobrochan");
 		addCustomPreference(KEY_ALWAYS_LOAD_CAPTCHA, false);
 	}
-	
+
 	@Override
 	public Board obtainBoardConfiguration(String boardName)
 	{
@@ -38,7 +38,7 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 		board.allowDeleting = true;
 		return board;
 	}
-	
+
 	@Override
 	public Captcha obtainCustomCaptchaConfiguration(String captchaType)
 	{
@@ -52,7 +52,7 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 		}
 		return null;
 	}
-	
+
 	@Override
 	public Posting obtainPostingConfiguration(String boardName, boolean newThread)
 	{
@@ -76,7 +76,7 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 		posting.attachmentRatings.add(new Pair<>("R-18G", "R-18G"));
 		return posting;
 	}
-	
+
 	@Override
 	public Deleting obtainDeletingConfiguration(String boardName)
 	{
@@ -85,7 +85,7 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 		deleting.multiplePosts = true;
 		return deleting;
 	}
-	
+
 	@Override
 	public CustomPreference obtainCustomPreferenceConfiguration(String key)
 	{
@@ -99,18 +99,18 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 		}
 		return null;
 	}
-	
+
 	public boolean isAlwaysLoadCaptcha()
 	{
 		return get(null, KEY_ALWAYS_LOAD_CAPTCHA, false);
 	}
-	
+
 	public void updateFromThreadsJson(String boardName, JSONObject jsonObject)
 	{
 		int pagesCount = jsonObject.optInt("pages");
 		if (pagesCount > 0) storePagesCount(boardName, pagesCount);
 	}
-	
+
 	public void updateFromPostsJson(String boardName, JSONObject jsonObject)
 	{
 		boolean filesEnabled = jsonObject.optBoolean("allow_files", true);
