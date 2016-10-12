@@ -229,12 +229,12 @@ public class NullnyanPostsParser
 			}
 		}
 
-	}).contains("i", "class", "icon-stickied").open((instance, holder, tagName, attributes) ->
+	}).contains("i", "class", "iconStickied").open((instance, holder, tagName, attributes) ->
 	{
 		holder.mPost.setSticky(true);
 		return false;
 
-	}).contains("i", "class", "icon-closed").open((instance, holder, tagName, attributes) ->
+	}).contains("i", "class", "iconLock").open((instance, holder, tagName, attributes) ->
 	{
 		holder.mPost.setClosed(true);
 		return false;
