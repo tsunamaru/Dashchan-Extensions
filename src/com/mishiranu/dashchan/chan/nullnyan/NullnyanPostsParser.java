@@ -124,7 +124,7 @@ public class NullnyanPostsParser
 
 	}).content((instance, holder, text) ->
 	{
-		holder.mAttachment = new FileAttachment();
+		if (holder.mAttachment == null) holder.mAttachment = new FileAttachment();
 		text = StringUtils.clearHtml(text);
 		Matcher matcher = FILE_SIZE.matcher(text);
 		if (matcher.find())
@@ -171,18 +171,13 @@ public class NullnyanPostsParser
 		}
 		return false;
 
-	}).name("img").open((instance, holder, tagName, attributes) ->
+	}).starts("img", "src", "thumb/").contains("img", "src", "/thumb/").open((instance, holder, tagName, attributes) ->
 	{
-		if (holder.mAttachment != null)
-		{
-			String src = attributes.get("src");
-			if (src != null && (src.startsWith("thumb/") || src.contains("/thumb/")))
-			{
-				if (src.startsWith("../")) src = src.substring(3);
-				src = "/" + holder.mBoardName + "/" + src;
-				holder.mAttachment.setThumbnailUri(holder.mLocator, holder.mLocator.buildPath(src));
-			}
-		}
+		String src = attributes.get("src");
+		if (src.startsWith("../")) src = src.substring(3);
+		src = "/" + holder.mBoardName + "/" + src;
+		if (holder.mAttachment == null) holder.mAttachment = new FileAttachment();
+		holder.mAttachment.setThumbnailUri(holder.mLocator, holder.mLocator.buildPath(src));
 		return false;
 
 	}).equals("span", "class", "filetitle").content((instance, holder, text) ->
