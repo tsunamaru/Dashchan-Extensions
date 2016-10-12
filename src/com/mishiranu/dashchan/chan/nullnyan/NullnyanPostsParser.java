@@ -112,7 +112,7 @@ public class NullnyanPostsParser
 		else holder.mPost.setParentPostNumber(holder.mParent);
 		return false;
 
-	}).equals("i", "class", "label-checkbox").open((instance, holder, tagName, attributes) ->
+	}).contains("div", "class", "managePost").open((instance, holder, tagName, attributes) ->
 	{
 		holder.mHeaderHandling = true;
 		return true; // Skip content
