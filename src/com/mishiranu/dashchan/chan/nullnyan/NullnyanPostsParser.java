@@ -67,10 +67,21 @@ public class NullnyanPostsParser
 		}
 	}
 
+	private void closePost()
+	{
+		if (mPost != null)
+		{
+			mPosts.add(mPost);
+			mAttachment = null;
+			mPost = null;
+		}
+	}
+
 	public ArrayList<Posts> convertThreads() throws ParseException
 	{
 		mThreads = new ArrayList<>();
 		PARSER.parse(mSource, this);
+		closePost();
 		closeThread();
 		return mThreads;
 	}
@@ -78,12 +89,14 @@ public class NullnyanPostsParser
 	public ArrayList<Post> convertPosts() throws ParseException
 	{
 		PARSER.parse(mSource, this);
+		closePost();
 		return mPosts;
 	}
 
 	private static final TemplateParser<NullnyanPostsParser> PARSER = new TemplateParser<NullnyanPostsParser>()
 			.starts("div", "id", "p").open((instance, holder, tagName, attributes) ->
 	{
+		holder.closePost();
 		String number = attributes.get("id").substring(1);
 		holder.mPost = new Post();
 		holder.mPost.setPostNumber(number);
@@ -245,9 +258,6 @@ public class NullnyanPostsParser
 		text = text.replaceAll("<a class=\"postlink\" href=\"(?:../)?res/",
 				"<a class=\"postlink\" href=\"/" + holder.mBoardName + "/res/");
 		holder.mPost.setComment(text);
-		holder.mPosts.add(holder.mPost);
-		holder.mPost = null;
-		holder.mAttachment = null;
 
 	}).equals("span", "class", "omittedposts").content((instance, holder, text) ->
 	{
