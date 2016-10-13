@@ -10,37 +10,37 @@ import chan.content.ChanLocator;
 public class ArhivachChanLocator extends ChanLocator
 {
 	private static final Pattern THREAD_PATH = Pattern.compile("/thread/\\d+/?");
-	
+
 	public ArhivachChanLocator()
 	{
 		addChanHost("arhivach.org");
 		setHttpsMode(HttpsMode.CONFIGURABLE);
 	}
-	
+
 	@Override
 	public boolean isBoardUri(Uri uri)
 	{
 		return false;
 	}
-	
+
 	@Override
 	public boolean isThreadUri(Uri uri)
 	{
 		return isChanHostOrRelative(uri) && isPathMatches(uri, THREAD_PATH);
 	}
-	
+
 	@Override
 	public boolean isAttachmentUri(Uri uri)
 	{
 		return isImageExtension(uri.getPath()) || isAudioExtension(uri.getPath()) || isVideoExtension(uri.getPath());
 	}
-	
+
 	@Override
 	public String getBoardName(Uri uri)
 	{
 		return null;
 	}
-	
+
 	@Override
 	public String getThreadNumber(Uri uri)
 	{
@@ -51,32 +51,32 @@ public class ArhivachChanLocator extends ChanLocator
 		}
 		return null;
 	}
-	
+
 	@Override
 	public String getPostNumber(Uri uri)
 	{
 		return uri.getFragment();
 	}
-	
+
 	@Override
 	public Uri createBoardUri(String boardName, int pageNumber)
 	{
 		return pageNumber > 0 ? buildPath("index", Integer.toString(ArhivachChanPerformer.PAGE_SIZE * pageNumber))
 				: buildPath();
 	}
-	
+
 	@Override
 	public Uri createThreadUri(String boardName, String threadNumber)
 	{
 		return buildPath("thread", threadNumber);
 	}
-	
+
 	@Override
 	public Uri createPostUri(String boardName, String threadNumber, String postNumber)
 	{
 		return createThreadUri(boardName, threadNumber).buildUpon().fragment(postNumber).build();
 	}
-	
+
 	@Override
 	public String createAttachmentForcedName(Uri fileUri)
 	{

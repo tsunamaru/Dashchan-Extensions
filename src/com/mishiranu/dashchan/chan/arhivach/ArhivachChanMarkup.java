@@ -23,9 +23,9 @@ public class ArhivachChanMarkup extends ChanMarkup
 		addTag("span", "s", TAG_STRIKE);
 		addTag("span", "u", TAG_UNDERLINE);
 	}
-	
+
 	private static final Pattern THREAD_LINK = Pattern.compile("#(\\d+)?$");
-	
+
 	@Override
 	public Pair<String, String> obtainPostLinkThreadPostNumbers(String uriString)
 	{

@@ -31,7 +31,7 @@ public class ArhivachThreadsParser
 	private static final Pattern PATTERN_BLOCK_TEXT = Pattern.compile("<a style=\"display:block;\".*?>(.*)</a>");
 	private static final Pattern PATTERN_SUBJECT = Pattern.compile("^<b>(.*?)</b> &mdash; ");
 	private static final Pattern PATTERN_NOT_ARCHIVED = Pattern.compile("<a.*?>\\[.*?\\] Ожидание обновления</a>");
-	
+
 	public ArhivachThreadsParser(String source, Object linked, boolean handlePagesCount)
 	{
 		mSource = source;
@@ -39,7 +39,7 @@ public class ArhivachThreadsParser
 		mLocator = ChanLocator.get(linked);
 		mHandlePagesCount = handlePagesCount;
 	}
-	
+
 	public ArrayList<Posts> convertThreads() throws ParseException
 	{
 		PARSER.parse(mSource, this);
@@ -54,7 +54,7 @@ public class ArhivachThreadsParser
 		}
 		return null;
 	}
-	
+
 	public ArrayList<Post> convertPosts() throws ParseException
 	{
 		PARSER.parse(mSource, this);
@@ -66,7 +66,7 @@ public class ArhivachThreadsParser
 		}
 		return null;
 	}
-	
+
 	private static long parseTimestamp(String date)
 	{
 		Matcher matcher = PATTERN_DATE.matcher(date);
@@ -111,7 +111,7 @@ public class ArhivachThreadsParser
 		}
 		return 0L;
 	}
-	
+
 	private static final TemplateParser<ArhivachThreadsParser> PARSER = new TemplateParser<ArhivachThreadsParser>()
 			.starts("tr", "id", "thread_row_").open((instance, holder, tagName, attributes) ->
 	{
@@ -119,13 +119,13 @@ public class ArhivachThreadsParser
 		holder.mPost = new Post().setThreadNumber(number).setPostNumber(number);
 		holder.mAttachments.clear();
 		return false;
-		
+
 	}).equals("span", "class", "thread_posts_count").content((instance, holder, text) ->
 	{
 		int postsCount = Integer.parseInt(text.trim());
 		if (postsCount >= 0) holder.mPostHolders.put(holder.mPost, postsCount);
 		else holder.mPost = null; // Thread is not archived
-		
+
 	}).equals("a", "class", "expand_image").open((instance, holder, tagName, attributes) ->
 	{
 		if (holder.mPost != null)
@@ -138,7 +138,7 @@ public class ArhivachThreadsParser
 			}
 		}
 		return false;
-		
+
 	}).name("img").open((instance, holder, tagName, attributes) ->
 	{
 		if (holder.mPost != null && holder.mNextThumbnail)
@@ -147,7 +147,7 @@ public class ArhivachThreadsParser
 			holder.mNextThumbnail = false;
 		}
 		return false;
-		
+
 	}).name("iframe").open((instance, holder, tagName, attributes) ->
 	{
 		if (holder.mPost != null && holder.mNextThumbnail)
@@ -156,7 +156,7 @@ public class ArhivachThreadsParser
 			holder.mNextThumbnail = false;
 		}
 		return false;
-		
+
 	}).equals("div", "class", "thread_text").open((instance, holder, tagName, attributes) -> holder.mPost != null)
 			.content((instance, holder, text) ->
 	{
@@ -178,14 +178,14 @@ public class ArhivachThreadsParser
 		}
 		if (text.length() > 500 && !text.endsWith(".")) text += '\u2026';
 		holder.mPost.setComment(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-		
+
 	}).equals("td", "class", "thread_date").open((instance, holder, tagName, attributes) -> holder.mPost != null)
 			.content((instance, holder, text) ->
 	{
 		holder.mPost.setTimestamp(parseTimestamp(text));
 		if (holder.mAttachments.size() > 0) holder.mPost.setAttachments(holder.mAttachments);
 		holder.mPost = null;
-		
+
 	}).equals("a", "title", "Последняя страница").open((instance, holder, tagName, a) -> holder.mHandlePagesCount)
 			.content((instance, holder, text) ->
 	{
@@ -195,8 +195,8 @@ public class ArhivachThreadsParser
 		}
 		catch (NumberFormatException e)
 		{
-			
+
 		}
-		
+
 	}).prepare();
 }

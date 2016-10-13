@@ -16,7 +16,7 @@ public class ArhivachChanConfiguration extends ChanConfiguration
 		setDefaultName("Аноним");
 		addCaptchaType(CAPTCHA_TYPE_RECAPTCHA_1);
 	}
-	
+
 	@Override
 	public Board obtainBoardConfiguration(String boardName)
 	{
@@ -24,7 +24,7 @@ public class ArhivachChanConfiguration extends ChanConfiguration
 		board.allowSearch = true;
 		return board;
 	}
-	
+
 	@Override
 	public Authorization obtainUserAuthorizationConfiguration()
 	{
@@ -36,7 +36,7 @@ public class ArhivachChanConfiguration extends ChanConfiguration
 		authorization.hints[1] = resources.getString(R.string.text_password);
 		return authorization;
 	}
-	
+
 	@Override
 	public Archivation obtainArchivationConfiguration()
 	{
@@ -48,7 +48,7 @@ public class ArhivachChanConfiguration extends ChanConfiguration
 		archivation.options.add(new Pair<>("bytoken", resources.getString(R.string.text_bytoken)));
 		return archivation;
 	}
-	
+
 	@Override
 	public Statistics obtainStatisticsConfiguration()
 	{

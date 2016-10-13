@@ -32,7 +32,7 @@ import chan.util.CommonUtils;
 public class ArhivachChanPerformer extends ChanPerformer
 {
 	public static final int PAGE_SIZE = 25;
-	
+
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
@@ -48,7 +48,7 @@ public class ArhivachChanPerformer extends ChanPerformer
 			throw new InvalidResponseException(e);
 		}
 	}
-	
+
 	@Override
 	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException
 	{
@@ -64,13 +64,13 @@ public class ArhivachChanPerformer extends ChanPerformer
 			throw new InvalidResponseException(e);
 		}
 	}
-	
+
 	private static final Pattern PATTERN_LONG_QUERY_PART = Pattern.compile("(?:^| )\"(.*?)\"(?= |$)");
 
 	private String mLastSearchQuery;
 	private String mLastSearchTags;
 	private ArrayList<String> mLastSearchTagsList;
-	
+
 	@Override
 	public ReadSearchPostsResult onReadSearchPosts(ReadSearchPostsData data) throws HttpException,
 			InvalidResponseException
@@ -168,7 +168,7 @@ public class ArhivachChanPerformer extends ChanPerformer
 			throw new InvalidResponseException(e);
 		}
 	}
-	
+
 	private boolean isBlack(int[] line)
 	{
 		for (int i = 0; i < line.length; i++)
@@ -179,7 +179,7 @@ public class ArhivachChanPerformer extends ChanPerformer
 		}
 		return true;
 	}
-	
+
 	@Override
 	public ReadContentResult onReadContent(ReadContentData data) throws HttpException, InvalidResponseException
 	{
@@ -235,22 +235,22 @@ public class ArhivachChanPerformer extends ChanPerformer
 			}
 			catch (Exception e)
 			{
-				
+
 			}
 			return new ReadContentResult(response);
 		}
 		return super.onReadContent(data);
 	}
-	
+
 	private String mUserEmailPassword;
 	private String mUserCaptchaKey;
-	
+
 	private boolean checkEmailPassword(String email, String password)
 	{
 		return email == null && password == null && mUserEmailPassword == null ||
 				(email + " " + password).equals(mUserEmailPassword);
 	}
-	
+
 	@Override
 	public CheckAuthorizationResult onCheckAuthorization(CheckAuthorizationData data) throws HttpException,
 			InvalidResponseException
@@ -259,7 +259,7 @@ public class ArhivachChanPerformer extends ChanPerformer
 		String password = data.authorizationData[1];
 		return new CheckAuthorizationResult(authorizeUser(data.holder, data, email, password));
 	}
-	
+
 	private boolean authorizeUser(HttpHolder holder, HttpRequest.Preset preset, String email, String password)
 			throws HttpException, InvalidResponseException
 	{
@@ -272,7 +272,7 @@ public class ArhivachChanPerformer extends ChanPerformer
 		if (jsonObject == null) throw new InvalidResponseException();
 		return updateAuthorizationData(jsonObject, email, password);
 	}
-	
+
 	private boolean updateAuthorizationData(JSONObject jsonObject, String email, String password)
 	{
 		JSONArray jsonArray = jsonObject.optJSONArray("info_msg");
@@ -292,7 +292,7 @@ public class ArhivachChanPerformer extends ChanPerformer
 		mUserEmailPassword = null;
 		return false;
 	}
-	
+
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
@@ -300,7 +300,7 @@ public class ArhivachChanPerformer extends ChanPerformer
 		captchaData.put(CaptchaData.API_KEY, mUserCaptchaKey);
 		return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData);
 	}
-	
+
 	@Override
 	public SendAddToArchiveResult onSendAddToArchive(SendAddToArchiveData data) throws HttpException, ApiException,
 			InvalidResponseException

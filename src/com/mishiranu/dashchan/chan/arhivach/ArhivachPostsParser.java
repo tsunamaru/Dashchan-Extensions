@@ -24,43 +24,43 @@ public class ArhivachPostsParser
 	private final String mSource;
 	private final ArhivachChanLocator mLocator;
 	private final String mThreadNumber;
-	
+
 	private Uri mThreadUri;
 	private String mParent;
 	private Post mPost;
 	private final ArrayList<Post> mPosts = new ArrayList<>();
 	private final ArrayList<FileAttachment> mAttachments = new ArrayList<>();
 	private boolean mNextThumbnail;
-	
+
 	private static final Pattern PATTERN_NAME_SAGE = Pattern.compile("ID:( |\u00a0|&nbsp;?)Heaven");
 	private static final Pattern PATTERN_CAPCODE = Pattern.compile("## (.*) ##");
 	private static final Pattern PATTERN_ICON = Pattern.compile("<img.+?src=\"(.+?)\".+?(?:title=\"(.+?)\")?.+?/?>");
 
 	static final TimeZone TIMEZONE_GMT = TimeZone.getTimeZone("Etc/GMT");
-	
+
 	private static final Pattern PATTERN_DATE_1 = Pattern.compile("(\\d{2})/(\\d{2})/(\\d{2}) \\w+ " +
 			"(\\d{2}):(\\d{2}):(\\d{2})");
 	private static final Pattern PATTERN_DATE_2 = Pattern.compile("\\w+ (\\d{2}) (\\w+) (\\d{4}) " +
 			"(\\d{2}):(\\d{2}):(\\d{2})");
-	
+
 	static final List<String> MONTHS_1 = Arrays.asList("января", "февраля", "марта", "апреля", "мая", "июня", "июля",
 			"августа", "сентября", "октября", "ноября", "декабря");
 	static final List<String> MONTHS_2 = Arrays.asList("Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг",
 			"Сен", "Окт", "Ноя", "Дек");
-	
+
 	public ArhivachPostsParser(String source, Object linked, String threadNumber)
 	{
 		mSource = source;
 		mLocator = ChanLocator.get(linked);
 		mThreadNumber = threadNumber;
 	}
-	
+
 	public Posts convert() throws ParseException
 	{
 		PARSER.parse(mSource, this);
 		return new Posts(mPosts).setArchivedThreadUri(mThreadUri);
 	}
-	
+
 	static FileAttachment parseExpandImage(TemplateParser.Attributes attributes, ArhivachChanLocator locator)
 	{
 		String onclick = attributes.get("onclick");
@@ -93,7 +93,7 @@ public class ArhivachPostsParser
 		}
 		return null;
 	}
-	
+
 	static boolean parseIframeThumbnail(TemplateParser.Attributes attributes, ArrayList<FileAttachment> attachments,
 			ArhivachChanLocator locator)
 	{
@@ -127,7 +127,7 @@ public class ArhivachPostsParser
 		}
 		return false;
 	}
-	
+
 	static void parseImageThumbnail(TemplateParser.Attributes attributes, ArrayList<FileAttachment> attachments,
 			ArhivachChanLocator locator)
 	{
@@ -139,7 +139,7 @@ public class ArhivachPostsParser
 			else attachment.setThumbnailUri(locator, locator.buildPath(uriString));
 		}
 	}
-	
+
 	private static long parseTimestamp(String date)
 	{
 		Matcher matcher = PATTERN_DATE_1.matcher(date);
@@ -178,12 +178,12 @@ public class ArhivachPostsParser
 		}
 		return 0L;
 	}
-	
+
 	private static final TemplateParser<ArhivachPostsParser> PARSER = new TemplateParser<ArhivachPostsParser>()
 			.equals("div", "class", "span3").content((instance, holder, text) ->
 	{
 		holder.mThreadUri = Uri.parse(StringUtils.clearHtml(text).trim());
-		
+
 	}).equals("div", "class", "post").equals("div", "class", "post post_deleted")
 			.open((instance, holder, tagName, attributes) ->
 	{
@@ -209,7 +209,7 @@ public class ArhivachPostsParser
 		else holder.mPost.setParentPostNumber(holder.mParent);
 		holder.mAttachments.clear();
 		return false;
-		
+
 	}).equals("a", "class", "expand_image").open((instance, holder, tagName, attributes) ->
 	{
 		FileAttachment attachment = ArhivachPostsParser.parseExpandImage(attributes, holder.mLocator);
@@ -219,7 +219,7 @@ public class ArhivachPostsParser
 			holder.mNextThumbnail = true;
 		}
 		return false;
-		
+
 	}).name("img").open((instance, holder, tagName, attributes) ->
 	{
 		if (holder.mPost != null && holder.mNextThumbnail)
@@ -228,7 +228,7 @@ public class ArhivachPostsParser
 			holder.mNextThumbnail = false;
 		}
 		return false;
-		
+
 	}).name("iframe").open((instance, holder, tagName, attributes) ->
 	{
 		if (holder.mPost != null && holder.mNextThumbnail)
@@ -237,11 +237,11 @@ public class ArhivachPostsParser
 			holder.mNextThumbnail = false;
 		}
 		return false;
-		
+
 	}).equals("h1", "class", "post_subject").equals("span", "class", "post_subject").content((instance, holder, text) ->
 	{
 		holder.mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-		
+
 	}).equals("span", "class", "poster_name").content((instance, holder, text) ->
 	{
 		int index = text.indexOf("<img");
@@ -283,7 +283,7 @@ public class ArhivachPostsParser
 				holder.mPost.setName(name);
 			}
 		}
-		
+
 	}).equals("span", "class", "poster_trip").content((instance, holder, text) ->
 	{
 		String tripcode = StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim());
@@ -294,7 +294,7 @@ public class ArhivachPostsParser
 			else if (tripcode.startsWith("!")) holder.mPost.setTripcode(tripcode);
 			else if (holder.mPost.getIdentifier() == null) holder.mPost.setIdentifier(tripcode);
 		}
-		
+
 	}).equals("a", "class", "post_mail").open((instance, holder, tagName, attributes) ->
 	{
 		String email = StringUtils.nullIfEmpty(StringUtils.clearHtml(attributes.get("href")));
@@ -304,20 +304,20 @@ public class ArhivachPostsParser
 			else holder.mPost.setEmail(email);
 		}
 		return false;
-		
+
 	}).equals("img", "class", "poster_sage").open((instance, holder, tagName, attributes) ->
 	{
 		holder.mPost.setSage(true);
 		return false;
-		
+
 	}).equals("span", "class", "post_time").content((instance, holder, text) ->
 	{
 		holder.mPost.setTimestamp(parseTimestamp(text.trim()));
-		
+
 	}).equals("span", "class", "label label-success").content((instance, holder, text) ->
 	{
 		if ("OP".equals(text)) holder.mPost.setOriginalPoster(true);
-		
+
 	}).equals("div", "class", "post_comment_body").content((instance, holder, text) ->
 	{
 		holder.mNextThumbnail = false;
@@ -333,6 +333,6 @@ public class ArhivachPostsParser
 		if (holder.mAttachments.size() > 0) holder.mPost.setAttachments(holder.mAttachments);
 		holder.mPosts.add(holder.mPost);
 		holder.mPost = null;
-		
+
 	}).prepare();
 }
