@@ -44,6 +44,7 @@ public class ArhivachChanConfiguration extends ChanConfiguration
 		Archivation archivation = new Archivation();
 		archivation.hosts.add("2ch.hk");
 		archivation.hosts.add("iichan.hk");
+		archivation.hosts.add("brchan.org");
 		archivation.options.add(new Pair<>("collapsed", resources.getString(R.string.text_collapsed)));
 		archivation.options.add(new Pair<>("bytoken", resources.getString(R.string.text_bytoken)));
 		return archivation;

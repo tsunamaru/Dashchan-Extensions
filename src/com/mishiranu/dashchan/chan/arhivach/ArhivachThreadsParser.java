@@ -27,7 +27,6 @@ public class ArhivachThreadsParser
 	private final ArrayList<FileAttachment> mAttachments = new ArrayList<>();
 	private boolean mNextThumbnail;
 
-	private static final Pattern PATTERN_DATE = Pattern.compile("(?:(\\d+) +)?(\\w+) +(?:(\\d+):(\\d+)|(\\d{4}))");
 	private static final Pattern PATTERN_BLOCK_TEXT = Pattern.compile("<a style=\"display:block;\".*?>(.*)</a>");
 	private static final Pattern PATTERN_SUBJECT = Pattern.compile("^<b>(.*?)</b> &mdash; ");
 	private static final Pattern PATTERN_NOT_ARCHIVED = Pattern.compile("<a.*?>\\[.*?\\] Ожидание обновления</a>");
@@ -65,51 +64,6 @@ public class ArhivachThreadsParser
 			return posts;
 		}
 		return null;
-	}
-
-	private static long parseTimestamp(String date)
-	{
-		Matcher matcher = PATTERN_DATE.matcher(date);
-		if (matcher.matches())
-		{
-			int day;
-			int month;
-			int year;
-			int hour;
-			int minute;
-			GregorianCalendar calendar = new GregorianCalendar(ArhivachPostsParser.TIMEZONE_GMT);
-			String dayString = matcher.group(1);
-			String monthString = matcher.group(2);
-			if (StringUtils.isEmpty(dayString))
-			{
-				if ("вчера".equals(monthString)) calendar.add(GregorianCalendar.DAY_OF_MONTH, -1);
-				day = calendar.get(GregorianCalendar.DAY_OF_MONTH);
-				month = calendar.get(GregorianCalendar.MONTH);
-			}
-			else
-			{
-				day = Integer.parseInt(dayString);
-				month = ArhivachPostsParser.MONTHS_1.indexOf(monthString);
-			}
-			String yearString = matcher.group(5);
-			if (!StringUtils.isEmpty(yearString))
-			{
-				hour = 0;
-				minute = 0;
-				year = Integer.parseInt(yearString);
-			}
-			else
-			{
-				hour = Integer.parseInt(matcher.group(3));
-				minute = Integer.parseInt(matcher.group(4));
-				year = calendar.get(GregorianCalendar.YEAR);
-			}
-			calendar = new GregorianCalendar(year, month, day, hour, minute, 0);
-			calendar.setTimeZone(ArhivachPostsParser.TIMEZONE_GMT);
-			calendar.add(GregorianCalendar.HOUR, -3);
-			return calendar.getTimeInMillis();
-		}
-		return 0L;
 	}
 
 	private static final TemplateParser<ArhivachThreadsParser> PARSER = new TemplateParser<ArhivachThreadsParser>()
@@ -182,7 +136,12 @@ public class ArhivachThreadsParser
 	}).equals("td", "class", "thread_date").open((instance, holder, tagName, attributes) -> holder.mPost != null)
 			.content((instance, holder, text) ->
 	{
-		holder.mPost.setTimestamp(parseTimestamp(text));
+		GregorianCalendar calendar = ArhivachPostsParser.parseCommonTime(text);
+		if (calendar != null)
+		{
+			calendar.add(GregorianCalendar.HOUR, -3);
+			holder.mPost.setTimestamp(calendar.getTimeInMillis());
+		}
 		if (holder.mAttachments.size() > 0) holder.mPost.setAttachments(holder.mAttachments);
 		holder.mPost = null;
 

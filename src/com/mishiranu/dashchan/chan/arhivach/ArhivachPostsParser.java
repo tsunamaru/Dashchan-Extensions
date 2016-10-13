@@ -3,6 +3,7 @@ package com.mishiranu.dashchan.chan.arhivach;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
@@ -38,6 +39,8 @@ public class ArhivachPostsParser
 
 	static final TimeZone TIMEZONE_GMT = TimeZone.getTimeZone("Etc/GMT");
 
+	private static final Pattern PATTERN_DATE_COMMON = Pattern.compile("(?:(\\d+) +)?(\\w+) +" +
+			"(?:(\\d+):(\\d+)|(\\d{4}))");
 	private static final Pattern PATTERN_DATE_1 = Pattern.compile("(\\d{2})/(\\d{2})/(\\d{2}) \\w+ " +
 			"(\\d{2}):(\\d{2}):(\\d{2})");
 	private static final Pattern PATTERN_DATE_2 = Pattern.compile("\\w+ (\\d{2}) (\\w+) (\\d{4}) " +
@@ -47,6 +50,14 @@ public class ArhivachPostsParser
 			"августа", "сентября", "октября", "ноября", "декабря");
 	static final List<String> MONTHS_2 = Arrays.asList("Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг",
 			"Сен", "Окт", "Ноя", "Дек");
+
+	private static final HashMap<String, Integer> TIME_ZONE_FIX = new HashMap<>();
+
+	static
+	{
+		TIME_ZONE_FIX.put("brchan.org", +2);
+		TIME_ZONE_FIX.put("www.brchan.org", +2);
+	}
 
 	public ArhivachPostsParser(String source, Object linked, String threadNumber)
 	{
@@ -140,7 +151,51 @@ public class ArhivachPostsParser
 		}
 	}
 
-	private static long parseTimestamp(String date)
+	static GregorianCalendar parseCommonTime(String date)
+	{
+		Matcher matcher = PATTERN_DATE_COMMON.matcher(date);
+		if (matcher.matches())
+		{
+			int day;
+			int month;
+			int year;
+			int hour;
+			int minute;
+			GregorianCalendar calendar = new GregorianCalendar(ArhivachPostsParser.TIMEZONE_GMT);
+			String dayString = matcher.group(1);
+			String monthString = matcher.group(2);
+			if (StringUtils.isEmpty(dayString))
+			{
+				if ("вчера".equals(monthString)) calendar.add(GregorianCalendar.DAY_OF_MONTH, -1);
+				day = calendar.get(GregorianCalendar.DAY_OF_MONTH);
+				month = calendar.get(GregorianCalendar.MONTH);
+			}
+			else
+			{
+				day = Integer.parseInt(dayString);
+				month = ArhivachPostsParser.MONTHS_1.indexOf(monthString);
+			}
+			String yearString = matcher.group(5);
+			if (!StringUtils.isEmpty(yearString))
+			{
+				hour = 0;
+				minute = 0;
+				year = Integer.parseInt(yearString);
+			}
+			else
+			{
+				hour = Integer.parseInt(matcher.group(3));
+				minute = Integer.parseInt(matcher.group(4));
+				year = calendar.get(GregorianCalendar.YEAR);
+			}
+			calendar = new GregorianCalendar(year, month, day, hour, minute, 0);
+			calendar.setTimeZone(ArhivachPostsParser.TIMEZONE_GMT);
+			return calendar;
+		}
+		return null;
+	}
+
+	private static long parseTimestamp(String date, String host)
 	{
 		Matcher matcher = PATTERN_DATE_1.matcher(date);
 		if (matcher.find())
@@ -175,6 +230,14 @@ public class ArhivachPostsParser
 				calendar.add(GregorianCalendar.HOUR, -3);
 				return calendar.getTimeInMillis();
 			}
+		}
+		GregorianCalendar calendar = parseCommonTime(date);
+		if (calendar != null)
+		{
+			Integer timeZoneFix = TIME_ZONE_FIX.get(host);
+			if (timeZoneFix != null) calendar.add(GregorianCalendar.HOUR, timeZoneFix);
+			else calendar.add(GregorianCalendar.HOUR, -3);
+			return calendar.getTimeInMillis();
 		}
 		return 0L;
 	}
@@ -312,7 +375,8 @@ public class ArhivachPostsParser
 
 	}).equals("span", "class", "post_time").content((instance, holder, text) ->
 	{
-		holder.mPost.setTimestamp(parseTimestamp(text.trim()));
+		holder.mPost.setTimestamp(parseTimestamp(text.trim(), holder.mThreadUri != null
+				? holder.mThreadUri.getHost() : null));
 
 	}).equals("span", "class", "label label-success").content((instance, holder, text) ->
 	{
