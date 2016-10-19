@@ -40,6 +40,16 @@ public class InfiniteChanLocator extends ChanLocator
 		return isChanHostOrRelative(uri) && isPathMatches(uri, ATTACHMENT_PATH);
 	}
 
+	public boolean isThumbnailUri(Uri uri)
+	{
+		if (isChanHostOrRelative(uri))
+		{
+			List<String> segments = uri.getPathSegments();
+			return segments.size() >= 2 && "thumb".equals(segments.get(1));
+		}
+		return false;
+	}
+
 	@Override
 	public String getBoardName(Uri uri)
 	{

@@ -243,6 +243,19 @@ public class InfiniteChanPerformer extends ChanPerformer
 		throw new InvalidResponseException();
 	}
 
+	@Override
+	public ReadContentResult onReadContent(ReadContentData data) throws HttpException, InvalidResponseException
+	{
+		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
+		if (!data.uri.getAuthority().endsWith(".onion") && (locator.isAttachmentUri(data.uri)
+				|| locator.isThumbnailUri(data.uri)))
+		{
+			Uri uri = data.uri.buildUpon().authority("media." + data.uri.getAuthority()).build();
+			return new ReadContentResult(new HttpRequest(uri, data).read());
+		}
+		return super.onReadContent(data);
+	}
+
 	private static final Pattern PATTERN_CAPTCHA = Pattern.compile("<image src=\"data:image/png;base64,(.*?)\">" +
 			"(?:.*?value=['\"]([^'\"]+?)['\"])?");
 
