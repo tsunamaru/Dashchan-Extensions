@@ -27,7 +27,7 @@ public class TumbachModelMapper
 	private static final Uri URI_ICON_APPLE = Uri.parse("chan:///res/raw/raw_os_apple");
 	private static final Uri URI_ICON_LINUX = Uri.parse("chan:///res/raw/raw_os_linux");
 	private static final Uri URI_ICON_WINDOWS = Uri.parse("chan:///res/raw/raw_os_windows");
-	
+
 	private static final Uri URI_ICON_BROWSER = Uri.parse("chan:///res/raw/raw_browser");
 	private static final Uri URI_ICON_CHROME = Uri.parse("chan:///res/raw/raw_browser_chrome");
 	private static final Uri URI_ICON_EDGE = Uri.parse("chan:///res/raw/raw_browser_edge");
@@ -35,14 +35,14 @@ public class TumbachModelMapper
 	private static final Uri URI_ICON_OPERA = Uri.parse("chan:///res/raw/raw_browser_opera");
 	private static final Uri URI_ICON_SAFARI = Uri.parse("chan:///res/raw/raw_browser_safari");
 	private static final Uri URI_ICON_VIVALDI = Uri.parse("chan:///res/raw/raw_browser_vivaldi");
-	
+
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
-	
+
 	static
 	{
 		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
 	}
-	
+
 	public static FileAttachment createFileAttachment(JSONObject jsonObject, TumbachChanLocator locator,
 			String boardName) throws JSONException
 	{
@@ -64,7 +64,7 @@ public class TumbachModelMapper
 		}
 		return attachment;
 	}
-	
+
 	public static Post createPost(JSONObject jsonObject, TumbachChanLocator locator, String boardName)
 			throws JSONException
 	{
@@ -81,7 +81,7 @@ public class TumbachModelMapper
 		}
 		catch (ParseException e)
 		{
-			
+
 		}
 		post.setName(CommonUtils.optJsonString(jsonObject, "name"));
 		post.setTripcode(CommonUtils.optJsonString(jsonObject, "tripcode"));
@@ -181,7 +181,7 @@ public class TumbachModelMapper
 		}
 		return post;
 	}
-	
+
 	public static Post[] createPosts(JSONObject jsonObject, TumbachChanLocator locator, String boardName)
 			throws JSONException
 	{
@@ -202,7 +202,7 @@ public class TumbachModelMapper
 		}
 		else return new Post[] {originalPost};
 	}
-	
+
 	public static Posts createThread(JSONObject jsonObject, TumbachChanLocator locator, String boardName)
 			throws JSONException
 	{
@@ -211,7 +211,7 @@ public class TumbachModelMapper
 		thread.addPostsCount(jsonObject.getInt("postCount"));
 		return thread;
 	}
-	
+
 	public static Posts[] createThreads(JSONArray jsonArray, TumbachChanLocator locator, String boardName)
 			throws JSONException
 	{
