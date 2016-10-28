@@ -17,24 +17,24 @@ public class CirnoCatalogParser
 {
 	private final String mSource;
 	private final CirnoChanLocator mLocator;
-	
+
 	private Post mPost;
 	private final ArrayList<Posts> mThreads = new ArrayList<>();
-	
+
 	private static final Pattern LINK_TITLE = Pattern.compile("#(\\d+) \\((.*)\\)");
-	
+
 	public CirnoCatalogParser(String source, Object linked)
 	{
 		mSource = source;
 		mLocator = CirnoChanLocator.get(linked);
 	}
-	
+
 	public ArrayList<Posts> convert() throws ParseException
 	{
 		PARSER.parse(mSource, this);
 		return mThreads;
 	}
-	
+
 	private static final TemplateParser<CirnoCatalogParser> PARSER = new TemplateParser<CirnoCatalogParser>()
 			.starts("a", "title", "#").open((instance, holder, tagName, attributes) ->
 	{
@@ -51,13 +51,13 @@ public class CirnoCatalogParser
 			}
 			catch (java.text.ParseException e)
 			{
-				
+
 			}
 			holder.mPost = post;
 			holder.mThreads.add(new Posts(post));
 		}
 		return false;
-		
+
 	}).name("img").open((instance, holder, tagName, attributes) ->
 	{
 		if (holder.mPost != null)
@@ -78,11 +78,11 @@ public class CirnoCatalogParser
 			}
 		}
 		return false;
-		
+
 	}).equals("span", "class", "filetitle").content((instance, holder, text) ->
 	{
 		if (holder.mPost != null) holder.mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-		
+
 	}).equals("span", "class", "cattext").content((instance, holder, text) ->
 	{
 		if (holder.mPost != null)
@@ -92,6 +92,6 @@ public class CirnoCatalogParser
 			holder.mPost.setComment(text);
 			holder.mPost = null;
 		}
-		
+
 	}).prepare();
 }

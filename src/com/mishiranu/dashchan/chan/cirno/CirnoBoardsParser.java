@@ -17,17 +17,17 @@ import chan.util.StringUtils;
 public class CirnoBoardsParser
 {
 	private final String mSource;
-	
+
 	private final LinkedHashMap<String, BoardCategory> mBoardCategories = new LinkedHashMap<>();
 	private final ArrayList<Board> mBoards = new ArrayList<>();
-	
+
 	private String mBoardCategoryTitle;
 	private String mBoardName;
 
 	private static final Pattern BOARD_NAME_PATTERN = Pattern.compile("/(\\w+)/");
-	
+
 	private static final HashMap<String, String> VALID_BOARD_TITLES = new HashMap<>();
-	
+
 	static
 	{
 		VALID_BOARD_TITLES.put("tv", "Кино и ТВ");
@@ -40,12 +40,12 @@ public class CirnoBoardsParser
 		VALID_BOARD_TITLES.put("sos", "Suzumiya Haruhi no Y\u016butsu");
 		VALID_BOARD_TITLES.put("hau", "Higurashi no Naku Koro ni");
 	}
-	
+
 	public CirnoBoardsParser(String source)
 	{
 		mSource = source;
 	}
-	
+
 	public ArrayList<BoardCategory> convert() throws ParseException
 	{
 		PARSER.parse(mSource, this);
@@ -55,7 +55,7 @@ public class CirnoBoardsParser
 		if (boardCategory != null) mBoardCategories.put(boardCategory.getTitle(), boardCategory);
 		return new ArrayList<>(mBoardCategories.values());
 	}
-	
+
 	private void closeCategory()
 	{
 		if (mBoardCategoryTitle != null)
@@ -68,7 +68,7 @@ public class CirnoBoardsParser
 			mBoards.clear();
 		}
 	}
-	
+
 	private static String transform(String string)
 	{
 		if (string.length() > 0)
@@ -78,13 +78,13 @@ public class CirnoBoardsParser
 		}
 		return string;
 	}
-	
+
 	private static final TemplateParser<CirnoBoardsParser> PARSER = new TemplateParser<CirnoBoardsParser>()
 			.equals("td", "class", "header").content((instance, holder, text) ->
 	{
 		holder.closeCategory();
 		holder.mBoardCategoryTitle = StringUtils.clearHtml(text);
-		
+
 	}).name("a").open((instance, holder, tagName, attributes) ->
 	{
 		if (holder.mBoardCategoryTitle != null)
@@ -100,11 +100,11 @@ public class CirnoBoardsParser
 			}
 		}
 		return false;
-		
+
 	}).content((instance, holder, text) ->
 	{
 		text = transform(StringUtils.clearHtml(text));
 		holder.mBoards.add(new Board(holder.mBoardName, text));
-		
+
 	}).prepare();
 }

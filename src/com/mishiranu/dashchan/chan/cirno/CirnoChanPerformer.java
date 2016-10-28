@@ -44,7 +44,7 @@ public class CirnoChanPerformer extends ChanPerformer
 			throw new InvalidResponseException(e);
 		}
 	}
-	
+
 	@Override
 	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException
 	{
@@ -61,7 +61,7 @@ public class CirnoChanPerformer extends ChanPerformer
 				if (path != null && path.contains("/arch/")) archived[0] = true;
 				return HttpRequest.RedirectHandler.BROWSER.onRedirectReached(responseCode,
 						requestedUri, redirectedUri, holder);
-				
+
 			}).read().getString();
 		}
 		catch (HttpException e)
@@ -86,7 +86,7 @@ public class CirnoChanPerformer extends ChanPerformer
 			throw new InvalidResponseException(e);
 		}
 	}
-	
+
 	@Override
 	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException
 	{
@@ -102,10 +102,10 @@ public class CirnoChanPerformer extends ChanPerformer
 			throw new InvalidResponseException(e);
 		}
 	}
-	
+
 	private static final Pattern PATTERN_ARCHIVED_THREAD = Pattern.compile("<a href=\"(\\d+).html\">.*?" +
 			"<td align=\"right\">(.{15,}?)</td>");
-	
+
 	@Override
 	public ReadThreadSummariesResult onReadThreadSummaries(ReadThreadSummariesData data) throws HttpException,
 			InvalidResponseException
@@ -122,7 +122,7 @@ public class CirnoChanPerformer extends ChanPerformer
 		}
 		return new ReadThreadSummariesResult(threadSummaries);
 	}
-	
+
 	@Override
 	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException
 	{
@@ -139,13 +139,13 @@ public class CirnoChanPerformer extends ChanPerformer
 		}
 		return new ReadPostsCountResult(count);
 	}
-	
+
 	private final HashSet<String> mNoCaptchaBoards = new HashSet<>(Arrays
 			.asList("mu", "o", "ph", "tv", "vg", "a", "tan", "to"));
-	
+
 	private static final ColorMatrixColorFilter CAPTCHA_FILTER = new ColorMatrixColorFilter(new float[]
 			{0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f});
-	
+
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
@@ -171,9 +171,9 @@ public class CirnoChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	private static final Pattern PATTERN_POST_ERROR = Pattern.compile("<h1 style=\"text-align: center\">(.*?)<br />");
-	
+
 	@Override
 	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException
 	{
@@ -216,7 +216,7 @@ public class CirnoChanPerformer extends ChanPerformer
 		{
 			data.holder.disconnect();
 		}
-		
+
 		Matcher matcher = PATTERN_POST_ERROR.matcher(responseText);
 		if (matcher.find())
 		{
@@ -282,7 +282,7 @@ public class CirnoChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public SendDeletePostsResult onSendDeletePosts(SendDeletePostsData data) throws HttpException, ApiException,
 			InvalidResponseException

@@ -3,13 +3,13 @@
 	package="com.mishiranu.dashchan.chan.cirno"
 	android:versionCode="1"
 	android:versionName="1.16">
-	
+
 	<uses-sdk android:minSdkVersion="16" android:targetSdkVersion="23" />
-	
+
 	<uses-feature android:name="chan.extension" />
-	
+
 	<application android:icon="@null" android:allowBackup="false" android:label="@string/text_app_name">
-		
+
 		<meta-data android:name="chan.extension.name" android:value="cirno" />
 		<meta-data android:name="chan.extension.version" android:value="1" />
 		<meta-data android:name="chan.extension.icon" android:resource="@drawable/ic_custom_cirno_white" />
@@ -18,10 +18,10 @@
 		<meta-data android:name="chan.extension.class.performer" android:value=".CirnoChanPerformer" />
 		<meta-data android:name="chan.extension.class.locator" android:value=".CirnoChanLocator" />
 		<meta-data android:name="chan.extension.class.markup" android:value=".CirnoChanMarkup" />
-		
+
 		<activity android:name="chan.app.UriHandlerActivity" android:label="@string/text_activity_name"
 		    android:theme="@android:style/Theme.NoDisplay">
-			
+
 			<intent-filter>
 				<action android:name="android.intent.action.VIEW" />
 				<category android:name="android.intent.category.DEFAULT" />
@@ -33,9 +33,9 @@
 				<data android:host="iichan.moe" />
 				<data android:host="closed.iichan.hk" />
 			</intent-filter>
-			
+
 		</activity>
-		
+
 	</application>
-	
+
 </manifest>

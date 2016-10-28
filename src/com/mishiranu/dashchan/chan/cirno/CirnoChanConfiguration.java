@@ -8,7 +8,7 @@ public class CirnoChanConfiguration extends ChanConfiguration
 	private static final String KEY_EMAILS_ENABLED = "emails_enabled";
 	private static final String KEY_NAMES_ENABLED = "names_enabled";
 	private static final String KEY_IMAGE_SPOILERS_ENABLED = "image_spoilers_enabled";
-	
+
 	public CirnoChanConfiguration()
 	{
 		request(OPTION_READ_POSTS_COUNT);
@@ -50,7 +50,7 @@ public class CirnoChanConfiguration extends ChanConfiguration
 		setBumpLimit(500);
 		addCaptchaType("wakaba");
 	}
-	
+
 	@Override
 	public Board obtainBoardConfiguration(String boardName)
 	{
@@ -61,7 +61,7 @@ public class CirnoChanConfiguration extends ChanConfiguration
 		board.allowDeleting = true;
 		return board;
 	}
-	
+
 	@Override
 	public Captcha obtainCustomCaptchaConfiguration(String captchaType)
 	{
@@ -75,7 +75,7 @@ public class CirnoChanConfiguration extends ChanConfiguration
 		}
 		return null;
 	}
-	
+
 	@Override
 	public Posting obtainPostingConfiguration(String boardName, boolean newThread)
 	{
@@ -88,7 +88,7 @@ public class CirnoChanConfiguration extends ChanConfiguration
 		posting.attachmentSpoiler = get(boardName, KEY_IMAGE_SPOILERS_ENABLED, false);
 		return posting;
 	}
-	
+
 	@Override
 	public Deleting obtainDeletingConfiguration(String boardName)
 	{
@@ -98,7 +98,7 @@ public class CirnoChanConfiguration extends ChanConfiguration
 		deleting.optionFilesOnly = true;
 		return deleting;
 	}
-	
+
 	public void storeNamesEmailsImagesSpoilersEnabled(String boardName, boolean namesEnabled, boolean emailsEnabled,
 			boolean imagesEnabled, boolean imageSpoilersEnabled)
 	{
