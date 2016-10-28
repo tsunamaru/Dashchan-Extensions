@@ -23,7 +23,7 @@ import android.net.Uri;
 import chan.content.ApiException;
 import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
-import chan.content.ThreadRedirectException;
+import chan.content.RedirectException;
 import chan.content.model.Board;
 import chan.content.model.BoardCategory;
 import chan.content.model.Post;
@@ -98,8 +98,8 @@ public class DvachChanPerformer extends ChanPerformer
 	}
 
 	@Override
-	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, ThreadRedirectException,
-			InvalidResponseException
+	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException,
+			RedirectException
 	{
 		boolean usePartialApi = data.partialThreadLoading;
 		boolean tryReadStatic = false;
@@ -128,7 +128,7 @@ public class DvachChanPerformer extends ChanPerformer
 	}
 
 	private Posts onReadPosts(ReadPostsData data, boolean usePartialApi, boolean archive) throws HttpException,
-			ThreadRedirectException, InvalidResponseException
+			InvalidResponseException, RedirectException
 	{
 		DvachChanLocator locator = DvachChanLocator.get(this);
 		DvachChanConfiguration configuration = DvachChanConfiguration.get(this);
@@ -179,7 +179,7 @@ public class DvachChanPerformer extends ChanPerformer
 						String parentPostNumber = post.getParentPostNumber();
 						if (parentPostNumber != null && !parentPostNumber.equals(data.threadNumber))
 						{
-							throw new ThreadRedirectException(parentPostNumber, post.getPostNumber());
+							throw RedirectException.toThread(data.boardName, parentPostNumber, post.getPostNumber());
 						}
 					}
 					int uniquePosters = 0;
