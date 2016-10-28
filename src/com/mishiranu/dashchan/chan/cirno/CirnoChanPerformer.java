@@ -16,6 +16,7 @@ import android.net.Uri;
 import chan.content.ApiException;
 import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
+import chan.content.RedirectException;
 import chan.content.model.Post;
 import chan.content.model.ThreadSummary;
 import chan.http.HttpException;
@@ -27,13 +28,19 @@ import chan.util.CommonUtils;
 
 public class CirnoChanPerformer extends ChanPerformer
 {
+	private static final Pattern PATTERN_REDIRECT = Pattern.compile("<meta http-equiv=\"Refresh\" " +
+			"content=\"0; ?url=(.*?)\" />");
+
 	@Override
-	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
+	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException,
+			RedirectException
 	{
 		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = data.isCatalog() ? locator.buildPath(data.boardName, "catalogue.html")
 				: locator.createBoardUri(data.boardName, data.pageNumber);
 		String responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
+		Matcher matcher = PATTERN_REDIRECT.matcher(responseText);
+		if (matcher.find()) throw RedirectException.toUri(Uri.parse(matcher.group(1)));
 		try
 		{
 			return new ReadThreadsResult(data.isCatalog() ? new CirnoCatalogParser(responseText, this).convert()
@@ -91,7 +98,7 @@ public class CirnoChanPerformer extends ChanPerformer
 	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException
 	{
 		CirnoChanLocator locator = CirnoChanLocator.get(this);
-		Uri uri = locator.buildPath("n", "list_ru.html");
+		Uri uri = locator.buildPath("n", "list_ru_m.html");
 		String responseText = new HttpRequest(uri, data).read().getString();
 		try
 		{

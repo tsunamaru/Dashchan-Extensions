@@ -22,9 +22,8 @@ public class CirnoBoardsParser
 	private final ArrayList<Board> mBoards = new ArrayList<>();
 
 	private String mBoardCategoryTitle;
-	private String mBoardName;
 
-	private static final Pattern BOARD_NAME_PATTERN = Pattern.compile("/(\\w+)/");
+	private static final Pattern PATTERN_BOARD = Pattern.compile("(.*) \\[(\\w+)\\]");
 
 	private static final HashMap<String, String> VALID_BOARD_TITLES = new HashMap<>();
 
@@ -69,42 +68,30 @@ public class CirnoBoardsParser
 		}
 	}
 
-	private static String transform(String string)
-	{
-		if (string.length() > 0)
-		{
-			string = string.toLowerCase(Locale.getDefault());
-			string = string.substring(0, 1).toUpperCase(Locale.getDefault()) + string.substring(1);
-		}
-		return string;
-	}
-
 	private static final TemplateParser<CirnoBoardsParser> PARSER = new TemplateParser<CirnoBoardsParser>()
 			.equals("td", "class", "header").content((instance, holder, text) ->
 	{
 		holder.closeCategory();
 		holder.mBoardCategoryTitle = StringUtils.clearHtml(text);
 
-	}).name("a").open((instance, holder, tagName, attributes) ->
+	}).equals("a", "target", "board").content((instance, holder, text) ->
 	{
-		if (holder.mBoardCategoryTitle != null)
+		Matcher matcher = PATTERN_BOARD.matcher(StringUtils.clearHtml(text));
+		if (matcher.matches())
 		{
-			String href = attributes.get("href");
-			Matcher matcher = BOARD_NAME_PATTERN.matcher(href);
-			if (matcher.matches())
+			String boardName = matcher.group(2);
+			String title = VALID_BOARD_TITLES.get(boardName);
+			if (title == null)
 			{
-				String boardName = matcher.group(1);
-				String title = VALID_BOARD_TITLES.get(boardName);
-				holder.mBoardName = boardName;
-				if (title != null) holder.mBoards.add(new Board(boardName, title)); else return true;
+				title = matcher.group(1);
+				if (!title.isEmpty())
+				{
+					title = title.toLowerCase(Locale.getDefault());
+					title = title.substring(0, 1).toUpperCase(Locale.getDefault()) + title.substring(1);
+				}
 			}
+			holder.mBoards.add(new Board(boardName, title));
 		}
-		return false;
-
-	}).content((instance, holder, text) ->
-	{
-		text = transform(StringUtils.clearHtml(text));
-		holder.mBoards.add(new Board(holder.mBoardName, text));
 
 	}).prepare();
 }
