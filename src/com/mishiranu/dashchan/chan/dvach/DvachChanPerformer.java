@@ -873,11 +873,19 @@ public class DvachChanPerformer extends ChanPerformer
 				}
 			}
 		}
+		String originalPosterCookieName = null;
+		String originalPosterCookie = null;
+		if (data.threadNumber != null && data.optionOriginalPoster)
+		{
+			DvachChanConfiguration configuration = DvachChanConfiguration.get(this);
+			originalPosterCookieName = "op_" + data.boardName + "_" + data.threadNumber;
+			originalPosterCookie = configuration.getCookie(originalPosterCookieName);
+		}
 
 		Uri uri = locator.createFcgiUri("posting", "json", "1");
 		String responseText = new HttpRequest(uri, data).setPostMethod(entity)
-				.addCookie(buildCookies(captchaPassCookie)).setRedirectHandler(HttpRequest.RedirectHandler.STRICT)
-				.read().getString();
+				.addCookie(buildCookies(captchaPassCookie)).addCookie(originalPosterCookieName, originalPosterCookie)
+				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getString();
 		JSONObject jsonObject;
 		try
 		{
@@ -896,7 +904,18 @@ public class DvachChanPerformer extends ChanPerformer
 		String postNumber = CommonUtils.optJsonString(jsonObject, "Num");
 		if (!StringUtils.isEmpty(postNumber)) return new SendPostResult(data.threadNumber, postNumber);
 		String threadNumber = CommonUtils.optJsonString(jsonObject, "Target");
-		if (!StringUtils.isEmpty(threadNumber)) return new SendPostResult(threadNumber, null);
+		if (!StringUtils.isEmpty(threadNumber))
+		{
+			originalPosterCookieName = "op_" + data.boardName + "_" + threadNumber;
+			originalPosterCookie = data.holder.getCookieValue(originalPosterCookieName);
+			if (!StringUtils.isEmpty(originalPosterCookie))
+			{
+				DvachChanConfiguration configuration = DvachChanConfiguration.get(this);
+				configuration.storeCookie(originalPosterCookieName, originalPosterCookie,
+						"OP /" + data.boardName + "/" + threadNumber);
+			}
+			return new SendPostResult(threadNumber, null);
+		}
 
 		int error = Math.abs(jsonObject.optInt("Error", Integer.MAX_VALUE));
 		String reason = CommonUtils.optJsonString(jsonObject, "Reason");
