@@ -12,19 +12,19 @@ import chan.text.ParseException;
 public class HaruhichanBoardsParser implements GroupParser.Callback
 {
 	private final String mSource;
-	
+
 	private final ArrayList<BoardCategory> mBoardCategories = new ArrayList<>();
 	private final ArrayList<Board> mBoards = new ArrayList<>();
-	
+
 	private boolean mBoardListParsing = false;
-	
+
 	private static final Pattern PATTERN_BOARD_URI = Pattern.compile("/(.*?)(?<!/new)/index.html");
-	
+
 	public HaruhichanBoardsParser(String source)
 	{
 		mSource = source;
 	}
-	
+
 	public ArrayList<BoardCategory> convert() throws ParseException
 	{
 		try
@@ -33,11 +33,11 @@ public class HaruhichanBoardsParser implements GroupParser.Callback
 		}
 		catch (FinishedException e)
 		{
-			
+
 		}
 		return mBoardCategories;
 	}
-	
+
 	private void closeCategory()
 	{
 		ArrayList<Board> boards = mBoards;
@@ -47,12 +47,12 @@ public class HaruhichanBoardsParser implements GroupParser.Callback
 			mBoards.clear();
 		}
 	}
-	
+
 	private static class FinishedException extends ParseException
 	{
 		private static final long serialVersionUID = 1L;
 	}
-	
+
 	@Override
 	public boolean onStartElement(GroupParser parser, String tagName, String attrs)
 	{
@@ -81,7 +81,7 @@ public class HaruhichanBoardsParser implements GroupParser.Callback
 		}
 		return false;
 	}
-	
+
 	@Override
 	public void onEndElement(GroupParser parser, String tagName) throws FinishedException
 	{
@@ -91,16 +91,16 @@ public class HaruhichanBoardsParser implements GroupParser.Callback
 			throw new FinishedException();
 		}
 	}
-	
+
 	@Override
 	public void onText(GroupParser parser, String source, int start, int end)
 	{
-		
+
 	}
-	
+
 	@Override
 	public void onGroupComplete(GroupParser parser, String text)
 	{
-		
+
 	}
 }

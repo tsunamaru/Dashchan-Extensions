@@ -12,7 +12,7 @@ public class HaruhichanChanMarkup extends ChanMarkup
 {
 	private static final int SUPPORTED_TAGS = TAG_BOLD | TAG_ITALIC | TAG_UNDERLINE | TAG_STRIKE | TAG_SPOILER
 			| TAG_CODE | TAG_HEADING;
-	
+
 	public HaruhichanChanMarkup()
 	{
 		addTag("strong", TAG_BOLD);
@@ -25,7 +25,7 @@ public class HaruhichanChanMarkup extends ChanMarkup
 		addTag("span", "style", "text-decoration: line-through", TAG_STRIKE);
 		addPreformatted("code", true);
 	}
-	
+
 	@Override
 	public CommentEditor obtainCommentEditor(String boardName)
 	{
@@ -33,15 +33,15 @@ public class HaruhichanChanMarkup extends ChanMarkup
 		commentEditor.addTag(TAG_HEADING, "==", "==");
 		return commentEditor;
 	}
-	
+
 	@Override
 	public boolean isTagSupported(String boardName, int tag)
 	{
 		return (SUPPORTED_TAGS & tag) == tag;
 	}
-	
+
 	private static final Pattern THREAD_LINK = Pattern.compile("(\\d+).html(?:#(\\d+))?$");
-	
+
 	@Override
 	public Pair<String, String> obtainPostLinkThreadPostNumbers(String uriString)
 	{

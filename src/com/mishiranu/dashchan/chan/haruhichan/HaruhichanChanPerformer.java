@@ -9,7 +9,6 @@ import org.json.JSONObject;
 import android.net.Uri;
 
 import chan.content.ApiException;
-import chan.content.ChanLocator;
 import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
 import chan.content.model.Post;
@@ -28,7 +27,7 @@ public class HaruhichanChanPerformer extends ChanPerformer
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
-		HaruhichanChanLocator locator = ChanLocator.get(this);
+		HaruhichanChanLocator locator = HaruhichanChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, (data.isCatalog() ? "catalog"
 				: Integer.toString(data.pageNumber)) + ".json");
 		HttpResponse response = new HttpRequest(uri, data.holder, data).setValidator(data.validator).read();
@@ -84,11 +83,11 @@ public class HaruhichanChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException
 	{
-		HaruhichanChanLocator locator = ChanLocator.get(this);
+		HaruhichanChanLocator locator = HaruhichanChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "res", data.threadNumber + ".json");
 		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
 				.read().getJsonObject();
@@ -116,11 +115,11 @@ public class HaruhichanChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException
 	{
-		HaruhichanChanLocator locator = ChanLocator.get(this);
+		HaruhichanChanLocator locator = HaruhichanChanLocator.get(this);
 		Uri uri = locator.buildPath("b", "");
 		String responseText = new HttpRequest(uri, data.holder, data).read().getString();
 		try
@@ -132,11 +131,11 @@ public class HaruhichanChanPerformer extends ChanPerformer
 			throw new InvalidResponseException(e);
 		}
 	}
-	
+
 	@Override
 	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException
 	{
-		HaruhichanChanLocator locator = ChanLocator.get(this);
+		HaruhichanChanLocator locator = HaruhichanChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "res", data.threadNumber + ".json");
 		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
 				.read().getJsonObject();
@@ -153,7 +152,7 @@ public class HaruhichanChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public ReadContentResult onReadContent(ReadContentData data) throws HttpException, InvalidResponseException
 	{
@@ -193,7 +192,7 @@ public class HaruhichanChanPerformer extends ChanPerformer
 		}
 		return super.onReadContent(data);
 	}
-	
+
 	@Override
 	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException
 	{
@@ -214,14 +213,14 @@ public class HaruhichanChanPerformer extends ChanPerformer
 			}
 		}
 		entity.add("json_response", "1");
-		
-		HaruhichanChanLocator locator = ChanLocator.get(this);
+
+		HaruhichanChanLocator locator = HaruhichanChanLocator.get(this);
 		Uri contentUri = data.threadNumber != null ? locator.createThreadUri(data.boardName, data.threadNumber)
 				: locator.createBoardUri(data.boardName, 0);
 		String responseText = new HttpRequest(contentUri, data.holder).read().getString();
 		try
 		{
-			AnstispamFieldsParser.parseAndApply(responseText, entity, "board", "thread", "name", "email",
+			AntispamFieldsParser.parseAndApply(responseText, entity, "board", "thread", "name", "email",
 					"subject", "body", "password", "file", "json_response");
 		}
 		catch (ParseException e)
@@ -232,7 +231,7 @@ public class HaruhichanChanPerformer extends ChanPerformer
 		JSONObject jsonObject = new HttpRequest(uri, data.holder, data).setPostMethod(entity).addHeader("Referer",
 				contentUri.toString()).setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
 		if (jsonObject == null) throw new InvalidResponseException();
-		
+
 		String redirect = jsonObject.optString("redirect");
 		if (!StringUtils.isEmpty(redirect))
 		{
@@ -299,12 +298,12 @@ public class HaruhichanChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public SendDeletePostsResult onSendDeletePosts(SendDeletePostsData data) throws HttpException, ApiException,
 			InvalidResponseException
 	{
-		HaruhichanChanLocator locator = ChanLocator.get(this);
+		HaruhichanChanLocator locator = HaruhichanChanLocator.get(this);
 		UrlEncodedEntity entity = new UrlEncodedEntity("delete", "1", "board", data.boardName,
 				"password", data.password, "json_response", "1");
 		for (String postNumber : data.postNumbers) entity.add("delete_" + postNumber, "1");
@@ -332,12 +331,12 @@ public class HaruhichanChanPerformer extends ChanPerformer
 		}
 		throw new InvalidResponseException();
 	}
-	
+
 	@Override
 	public SendReportPostsResult onSendReportPosts(SendReportPostsData data) throws HttpException, ApiException,
 			InvalidResponseException
 	{
-		HaruhichanChanLocator locator = ChanLocator.get(this);
+		HaruhichanChanLocator locator = HaruhichanChanLocator.get(this);
 		UrlEncodedEntity entity = new UrlEncodedEntity("report", "1", "board", data.boardName,
 				"reason", StringUtils.emptyIfNull(data.comment), "json_response", "1");
 		for (String postNumber : data.postNumbers) entity.add("delete_" + postNumber, "1");
