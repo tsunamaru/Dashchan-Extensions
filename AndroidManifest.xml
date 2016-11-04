@@ -27,6 +27,7 @@
 				<category android:name="android.intent.category.DEFAULT" />
 				<category android:name="android.intent.category.BROWSABLE" />
 				<data android:scheme="http" />
+				<data android:scheme="https" />
 				<data android:host="nowere.net" />
 				<data android:host="sky.nowere.net" />
 				<data android:host="www.nowere.net" />

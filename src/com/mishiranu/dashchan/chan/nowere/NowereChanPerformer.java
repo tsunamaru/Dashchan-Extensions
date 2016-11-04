@@ -20,6 +20,7 @@ import chan.content.InvalidResponseException;
 import chan.content.model.Post;
 import chan.content.model.ThreadSummary;
 import chan.http.HttpException;
+import chan.http.HttpHolder;
 import chan.http.HttpRequest;
 import chan.http.MultipartEntity;
 import chan.http.UrlEncodedEntity;
@@ -174,6 +175,17 @@ public class NowereChanPerformer extends ChanPerformer
 		throw new InvalidResponseException();
 	}
 
+	private static final HttpRequest.RedirectHandler POST_REDIRECT_HANDLER = new HttpRequest.RedirectHandler()
+	{
+		@Override
+		public Action onRedirectReached(int responseCode, Uri requestedUri, Uri redirectedUri, HttpHolder holder)
+				throws HttpException
+		{
+			if (responseCode == HttpURLConnection.HTTP_SEE_OTHER) return Action.CANCEL;
+			return STRICT.onRedirectReached(responseCode, requestedUri, redirectedUri, holder);
+		}
+	};
+
 	private static final Pattern PATTERN_POST_ERROR = Pattern.compile("<h1 style=\"text-align: center\">(.*?)<br />");
 
 	@Override
@@ -200,13 +212,8 @@ public class NowereChanPerformer extends ChanPerformer
 		String responseText;
 		try
 		{
-			new HttpRequest(uri, data).setPostMethod(entity)
-					.setRedirectHandler(HttpRequest.RedirectHandler.NONE).execute();
-			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_SEE_OTHER)
-			{
-				// Success
-				return null;
-			}
+			new HttpRequest(uri, data).setPostMethod(entity).setRedirectHandler(POST_REDIRECT_HANDLER).execute();
+			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_SEE_OTHER) return null;
 			responseText = data.holder.read().getString();
 		}
 		finally
@@ -284,8 +291,7 @@ public class NowereChanPerformer extends ChanPerformer
 		String responseText;
 		try
 		{
-			new HttpRequest(uri, data).setPostMethod(entity)
-					.setRedirectHandler(HttpRequest.RedirectHandler.NONE).execute();
+			new HttpRequest(uri, data).setPostMethod(entity).setRedirectHandler(POST_REDIRECT_HANDLER).execute();
 			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_SEE_OTHER) return null;
 			responseText = data.holder.read().getString();
 		}
