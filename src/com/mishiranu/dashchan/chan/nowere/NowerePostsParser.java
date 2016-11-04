@@ -12,11 +12,11 @@ import chan.content.ChanLocator;
 import chan.content.model.FileAttachment;
 import chan.content.model.Post;
 import chan.content.model.Posts;
-import chan.text.GroupParser;
 import chan.text.ParseException;
+import chan.text.TemplateParser;
 import chan.util.StringUtils;
 
-public class NowerePostsParser implements GroupParser.Callback
+public class NowerePostsParser
 {
 	private final String mSource;
 	private final NowereChanConfiguration mConfiguration;
@@ -30,19 +30,7 @@ public class NowerePostsParser implements GroupParser.Callback
 	private ArrayList<Posts> mThreads;
 	private final ArrayList<Post> mPosts = new ArrayList<>();
 
-	private static final int EXPECT_NONE = 0;
-	private static final int EXPECT_FILE_DATA = 1;
-	private static final int EXPECT_FILE_SIZE = 2;
-	private static final int EXPECT_SUBJECT = 3;
-	private static final int EXPECT_NAME = 4;
-	private static final int EXPECT_TRIPCODE = 5;
-	private static final int EXPECT_COMMENT = 6;
-	private static final int EXPECT_OMITTED = 7;
-	private static final int EXPECT_BOARD_TITLE = 8;
-	private static final int EXPECT_PAGES_COUNT = 9;
-
-	private int mExpect = EXPECT_NONE;
-	private boolean mHeaderHandling = false; // True when parser is inside post's <label>. Used to parse date.
+	private boolean mHeaderHandling = false;
 
 	private static final SimpleDateFormat DATE_FORMAT;
 
@@ -54,7 +42,7 @@ public class NowerePostsParser implements GroupParser.Callback
 
 	private static final Pattern FILE_SIZE = Pattern.compile("([\\d\\.]+) (\\w+), (\\d+)x(\\d+)");
 	private static final Pattern NAME_EMAIL = Pattern.compile("<a href=\"(.*?)\">(.*)</a>");
-	private static final Pattern NUMBER = Pattern.compile("(\\d+)");
+	private static final Pattern NUMBER = Pattern.compile("\\d+");
 
 	public NowerePostsParser(String source, Object linked, String boardName)
 	{
@@ -81,280 +69,182 @@ public class NowerePostsParser implements GroupParser.Callback
 	public ArrayList<Posts> convertThreads() throws ParseException
 	{
 		mThreads = new ArrayList<>();
-		GroupParser.parse(mSource, this);
+		PARSER.parse(mSource, this);
 		closeThread();
 		return mThreads;
 	}
 
 	public ArrayList<Post> convertPosts() throws ParseException
 	{
-		GroupParser.parse(mSource, this);
+		PARSER.parse(mSource, this);
 		return mPosts;
 	}
 
-	@Override
-	public boolean onStartElement(GroupParser parser, String tagName, String attrs)
+	private static final TemplateParser<NowerePostsParser> PARSER = new TemplateParser<NowerePostsParser>()
+			.equals("input", "name", "delete").open((instance, holder, tagName, attributes) ->
 	{
-		/*
-		 * For original posts:
-		 * 1) Post has image -> create Post when 'span.filesize' reached
-		 * 2) Post has no image -> create Post when 'input[type=checkbox][name=delete]' reached
-		 * Create Thread when 'input[type=checkbox][name=delete]' reached
-		 *
-		 * For replies:
-		 * Create Post when td[id^=reply] reached
-		 */
-
-		if ("input".equals(tagName))
+		if ("checkbox".equals(attributes.get("type")))
 		{
-			if ("checkbox".equals(parser.getAttr(attrs, "type")) && "delete".equals(parser.getAttr(attrs, "name")))
+			holder.mHeaderHandling = true;
+			if (holder.mPost == null || holder.mPost.getPostNumber() == null)
 			{
-				mHeaderHandling = true;
-				if (mPost == null || mPost.getPostNumber() == null)
+				String number = attributes.get("value");
+				if (holder.mPost == null) holder.mPost = new Post();
+				holder.mPost.setPostNumber(number);
+				holder.mParent = number;
+				if (holder.mThreads != null)
 				{
-					String number = parser.getAttr(attrs, "value");
-					if (mPost == null) mPost = new Post();
-					mPost.setPostNumber(number);
-					mParent = number;
-					if (mThreads != null)
-					{
-						closeThread();
-						mThread = new Posts();
-					}
+					holder.closeThread();
+					holder.mThread = new Posts();
 				}
-			}
-		}
-		else if ("td".equals(tagName))
-		{
-			String id = parser.getAttr(attrs, "id");
-			if (id != null && id.startsWith("reply"))
-			{
-				String number = id.substring(5);
-				Post post = new Post();
-				post.setParentPostNumber(mParent);
-				post.setPostNumber(number);
-				mPost = post;
-			}
-		}
-		else if ("span".equals(tagName))
-		{
-			String cssClass = parser.getAttr(attrs, "class");
-			if ("filesize".equals(cssClass))
-			{
-				if (mPost == null)
-				{
-					// New thread with image
-					// Thread will be created later when parser reach deleting checkbox
-					mPost = new Post();
-				}
-				mAttachment = new FileAttachment();
-				mExpect = EXPECT_FILE_DATA;
-			}
-			else if ("filetitle".equals(cssClass) || "replytitle".equals(cssClass))
-			{
-				mExpect = EXPECT_SUBJECT;
-				return true;
-			}
-			else if ("postername".equals(cssClass) || "commentpostername".equals(cssClass))
-			{
-				mExpect = EXPECT_NAME;
-				return true;
-			}
-			else if ("postertrip".equals(cssClass))
-			{
-				mExpect = EXPECT_TRIPCODE;
-				return true;
-			}
-			else if ("omittedposts".equals(cssClass))
-			{
-				if (mThreads != null)
-				{
-					mExpect = EXPECT_OMITTED;
-					return true;
-				}
-			}
-		}
-		else if ("img".equals(tagName))
-		{
-			String cssClass = parser.getAttr(attrs, "class");
-			if ("thumb".equals(cssClass))
-			{
-				String src = parser.getAttr(attrs, "src");
-				if (src != null && src.contains("/thumb/"))
-				{
-					mAttachment.setThumbnailUri(mLocator, mLocator.buildPath(src));
-				}
-				mPost.setAttachments(mAttachment);
-			}
-		}
-		else if ("div".equals(tagName))
-		{
-			String cssClass = parser.getAttr(attrs, "class");
-			if ("nothumb".equals(cssClass))
-			{
-				if (mAttachment.getSize() > 0 || mAttachment.getWidth() > 0 || mAttachment.getHeight() > 0)
-				{
-					mPost.setAttachments(mAttachment);
-				}
-				mExpect = EXPECT_NONE;
-			}
-			else if ("logo".equals(cssClass))
-			{
-				mExpect = EXPECT_BOARD_TITLE;
-				return true;
-			}
-		}
-		else if ("a".equals(tagName))
-		{
-			if (mExpect == EXPECT_FILE_DATA)
-			{
-				mAttachment.setFileUri(mLocator, mLocator.buildPath(parser.getAttr(attrs, "href")));
-			}
-		}
-		else if ("em".equals(tagName))
-		{
-			if (mExpect == EXPECT_FILE_DATA)
-			{
-				mExpect = EXPECT_FILE_SIZE;
-				return true;
-			}
-		}
-		else if ("blockquote".equals(tagName))
-		{
-			mExpect = EXPECT_COMMENT;
-			return true;
-		}
-		else if ("table".equals(tagName))
-		{
-			String border = parser.getAttr(attrs, "border");
-			if (mThreads != null && "1".equals(border))
-			{
-				mExpect = EXPECT_PAGES_COUNT;
-				return true;
 			}
 		}
 		return false;
-	}
 
-	@Override
-	public void onEndElement(GroupParser parser, String tagName)
+	}).starts("td", "id", "reply").open((instance, holder, tagName, attributes) ->
 	{
+		String number = attributes.get("id").substring(5);
+		Post post = new Post();
+		post.setParentPostNumber(holder.mParent);
+		post.setPostNumber(number);
+		holder.mPost = post;
+		return false;
 
-	}
-
-	@Override
-	public void onText(GroupParser parser, String source, int start, int end)
+	}).equals("span", "class", "filesize").open((instance, holder, tagName, attributes) ->
 	{
-		if (mHeaderHandling)
+		if (holder.mPost == null) holder.mPost = new Post();
+		holder.mAttachment = new FileAttachment();
+		return false;
+
+	}).name("a").open((instance, holder, tagName, attributes) ->
+	{
+		if (holder.mAttachment != null)
+		{
+			holder.mAttachment.setFileUri(holder.mLocator, holder.mLocator.buildPath(attributes.get("href")));
+		}
+		return false;
+
+	}).equals("img", "class", "thumb").open((instance, holder, tagName, attributes) ->
+	{
+		String src = attributes.get("src");
+		if (src != null && src.contains("/thumb/"))
+		{
+			holder.mAttachment.setThumbnailUri(holder.mLocator, holder.mLocator.buildPath(src));
+		}
+		holder.mPost.setAttachments(holder.mAttachment);
+		holder.mAttachment = null;
+		return false;
+
+	}).equals("div", "class", "nothumb").open((instance, holder, tagName, attributes) ->
+	{
+		if (holder.mAttachment.getSize() > 0 || holder.mAttachment.getWidth() > 0 || holder.mAttachment.getHeight() > 0)
+		{
+			holder.mPost.setAttachments(holder.mAttachment);
+		}
+		holder.mAttachment = null;
+		return false;
+
+	}).name("em").open((instance, holder, tagName, attributes) -> holder.mAttachment != null)
+			.content((instance, holder, text) ->
+	{
+		Matcher matcher = FILE_SIZE.matcher(text);
+		if (matcher.matches())
+		{
+			float size = Float.parseFloat(matcher.group(1));
+			String dim = matcher.group(2);
+			if ("kB".equals(dim)) size *= 1024;
+			else if ("MB".equals(dim)) size *= 1024 * 1024;
+			int width = Integer.parseInt(matcher.group(3));
+			int height = Integer.parseInt(matcher.group(4));
+			holder.mAttachment.setSize((int) size);
+			holder.mAttachment.setWidth(width);
+			holder.mAttachment.setHeight(height);
+		}
+
+	}).equals("span", "class", "filetitle").equals("span", "class", "replytitle").content((instance, holder, text) ->
+	{
+		holder.mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
+
+	}).equals("span", "class", "postername").equals("span", "class", "commentpostername")
+			.content((instance, holder, text) ->
+	{
+		Matcher matcher = NAME_EMAIL.matcher(text);
+		if (matcher.matches())
+		{
+			String email = StringUtils.clearHtml(matcher.group(1));
+			if (email.toLowerCase(Locale.US).contains("sage")) holder.mPost.setSage(true);
+			else holder.mPost.setEmail(email);
+			text = matcher.group(2);
+		}
+		holder.mPost.setName(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
+
+	}).equals("span", "class", "postertrip").content((instance, holder, text) ->
+	{
+		holder.mPost.setTripcode(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
+
+	}).text((instance, holder, source, start, end) ->
+	{
+		if (holder.mHeaderHandling)
 		{
 			String text = source.substring(start, end).trim();
 			if (text.length() > 0)
 			{
 				try
 				{
-					mPost.setTimestamp(DATE_FORMAT.parse(text).getTime());
+					holder.mPost.setTimestamp(DATE_FORMAT.parse(text).getTime());
 				}
 				catch (java.text.ParseException e)
 				{
 
 				}
-				mHeaderHandling = false;
+				holder.mHeaderHandling = false;
 			}
 		}
-	}
 
-	@Override
-	public void onGroupComplete(GroupParser parser, String text)
+	}).name("blockquote").content((instance, holder, text) ->
 	{
-		switch (mExpect)
-		{
-			case EXPECT_FILE_SIZE:
-			{
-				Matcher matcher = FILE_SIZE.matcher(text);
-				if (matcher.matches())
-				{
-					float size = Float.parseFloat(matcher.group(1));
-					String dim = matcher.group(2);
-					if ("kB".equals(dim)) size *= 1024;
-					else if ("MB".equals(dim)) size *= 1024 * 1024;
-					int width = Integer.parseInt(matcher.group(3));
-					int height = Integer.parseInt(matcher.group(4));
-					mAttachment.setSize((int) size);
-					mAttachment.setWidth(width);
-					mAttachment.setHeight(height);
-				}
-				break;
-			}
-			case EXPECT_SUBJECT:
-			{
-				mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-				break;
-			}
-			case EXPECT_NAME:
-			{
-				Matcher matcher = NAME_EMAIL.matcher(text);
-				if (matcher.matches())
-				{
-					String email = StringUtils.clearHtml(matcher.group(1));
-					if (email.toLowerCase(Locale.US).contains("sage")) mPost.setSage(true);
-					else mPost.setEmail(email);
-					text = matcher.group(2);
-				}
-				mPost.setName(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-				break;
-			}
-			case EXPECT_TRIPCODE:
-			{
-				mPost.setTripcode(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-				break;
-			}
-			case EXPECT_COMMENT:
-			{
-				text = text.trim();
-				int index = text.lastIndexOf("<div class=\"abbrev\">");
-				if (index >= 0) text = text.substring(0, index).trim();
-				mPost.setComment(text);
-				mPosts.add(mPost);
-				mPost = null;
-				break;
-			}
-			case EXPECT_OMITTED:
-			{
-				Matcher matcher = NUMBER.matcher(text);
-				if (matcher.find())
-				{
-					mThread.addPostsCount(Integer.parseInt(matcher.group(1)));
-					if (matcher.find()) mThread.addPostsWithFilesCount(Integer.parseInt(matcher.group(1)));
-				}
-				break;
-			}
-			case EXPECT_BOARD_TITLE:
-			{
-				text = StringUtils.clearHtml(text).trim();
-				if (!StringUtils.isEmpty(text)) mConfiguration.storeBoardTitle(mBoardName, text);
-				break;
-			}
-			case EXPECT_PAGES_COUNT:
-			{
-				text = StringUtils.clearHtml(text);
-				int index1 = text.lastIndexOf('[');
-				int index2 = text.lastIndexOf(']');
-				if (index1 >= 0 && index2 > index1)
-				{
-					text = text.substring(index1 + 1, index2);
-					try
-					{
-						int pagesCount = Integer.parseInt(text) + 1;
-						mConfiguration.storePagesCount(mBoardName, pagesCount);
-					}
-					catch (NumberFormatException e)
-					{
+		text = text.trim();
+		int index = text.lastIndexOf("<div class=\"abbrev\">");
+		if (index >= 0) text = text.substring(0, index).trim();
+		holder.mPost.setComment(text);
+		holder.mPosts.add(holder.mPost);
+		holder.mPost = null;
 
-					}
-				}
-				break;
+	}).equals("span", "class", "omittedposts").content((instance, holder, text) ->
+	{
+		if (holder.mThreads != null)
+		{
+			Matcher matcher = NUMBER.matcher(text);
+			if (matcher.find())
+			{
+				holder.mThread.addPostsCount(Integer.parseInt(matcher.group()));
+				if (matcher.find()) holder.mThread.addPostsWithFilesCount(Integer.parseInt(matcher.group()));
 			}
 		}
-		mExpect = EXPECT_NONE;
-	}
+
+	}).equals("div", "class", "logo").content((instance, holder, text) ->
+	{
+		text = StringUtils.clearHtml(text).trim();
+		if (!StringUtils.isEmpty(text)) holder.mConfiguration.storeBoardTitle(holder.mBoardName, text);
+
+	}).equals("table", "border", "1").content((instance, holder, text) ->
+	{
+		text = StringUtils.clearHtml(text);
+		int index1 = text.lastIndexOf('[');
+		int index2 = text.lastIndexOf(']');
+		if (index1 >= 0 && index2 > index1)
+		{
+			text = text.substring(index1 + 1, index2);
+			try
+			{
+				int pagesCount = Integer.parseInt(text) + 1;
+				holder.mConfiguration.storePagesCount(holder.mBoardName, pagesCount);
+			}
+			catch (NumberFormatException e)
+			{
+
+			}
+		}
+
+	}).prepare();
 }
