@@ -22,14 +22,14 @@ public class NowerePostsParser implements GroupParser.Callback
 	private final NowereChanConfiguration mConfiguration;
 	private final NowereChanLocator mLocator;
 	private final String mBoardName;
-	
+
 	private String mParent;
 	private Posts mThread;
 	private Post mPost;
 	private FileAttachment mAttachment;
 	private ArrayList<Posts> mThreads;
 	private final ArrayList<Post> mPosts = new ArrayList<>();
-	
+
 	private static final int EXPECT_NONE = 0;
 	private static final int EXPECT_FILE_DATA = 1;
 	private static final int EXPECT_FILE_SIZE = 2;
@@ -40,22 +40,22 @@ public class NowerePostsParser implements GroupParser.Callback
 	private static final int EXPECT_OMITTED = 7;
 	private static final int EXPECT_BOARD_TITLE = 8;
 	private static final int EXPECT_PAGES_COUNT = 9;
-	
+
 	private int mExpect = EXPECT_NONE;
 	private boolean mHeaderHandling = false; // True when parser is inside post's <label>. Used to parse date.
-	
+
 	private static final SimpleDateFormat DATE_FORMAT;
-	
+
 	static
 	{
 		DATE_FORMAT = new SimpleDateFormat("yy/MM/dd(EEE)hh:mm", Locale.US);
 		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT+3"));
 	}
-	
+
 	private static final Pattern FILE_SIZE = Pattern.compile("([\\d\\.]+) (\\w+), (\\d+)x(\\d+)");
 	private static final Pattern NAME_EMAIL = Pattern.compile("<a href=\"(.*?)\">(.*)</a>");
 	private static final Pattern NUMBER = Pattern.compile("(\\d+)");
-	
+
 	public NowerePostsParser(String source, Object linked, String boardName)
 	{
 		mSource = source;
@@ -63,7 +63,7 @@ public class NowerePostsParser implements GroupParser.Callback
 		mLocator = ChanLocator.get(linked);
 		mBoardName = boardName;
 	}
-	
+
 	private void closeThread()
 	{
 		if (mThread != null)
@@ -77,7 +77,7 @@ public class NowerePostsParser implements GroupParser.Callback
 			mPosts.clear();
 		}
 	}
-	
+
 	public ArrayList<Posts> convertThreads() throws ParseException
 	{
 		mThreads = new ArrayList<>();
@@ -85,13 +85,13 @@ public class NowerePostsParser implements GroupParser.Callback
 		closeThread();
 		return mThreads;
 	}
-	
+
 	public ArrayList<Post> convertPosts() throws ParseException
 	{
 		GroupParser.parse(mSource, this);
 		return mPosts;
 	}
-	
+
 	@Override
 	public boolean onStartElement(GroupParser parser, String tagName, String attrs)
 	{
@@ -100,11 +100,11 @@ public class NowerePostsParser implements GroupParser.Callback
 		 * 1) Post has image -> create Post when 'span.filesize' reached
 		 * 2) Post has no image -> create Post when 'input[type=checkbox][name=delete]' reached
 		 * Create Thread when 'input[type=checkbox][name=delete]' reached
-		 * 
+		 *
 		 * For replies:
 		 * Create Post when td[id^=reply] reached
 		 */
-		
+
 		if ("input".equals(tagName))
 		{
 			if ("checkbox".equals(parser.getAttr(attrs, "type")) && "delete".equals(parser.getAttr(attrs, "name")))
@@ -235,13 +235,13 @@ public class NowerePostsParser implements GroupParser.Callback
 		}
 		return false;
 	}
-	
+
 	@Override
 	public void onEndElement(GroupParser parser, String tagName)
 	{
-		
+
 	}
-	
+
 	@Override
 	public void onText(GroupParser parser, String source, int start, int end)
 	{
@@ -256,13 +256,13 @@ public class NowerePostsParser implements GroupParser.Callback
 				}
 				catch (java.text.ParseException e)
 				{
-					
+
 				}
 				mHeaderHandling = false;
 			}
 		}
 	}
-	
+
 	@Override
 	public void onGroupComplete(GroupParser parser, String text)
 	{
@@ -349,7 +349,7 @@ public class NowerePostsParser implements GroupParser.Callback
 					}
 					catch (NumberFormatException e)
 					{
-						
+
 					}
 				}
 				break;

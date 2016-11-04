@@ -11,7 +11,7 @@ public class NowereChanConfiguration extends ChanConfiguration
 		setBumpLimit(500);
 		addCaptchaType("wakaba");
 	}
-	
+
 	@Override
 	public Board obtainBoardConfiguration(String boardName)
 	{
@@ -21,7 +21,7 @@ public class NowereChanConfiguration extends ChanConfiguration
 		board.allowDeleting = true;
 		return board;
 	}
-	
+
 	@Override
 	public Captcha obtainCustomCaptchaConfiguration(String captchaType)
 	{
@@ -35,7 +35,7 @@ public class NowereChanConfiguration extends ChanConfiguration
 		}
 		return null;
 	}
-	
+
 	@Override
 	public Posting obtainPostingConfiguration(String boardName, boolean newThread)
 	{
@@ -50,7 +50,7 @@ public class NowereChanConfiguration extends ChanConfiguration
 		posting.attachmentMimeTypes.add("video/webm");
 		return posting;
 	}
-	
+
 	@Override
 	public Deleting obtainDeletingConfiguration(String boardName)
 	{

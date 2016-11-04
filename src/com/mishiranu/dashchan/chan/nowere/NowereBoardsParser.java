@@ -14,26 +14,26 @@ import chan.util.StringUtils;
 public class NowereBoardsParser implements GroupParser.Callback
 {
 	private final String mSource;
-	
+
 	private final ArrayList<BoardCategory> mBoardCategories = new ArrayList<>();
 	private final ArrayList<Board> mBoards = new ArrayList<>();
-	
+
 	private String mBoardCategoryTitle;
 	private String mBoardName;
 
 	private static final int EXPECT_NONE = 0;
 	private static final int EXPECT_CATEGORY = 1;
 	private static final int EXPECT_BOARD = 2;
-	
+
 	private int mExpect = EXPECT_NONE;
-	
+
 	private static final Pattern BOARD_NAME_PATTERN = Pattern.compile("/(\\w+)/");
-	
+
 	public NowereBoardsParser(String source)
 	{
 		mSource = source;
 	}
-	
+
 	public ArrayList<BoardCategory> convert() throws ParseException
 	{
 		GroupParser.parse(mSource, this);
@@ -41,7 +41,7 @@ public class NowereBoardsParser implements GroupParser.Callback
 		for (BoardCategory boardCategory : mBoardCategories) Arrays.sort(boardCategory.getBoards());
 		return mBoardCategories;
 	}
-	
+
 	private void closeCategory()
 	{
 		if (mBoardCategoryTitle != null)
@@ -51,7 +51,7 @@ public class NowereBoardsParser implements GroupParser.Callback
 			mBoards.clear();
 		}
 	}
-	
+
 	@Override
 	public boolean onStartElement(GroupParser parser, String tagName, String attrs)
 	{
@@ -81,19 +81,19 @@ public class NowereBoardsParser implements GroupParser.Callback
 		}
 		return false;
 	}
-	
+
 	@Override
 	public void onEndElement(GroupParser parser, String tagName)
 	{
-		
+
 	}
-	
+
 	@Override
 	public void onText(GroupParser parser, String source, int start, int end)
 	{
-		
+
 	}
-	
+
 	@Override
 	public void onGroupComplete(GroupParser parser, String text)
 	{
