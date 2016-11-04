@@ -141,6 +141,7 @@ public class NowereChanPerformer extends ChanPerformer
 		NowereChanLocator locator = NowereChanLocator.get(this);
 		Uri uri = locator.createThreadUri(data.boardName, data.threadNumber);
 		String responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
+		if (!responseText.contains("<form id=\"delform\"")) throw new InvalidResponseException();
 		int count = 0;
 		int index = 0;
 		while (index != -1)
