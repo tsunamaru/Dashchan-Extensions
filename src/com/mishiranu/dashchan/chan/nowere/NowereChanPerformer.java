@@ -15,7 +15,6 @@ import android.net.Uri;
 import android.util.Pair;
 
 import chan.content.ApiException;
-import chan.content.ChanLocator;
 import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
 import chan.content.model.Post;
@@ -32,10 +31,9 @@ public class NowereChanPerformer extends ChanPerformer
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
 	{
-		NowereChanLocator locator = ChanLocator.get(this);
+		NowereChanLocator locator = NowereChanLocator.get(this);
 		Uri uri = locator.createBoardUri(data.boardName, data.pageNumber);
-		String responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
-				.read().getString();
+		String responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
 		try
 		{
 			return new ReadThreadsResult(new NowerePostsParser(responseText, this, data.boardName).convertThreads());
@@ -49,20 +47,20 @@ public class NowereChanPerformer extends ChanPerformer
 	@Override
 	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException
 	{
-		NowereChanLocator locator = ChanLocator.get(this);
+		NowereChanLocator locator = NowereChanLocator.get(this);
 		Uri uri = locator.createThreadUri(data.boardName, data.threadNumber);
 		String responseText;
 		boolean archived = false;
 		try
 		{
-			responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator).read().getString();
+			responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
 		}
 		catch (HttpException e)
 		{
 			if (e.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND)
 			{
 				uri = locator.createThreadArchiveUri(data.boardName, data.threadNumber);
-				responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator).read().getString();
+				responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
 				archived = true;
 			}
 			else throw e;
@@ -82,9 +80,9 @@ public class NowereChanPerformer extends ChanPerformer
 	@Override
 	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException
 	{
-		NowereChanLocator locator = ChanLocator.get(this);
+		NowereChanLocator locator = NowereChanLocator.get(this);
 		Uri uri = locator.buildPath("nav.html");
-		String responseText = new HttpRequest(uri, data.holder, data).read().getString();
+		String responseText = new HttpRequest(uri, data).read().getString();
 		try
 		{
 			return new ReadBoardsResult(new NowereBoardsParser(responseText).convert());
@@ -112,9 +110,9 @@ public class NowereChanPerformer extends ChanPerformer
 	public ReadThreadSummariesResult onReadThreadSummaries(ReadThreadSummariesData data) throws HttpException,
 			InvalidResponseException
 	{
-		NowereChanLocator locator = ChanLocator.get(this);
+		NowereChanLocator locator = NowereChanLocator.get(this);
 		Uri uri = locator.createBoardUri(data.boardName, 0).buildUpon().appendEncodedPath("arch").build();
-		String responseText = new HttpRequest(uri, data.holder, data).read().getString();
+		String responseText = new HttpRequest(uri, data).read().getString();
 		ArrayList<Pair<Integer, ThreadSummary>> threadSummaries = new ArrayList<>();
 		Matcher matcher = PATTERN_ARCHIVED_THREAD.matcher(responseText);
 		while (matcher.find())
@@ -139,9 +137,9 @@ public class NowereChanPerformer extends ChanPerformer
 	@Override
 	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException
 	{
-		NowereChanLocator locator = ChanLocator.get(this);
+		NowereChanLocator locator = NowereChanLocator.get(this);
 		Uri uri = locator.createThreadUri(data.boardName, data.threadNumber);
-		String responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator).read().getString();
+		String responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
 		int count = 0;
 		int index = 0;
 		while (index != -1)
@@ -158,10 +156,10 @@ public class NowereChanPerformer extends ChanPerformer
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
 	{
-		NowereChanLocator locator = ChanLocator.get(this);
+		NowereChanLocator locator = NowereChanLocator.get(this);
 		Uri uri = locator.buildQuery(data.boardName + "/captcha.pl", "key",
 				data.threadNumber == null ? "mainpage" : "res" + data.threadNumber);
-		Bitmap image = new HttpRequest(uri, data.holder, data).read().getBitmap();
+		Bitmap image = new HttpRequest(uri, data).read().getBitmap();
 		if (image != null)
 		{
 			Bitmap newImage = Bitmap.createBitmap(image.getWidth(), 32, Bitmap.Config.ARGB_8888);
@@ -197,12 +195,12 @@ public class NowereChanPerformer extends ChanPerformer
 		else entity.add("nofile", "on");
 		if (data.captchaData != null) entity.add("captcha", data.captchaData.get(CaptchaData.INPUT));
 
-		NowereChanLocator locator = ChanLocator.get(this);
+		NowereChanLocator locator = NowereChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "wakaba.pl");
 		String responseText;
 		try
 		{
-			new HttpRequest(uri, data.holder, data).setPostMethod(entity)
+			new HttpRequest(uri, data).setPostMethod(entity)
 					.setRedirectHandler(HttpRequest.RedirectHandler.NONE).execute();
 			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_SEE_OTHER)
 			{
@@ -278,7 +276,7 @@ public class NowereChanPerformer extends ChanPerformer
 	public SendDeletePostsResult onSendDeletePosts(SendDeletePostsData data) throws HttpException, ApiException,
 			InvalidResponseException
 	{
-		NowereChanLocator locator = ChanLocator.get(this);
+		NowereChanLocator locator = NowereChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "wakaba.pl");
 		UrlEncodedEntity entity = new UrlEncodedEntity("task", "delete", "password", data.password);
 		for (String postNumber : data.postNumbers) entity.add("delete", postNumber);
@@ -286,7 +284,7 @@ public class NowereChanPerformer extends ChanPerformer
 		String responseText;
 		try
 		{
-			new HttpRequest(uri, data.holder, data).setPostMethod(entity)
+			new HttpRequest(uri, data).setPostMethod(entity)
 					.setRedirectHandler(HttpRequest.RedirectHandler.NONE).execute();
 			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_SEE_OTHER) return null;
 			responseText = data.holder.read().getString();
