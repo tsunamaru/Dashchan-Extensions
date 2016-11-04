@@ -287,7 +287,7 @@ public class NowerePostsParser implements GroupParser.Callback
 			}
 			case EXPECT_SUBJECT:
 			{
-				mPost.setSubject(StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim()));
+				mPost.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
 				break;
 			}
 			case EXPECT_NAME:
@@ -300,12 +300,12 @@ public class NowerePostsParser implements GroupParser.Callback
 					else mPost.setEmail(email);
 					text = matcher.group(2);
 				}
-				mPost.setName(StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim()));
+				mPost.setName(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
 				break;
 			}
 			case EXPECT_TRIPCODE:
 			{
-				mPost.setTripcode(StringUtils.emptyIfNull(StringUtils.clearHtml(text).trim()));
+				mPost.setTripcode(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
 				break;
 			}
 			case EXPECT_COMMENT:
