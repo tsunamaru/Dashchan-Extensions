@@ -43,6 +43,7 @@ public class DvachModelMapper
 	{
 		String file = CommonUtils.getJsonString(jsonObject, "path");
 		String thumbnail = CommonUtils.optJsonString(jsonObject, "thumbnail");
+		String originalName = StringUtils.nullIfEmpty(CommonUtils.optJsonString(jsonObject, "fullname"));
 		Uri fileUri = file != null ? archiveStartPath != null ? locator.buildPath(archiveStartPath, file)
 				: locator.buildPath(boardName, file) : null;
 		Uri thumbnailUri = thumbnail != null ? archiveStartPath != null ? locator.buildPath(archiveStartPath, thumbnail)
@@ -51,7 +52,7 @@ public class DvachModelMapper
 		int width = jsonObject.optInt("width");
 		int height = jsonObject.optInt("height");
 		return new FileAttachment().setFileUri(locator, fileUri).setThumbnailUri(locator, thumbnailUri)
-				.setSize(size).setWidth(width).setHeight(height);
+				.setSize(size).setWidth(width).setHeight(height).setOriginalName(originalName);
 	}
 
 	public static Post createPost(JSONObject jsonObject, DvachChanLocator locator, String boardName,
