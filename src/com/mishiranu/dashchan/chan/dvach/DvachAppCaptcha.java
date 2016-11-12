@@ -1,26 +1,20 @@
 package com.mishiranu.dashchan.chan.dvach;
 
-public class DvachAppCaptcha
-{
-	private static DvachAppCaptcha sDvachAppCaptcha;
-	private static boolean sReady = false;
+public class DvachAppCaptcha {
+	private static DvachAppCaptcha dvachAppCaptcha;
+	private static boolean ready = false;
 
-	public static synchronized DvachAppCaptcha getInstance()
-	{
-		if (!sReady)
-		{
-			sReady = true;
-			try
-			{
+	public static synchronized DvachAppCaptcha getInstance() {
+		if (!ready) {
+			ready = true;
+			try {
 				System.loadLibrary("appcaptcha");
-				sDvachAppCaptcha = new DvachAppCaptcha();
-			}
-			catch (LinkageError e)
-			{
-
+				dvachAppCaptcha = new DvachAppCaptcha();
+			} catch (LinkageError e) {
+				// Ignore exception
 			}
 		}
-		return sDvachAppCaptcha;
+		return dvachAppCaptcha;
 	}
 
 	public native String getPublicKey();
