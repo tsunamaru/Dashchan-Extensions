@@ -40,8 +40,8 @@ import chan.util.StringUtils;
 
 @SuppressLint("SimpleDateFormat")
 public class DvachChanPerformer extends ChanPerformer {
-	private static final String COOKIE_AUTH = "usercode_auth";
-	private static final String COOKIE_NOCAPTCHA = "usercode_nocaptcha";
+	private static final String COOKIE_USERCODE_AUTH = "usercode_auth";
+	private static final String COOKIE_PASSCODE_AUTH = "passcode_auth";
 
 	private static final String[] PREFERRED_BOARDS_ORDER = {"Разное", "Тематика", "Творчество", "Политика",
 		"Техника и софт", "Игры", "Японская культура", "Взрослым", "Пробное"};
@@ -49,13 +49,13 @@ public class DvachChanPerformer extends ChanPerformer {
 	private CookieBuilder buildCookies(String captchaPassCookie) {
 		DvachChanConfiguration configuration = DvachChanConfiguration.get(this);
 		CookieBuilder builder = new CookieBuilder();
-		builder.append(COOKIE_AUTH, configuration.getCookie(COOKIE_AUTH));
-		builder.append(COOKIE_NOCAPTCHA, captchaPassCookie);
+		builder.append(COOKIE_USERCODE_AUTH, configuration.getCookie(COOKIE_USERCODE_AUTH));
+		builder.append(COOKIE_PASSCODE_AUTH, captchaPassCookie);
 		return builder;
 	}
 
 	private CookieBuilder buildCookiesWithCaptchaPass() {
-		return buildCookies(DvachChanConfiguration.get(this).getCookie(COOKIE_NOCAPTCHA));
+		return buildCookies(DvachChanConfiguration.get(this).getCookie(COOKIE_PASSCODE_AUTH));
 	}
 
 	@Override
@@ -427,7 +427,7 @@ public class DvachChanPerformer extends ChanPerformer {
 		lastCaptchaPassData = null;
 		lastCaptchaPassCookie = null;
 		DvachChanConfiguration configuration = DvachChanConfiguration.get(this);
-		configuration.storeCookie(COOKIE_NOCAPTCHA, null, null);
+		configuration.storeCookie(COOKIE_PASSCODE_AUTH, null, null);
 		DvachChanLocator locator = DvachChanLocator.get(this);
 		Uri uri = locator.createFcgiUri("makaba");
 		UrlEncodedEntity entity = new UrlEncodedEntity("task", "auth", "usercode", captchaPassData, "json", "1");
@@ -446,7 +446,7 @@ public class DvachChanPerformer extends ChanPerformer {
 		lastCaptchaPassData = captchaPassData;
 		lastCaptchaPassCookie = captchaPassCookie;
 		if (captchaPassCookie != null) {
-			configuration.storeCookie(COOKIE_NOCAPTCHA, captchaPassCookie, "Usercode No Captcha");
+			configuration.storeCookie(COOKIE_PASSCODE_AUTH, captchaPassCookie, "Passcode Auth");
 		}
 		return captchaPassCookie;
 	}
@@ -502,7 +502,8 @@ public class DvachChanPerformer extends ChanPerformer {
 	}
 
 	private ReadCaptchaResult onReadCaptcha(ReadCaptchaData data, String captchaType, boolean overrideCaptchaType,
-			String captchaPassData, boolean mayUseLastCaptchaPassCookie) throws HttpException, InvalidResponseException {
+			String captchaPassData, boolean mayUseLastCaptchaPassCookie) throws HttpException,
+			InvalidResponseException {
 		DvachChanLocator locator = DvachChanLocator.get(this);
 		String captchaPassCookie = null;
 		boolean mayRelogin = false;
@@ -823,10 +824,10 @@ public class DvachChanPerformer extends ChanPerformer {
 		} catch (JSONException e) {
 			throw new InvalidResponseException(e);
 		}
-		String auth = data.holder.getCookieValue(COOKIE_AUTH);
+		String auth = data.holder.getCookieValue(COOKIE_USERCODE_AUTH);
 		if (!StringUtils.isEmpty(auth)) {
 			DvachChanConfiguration configuration = DvachChanConfiguration.get(this);
-			configuration.storeCookie(COOKIE_AUTH, auth, "Usercode Auth");
+			configuration.storeCookie(COOKIE_USERCODE_AUTH, auth, "Usercode Auth");
 		}
 		String postNumber = CommonUtils.optJsonString(jsonObject, "Num");
 		if (!StringUtils.isEmpty(postNumber)) {
