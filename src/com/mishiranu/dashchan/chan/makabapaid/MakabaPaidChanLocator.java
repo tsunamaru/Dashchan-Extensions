@@ -68,11 +68,7 @@ public class MakabaPaidChanLocator extends ChanLocator {
 		return createThreadUri(boardName, threadNumber).buildUpon().fragment(postNumber).build();
 	}
 
-	public Uri createApiUri(String name, String... params) {
-		Uri.Builder builder = buildPath("makaba", name).buildUpon();
-		for (int i = 0; i < params.length; i += 2) {
-			builder.appendQueryParameter(params[i], params[i + 1]);
-		}
-		return builder.build();
+	public Uri createFcgiUri(String name, String... alternation) {
+		return buildQuery("makaba/" + name + ".fcgi", alternation);
 	}
 }

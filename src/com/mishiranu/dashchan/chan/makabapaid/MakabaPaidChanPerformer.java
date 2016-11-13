@@ -129,7 +129,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 			InvalidResponseException {
 		MakabaPaidChanLocator locator = MakabaPaidChanLocator.get(this);
 		MakabaPaidChanConfiguration configuration = MakabaPaidChanConfiguration.get(this);
-		Uri uri = locator.createApiUri("makaba.fcgi");
+		Uri uri = locator.createFcgiUri("makaba");
 		MultipartEntity entity = new MultipartEntity("task", "search", "board", "hidden_" + data.boardName,
 				"find", data.searchQuery, "json", "1");
 		JSONObject jsonObject = readResponse(new HttpRequest(uri, data.holder, data).setPostMethod(entity)
@@ -180,7 +180,8 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 	}
 
 	@Override
-	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException {
+	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException,
+			InvalidResponseException {
 		MakabaPaidChanLocator locator = MakabaPaidChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "res", data.threadNumber + ".json");
 		JSONObject jsonObject = readResponse(new HttpRequest(uri, data.holder, data)
@@ -218,7 +219,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 		lastUserAuthorizationData = null;
 		lastUserAuthorizationCookie = null;
 		MakabaPaidChanLocator locator = MakabaPaidChanLocator.get(this);
-		Uri uri = locator.createApiUri("makaba.fcgi");
+		Uri uri = locator.createFcgiUri("makaba");
 		UrlEncodedEntity entity = new UrlEncodedEntity("task", "auth", "usercode", userAuthorizationData, "json", "1");
 		JSONObject jsonObject = new HttpRequest(uri, holder, preset).setPostMethod(entity)
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
@@ -281,7 +282,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 		entity.add("icon", data.userIcon);
 
 		MakabaPaidChanLocator locator = MakabaPaidChanLocator.get(this);
-		Uri uri = locator.createApiUri("posting.fcgi", "json", "1");
+		Uri uri = locator.createFcgiUri("posting", "json", "1");
 		String responseText = readResponse(new HttpRequest(uri, data.holder, data).setPostMethod(entity)
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT), data.holder).getString();
 		JSONObject jsonObject;
@@ -417,7 +418,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 	public SendReportPostsResult onSendReportPosts(SendReportPostsData data) throws HttpException, ApiException,
 			InvalidResponseException {
 		MakabaPaidChanLocator locator = MakabaPaidChanLocator.get(this);
-		Uri uri = locator.createApiUri("makaba.fcgi");
+		Uri uri = locator.createFcgiUri("makaba");
 		StringBuilder postsBuilder = new StringBuilder();
 		for (String postNumber : data.postNumbers) {
 			postsBuilder.append(postNumber).append(", ");

@@ -23,6 +23,7 @@ public class MakabaPaidChanMarkup extends ChanMarkup {
 		addTag("span", "u", TAG_UNDERLINE);
 		addTag("span", "o", TAG_OVERLINE);
 		addColorable("span");
+		addColorable("font");
 	}
 
 	@Override
