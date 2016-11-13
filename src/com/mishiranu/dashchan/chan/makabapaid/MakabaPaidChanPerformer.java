@@ -55,7 +55,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 			return response;
 		}
 		String responseText = response.getString();
-		if (responseText.contains("<title>\nU shall not pass\n</title>")) {
+		if (responseText.matches("(?s).*<title>\\s*U shall not pass\\s*</title>.*")) {
 			synchronized (this) {
 				lastUserAuthorizationData = null;
 				lastUserAuthorizationCookie = null;
