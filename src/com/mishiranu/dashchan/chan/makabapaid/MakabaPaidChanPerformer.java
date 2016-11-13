@@ -18,7 +18,6 @@ import android.net.Uri;
 import chan.content.ApiException;
 import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
-import chan.content.ThreadRedirectException;
 import chan.content.model.Board;
 import chan.content.model.BoardCategory;
 import chan.content.model.Posts;
@@ -115,8 +114,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer
 	}
 
 	@Override
-	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, ThreadRedirectException,
-			InvalidResponseException
+	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException
 	{
 		MakabaPaidChanLocator locator = MakabaPaidChanLocator.get(this);
 		MakabaPaidChanConfiguration configuration = MakabaPaidChanConfiguration.get(this);
