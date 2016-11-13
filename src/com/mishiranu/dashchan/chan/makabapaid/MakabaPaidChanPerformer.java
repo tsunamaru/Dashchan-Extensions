@@ -32,7 +32,7 @@ import chan.util.StringUtils;
 
 @SuppressLint("SimpleDateFormat")
 public class MakabaPaidChanPerformer extends ChanPerformer {
-	private static final String COOKIE_AUTH = "usercode_auth";
+	private static final String COOKIE_USERCODE_AUTH = "usercode_auth";
 
 	private String lastUserAuthorizationData;
 	private String lastUserAuthorizationCookie;
@@ -49,8 +49,8 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 				}
 			}
 		}
-		HttpResponse response = (mayRetry ? request.copy() : request).addCookie(COOKIE_AUTH, configuration
-				.getCookie(COOKIE_AUTH)).addCookie("usercode_nocaptcha", lastUserAuthorizationCookie).read();
+		HttpResponse response = (mayRetry ? request.copy() : request).addCookie(COOKIE_USERCODE_AUTH, configuration
+				.getCookie(COOKIE_USERCODE_AUTH)).addCookie("passcode_auth", lastUserAuthorizationCookie).read();
 		if (response == null) {
 			return response;
 		}
@@ -290,10 +290,10 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 		} catch (JSONException e) {
 			throw new InvalidResponseException(e);
 		}
-		String auth = data.holder.getCookieValue(COOKIE_AUTH);
+		String auth = data.holder.getCookieValue(COOKIE_USERCODE_AUTH);
 		if (!StringUtils.isEmpty(auth)) {
 			MakabaPaidChanConfiguration configuration = MakabaPaidChanConfiguration.get(this);
-			configuration.storeCookie(COOKIE_AUTH, auth, "Usercode Auth");
+			configuration.storeCookie(COOKIE_USERCODE_AUTH, auth, "Usercode Auth");
 		}
 		String postNumber = CommonUtils.optJsonString(jsonObject, "Num");
 		if (!StringUtils.isEmpty(postNumber)) {
