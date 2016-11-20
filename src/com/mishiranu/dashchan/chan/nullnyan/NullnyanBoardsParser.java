@@ -15,6 +15,8 @@ public class NullnyanBoardsParser {
 
 	private final ArrayList<Board> boards = new ArrayList<>();
 
+	private String boardName;
+
 	private static final Pattern PATTERN_BOARD = Pattern.compile("/(\\w+)/");
 
 	public NullnyanBoardsParser(String source) {
@@ -27,13 +29,15 @@ public class NullnyanBoardsParser {
 	}
 
 	private static final TemplateParser<NullnyanBoardsParser> PARSER = new TemplateParser<NullnyanBoardsParser>()
-			.contains("a", "title", "").open((instance, holder, tagName, attributes) -> {
+			.name("a").open((instance, holder, tagName, attributes) -> {
 		String href = attributes.get("href");
 		Matcher matcher = PATTERN_BOARD.matcher(href);
 		if (matcher.matches()) {
-			String title = StringUtils.clearHtml(attributes.get("title")).trim();
-			holder.boards.add(new Board(matcher.group(1), title));
+			holder.boardName = matcher.group(1);
+			return true;
 		}
 		return false;
+	}).content((instance, holder, text) -> {
+		holder.boards.add(new Board(holder.boardName, StringUtils.clearHtml(text).trim()));
 	}).name("nav").close((instance, holder, tagName) -> instance.finish()).prepare();
 }
