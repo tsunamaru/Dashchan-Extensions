@@ -2,18 +2,15 @@ package com.mishiranu.dashchan.chan.nullnyan;
 
 import chan.content.ChanConfiguration;
 
-public class NullnyanChanConfiguration extends ChanConfiguration
-{
-	public NullnyanChanConfiguration()
-	{
+public class NullnyanChanConfiguration extends ChanConfiguration {
+	public NullnyanChanConfiguration() {
 		request(OPTION_READ_POSTS_COUNT);
 		setDefaultName("Anonymous");
 		addCaptchaType("nullnyan");
 	}
 
 	@Override
-	public Board obtainBoardConfiguration(String boardName)
-	{
+	public Board obtainBoardConfiguration(String boardName) {
 		Board board = new Board();
 		board.allowPosting = true;
 		board.allowDeleting = true;
@@ -21,10 +18,8 @@ public class NullnyanChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Captcha obtainCustomCaptchaConfiguration(String captchaType)
-	{
-		if ("nullnyan".equals(captchaType))
-		{
+	public Captcha obtainCustomCaptchaConfiguration(String captchaType) {
+		if ("nullnyan".equals(captchaType)) {
 			Captcha captcha = new Captcha();
 			captcha.title = "0nyan";
 			captcha.input = Captcha.Input.ALL;
@@ -35,8 +30,7 @@ public class NullnyanChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Posting obtainPostingConfiguration(String boardName, boolean newThread)
-	{
+	public Posting obtainPostingConfiguration(String boardName, boolean newThread) {
 		Posting posting = new Posting();
 		posting.allowName = true;
 		posting.allowTripcode = true;
@@ -51,8 +45,7 @@ public class NullnyanChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Deleting obtainDeletingConfiguration(String boardName)
-	{
+	public Deleting obtainDeletingConfiguration(String boardName) {
 		Deleting deleting = new Deleting();
 		deleting.password = true;
 		return deleting;
