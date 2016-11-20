@@ -186,7 +186,16 @@ public class NullnyanPostsParser {
 		if (holder.headerHandling) {
 			String text = source.substring(start, end).trim();
 			if (text.length() > 0) {
-				text = text.substring(text.indexOf(' ') + 1);
+				if (text.contains("/")) {
+					// e.g. "Mon 16/05/16 21:13:18" -> "16/05/16 21:13:18"
+					text = text.substring(text.indexOf(' ') + 1);
+				} else {
+					int index = text.indexOf(", ");
+					if (index >= 0) {
+						// e.g. "Saturday, 9 July 2016 05:05:10" -> "9 July 2016 05:05:10"
+						text = text.substring(index + 2);
+					}
+				}
 				for (SimpleDateFormat dateFormat : DATE_FORMATS) {
 					try {
 						holder.post.setTimestamp(dateFormat.parse(text).getTime());
