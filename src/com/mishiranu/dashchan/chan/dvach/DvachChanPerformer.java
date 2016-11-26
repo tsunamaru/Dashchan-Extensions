@@ -404,17 +404,6 @@ public class DvachChanPerformer extends ChanPerformer {
 	}
 
 	@Override
-	public ReadContentResult onReadContent(ReadContentData data) throws HttpException {
-		Uri uri = data.uri;
-		DvachChanLocator locator = DvachChanLocator.get(this);
-		if (StringUtils.isEmpty(uri.getQuery()) && locator.isAttachmentUri(uri)
-				&& locator.isImageExtension(uri.getPath())) {
-			uri = uri.buildUpon().encodedQuery("image=" + System.currentTimeMillis()).build();
-		}
-		return new ReadContentResult(new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass()).read());
-	}
-
-	@Override
 	public CheckAuthorizationResult onCheckAuthorization(CheckAuthorizationData data) throws HttpException,
 			InvalidResponseException {
 		return new CheckAuthorizationResult(readCaptchaPass(data, data.authorizationData[0]) != null);
