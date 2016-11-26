@@ -139,12 +139,13 @@ public class DvachChanPerformer extends ChanPerformer {
 		}
 		HttpResponse response = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass())
 				.setValidator(data.validator).setRedirectHandler(handler).read();
-		String archiveStartPath = null;
+		String archiveDate = null;
 		if (archive) {
-			archiveStartPath = threadUri[0].getPath();
-			int index = archiveStartPath.indexOf("/res");
-			if (index > 0) {
-				archiveStartPath = archiveStartPath.substring(0, index + 1);
+			archiveDate = threadUri[0].getPath();
+			int index1 = archiveDate.indexOf("arch/");
+			int index2 = archiveDate.indexOf("/res");
+			if (index2 >= index1 && index1 >= 0) {
+				archiveDate = archiveDate.substring(index1 + 5, index2);
 			}
 		}
 		JSONObject jsonObject = response.getJsonObject();
@@ -175,7 +176,7 @@ public class DvachChanPerformer extends ChanPerformer {
 		} else {
 			if (jsonObject != null) {
 				try {
-					if (archiveStartPath != null && archiveStartPath.endsWith("/wakaba/")) {
+					if (archiveDate != null && archiveDate.equals("wakaba")) {
 						jsonArray = jsonObject.getJSONArray("thread");
 						ArrayList<Post> posts = new ArrayList<>();
 						for (int i = 0; i < jsonArray.length(); i++) {
@@ -188,7 +189,7 @@ public class DvachChanPerformer extends ChanPerformer {
 						int uniquePosters = jsonObject.optInt("unique_posters");
 						jsonArray = jsonObject.getJSONArray("threads").getJSONObject(0).getJSONArray("posts");
 						return new Posts(DvachModelMapper.createPosts(jsonArray, locator, data.boardName,
-								archiveStartPath, configuration.isSageEnabled(data.boardName)))
+								archiveDate, configuration.isSageEnabled(data.boardName)))
 								.setUniquePosters(uniquePosters);
 					}
 				} catch (JSONException e) {
