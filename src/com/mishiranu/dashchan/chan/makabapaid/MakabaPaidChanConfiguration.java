@@ -3,7 +3,6 @@ package com.mishiranu.dashchan.chan.makabapaid;
 import java.util.Locale;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.util.Pair;

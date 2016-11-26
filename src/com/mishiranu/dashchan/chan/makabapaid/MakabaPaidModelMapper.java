@@ -21,14 +21,12 @@ import chan.util.StringUtils;
 public class MakabaPaidModelMapper {
 	private static final Pattern BADGE_PATTERN = Pattern.compile("<img.+?src=\"(.+?)\".+?(?:title=\"(.+?)\")?.+?/?>");
 
-	public static FileAttachment createFileAttachment(JSONObject jsonObject, MakabaPaidChanLocator locator,
-			String boardName, boolean archive) throws JSONException {
+	public static FileAttachment createFileAttachment(JSONObject jsonObject, MakabaPaidChanLocator locator)
+			throws JSONException {
 		String file = CommonUtils.getJsonString(jsonObject, "path");
 		String thumbnail = CommonUtils.optJsonString(jsonObject, "thumbnail");
-		Uri fileUri = file != null ? archive ? locator.buildPath(boardName, "arch", file)
-				: locator.buildPath(boardName, file) : null;
-		Uri thumbnailUri = thumbnail != null ? archive ? locator.buildPath(boardName, "arch", thumbnail)
-				: locator.buildPath(boardName, thumbnail) : null;
+		Uri fileUri = file != null ? locator.buildPath(file) : null;
+		Uri thumbnailUri = thumbnail != null ? locator.buildPath(thumbnail) : null;
 		int size = jsonObject.optInt("size") * 1024;
 		int width = jsonObject.optInt("width");
 		int height = jsonObject.optInt("height");
@@ -36,8 +34,8 @@ public class MakabaPaidModelMapper {
 				.setSize(size).setWidth(width).setHeight(height);
 	}
 
-	public static Post createPost(JSONObject jsonObject, MakabaPaidChanLocator locator, String boardName,
-			boolean archive, boolean sageEnabled) throws JSONException {
+	public static Post createPost(JSONObject jsonObject, MakabaPaidChanLocator locator, boolean sageEnabled)
+			throws JSONException {
 		Post post = new Post();
 		String num = CommonUtils.getJsonString(jsonObject, "num");
 		String parent = CommonUtils.getJsonString(jsonObject, "parent");
@@ -74,7 +72,7 @@ public class MakabaPaidModelMapper {
 					if (attachments == null) {
 						attachments = new ArrayList<>();
 					}
-					attachments.add(createFileAttachment(filesArray.getJSONObject(i), locator, boardName, archive));
+					attachments.add(createFileAttachment(filesArray.getJSONObject(i), locator));
 				}
 			}
 		} catch (JSONException e) {
@@ -147,23 +145,20 @@ public class MakabaPaidModelMapper {
 				.setAttachments(attachments).setIcons(icons);
 	}
 
-	public static Post[] createPosts(JSONArray jsonArray, MakabaPaidChanLocator locator, String boardName,
-			boolean archive, boolean sageEnabled) throws JSONException {
+	public static Post[] createPosts(JSONArray jsonArray, MakabaPaidChanLocator locator,
+			boolean sageEnabled) throws JSONException {
 		if (jsonArray.length() > 0) {
 			Post[] posts = new Post[jsonArray.length()];
 			for (int i = 0; i < posts.length; i++) {
-				posts[i] = createPost(jsonArray.getJSONObject(i), locator, boardName, archive, sageEnabled);
-			}
-			if (archive) {
-				posts[0].setArchived(true);
+				posts[i] = createPost(jsonArray.getJSONObject(i), locator, sageEnabled);
 			}
 			return posts;
 		}
 		return null;
 	}
 
-	public static Posts createThread(JSONObject jsonObject, MakabaPaidChanLocator locator, String boardName,
-			boolean sageEnabled) throws JSONException {
+	public static Posts createThread(JSONObject jsonObject, MakabaPaidChanLocator locator, boolean sageEnabled)
+			throws JSONException {
 		int postsCount = jsonObject.optInt("posts_count");
 		int postsWithFilesCount = Math.max(jsonObject.optInt("files_count"), jsonObject.optInt("images_count"));
 		Post[] posts;
@@ -176,10 +171,10 @@ public class MakabaPaidModelMapper {
 			}
 			posts = new Post[jsonArray.length()];
 			for (int i = 0; i < posts.length; i++) {
-				posts[i] = createPost(jsonArray.getJSONObject(i), locator, boardName, false, sageEnabled);
+				posts[i] = createPost(jsonArray.getJSONObject(i), locator, sageEnabled);
 			}
 		} else {
-			posts = new Post[] {createPost(jsonObject, locator, boardName, false, sageEnabled)};
+			posts = new Post[] {createPost(jsonObject, locator, sageEnabled)};
 		}
 		for (int i = 0; i < posts.length; i++) {
 			if (posts[i].getAttachmentsCount() > 0) {

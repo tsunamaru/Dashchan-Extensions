@@ -90,7 +90,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 					threads = new Posts[threadsArray.length()];
 					for (int i = 0; i < threads.length; i++) {
 						threads[i] = MakabaPaidModelMapper.createThread(threadsArray.getJSONObject(i),
-								locator, data.boardName, configuration.isSageEnabled(data.boardName));
+								locator, configuration.isSageEnabled(data.boardName));
 					}
 				}
 				int boardSpeed = jsonObject.optInt("board_speed");
@@ -115,7 +115,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 				int uniquePosters = jsonObject.optInt("unique_posters");
 				JSONArray jsonArray = jsonObject.getJSONArray("threads").getJSONObject(0).getJSONArray("posts");
 				return new ReadPostsResult(new Posts(MakabaPaidModelMapper.createPosts(jsonArray,
-						locator, data.boardName, false, configuration.isSageEnabled(data.boardName)))
+						locator, configuration.isSageEnabled(data.boardName)))
 						.setUniquePosters(uniquePosters));
 			} catch (JSONException e) {
 				throw new InvalidResponseException(e);
@@ -141,7 +141,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 					throw new HttpException(0, errorMessage);
 				}
 				return new ReadSearchPostsResult(MakabaPaidModelMapper.createPosts(jsonObject.getJSONArray("posts"),
-						locator, data.boardName, false, configuration.isSageEnabled(data.boardName)));
+						locator, configuration.isSageEnabled(data.boardName)));
 			} catch (JSONException e) {
 				throw new InvalidResponseException(e);
 			}
