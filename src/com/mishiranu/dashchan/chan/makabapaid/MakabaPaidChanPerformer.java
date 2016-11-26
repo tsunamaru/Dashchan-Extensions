@@ -198,17 +198,6 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 	}
 
 	@Override
-	public ReadContentResult onReadContent(ReadContentData data) throws HttpException, InvalidResponseException {
-		Uri uri = data.uri;
-		MakabaPaidChanLocator locator = MakabaPaidChanLocator.get(this);
-		if (StringUtils.isEmpty(uri.getQuery()) && locator.isAttachmentUri(uri)
-				&& locator.isImageExtension(uri.getPath())) {
-			uri = uri.buildUpon().encodedQuery("image=" + System.currentTimeMillis()).build();
-		}
-		return new ReadContentResult(readResponse(new HttpRequest(uri, data.holder, data), data.holder));
-	}
-
-	@Override
 	public CheckAuthorizationResult onCheckAuthorization(CheckAuthorizationData data) throws HttpException,
 			InvalidResponseException {
 		return new CheckAuthorizationResult(readUserAuthorization(data.holder, data, data.authorizationData[0]));
