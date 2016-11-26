@@ -176,10 +176,8 @@ public class MakabaPaidModelMapper {
 		} else {
 			posts = new Post[] {createPost(jsonObject, locator, sageEnabled)};
 		}
-		for (int i = 0; i < posts.length; i++) {
-			if (posts[i].getAttachmentsCount() > 0) {
-				postsWithFilesCount++;
-			}
+		if (posts.length > 0 && posts[0].getAttachmentsCount() > 0) {
+			postsWithFilesCount++;
 		}
 		postsCount += posts.length;
 		return new Posts(posts).addPostsCount(postsCount).addPostsWithFilesCount(postsWithFilesCount);
