@@ -22,7 +22,6 @@ import chan.content.model.Board;
 import chan.content.model.BoardCategory;
 import chan.content.model.Posts;
 import chan.http.HttpException;
-import chan.http.HttpHolder;
 import chan.http.HttpRequest;
 import chan.http.HttpResponse;
 import chan.http.MultipartEntity;
@@ -37,14 +36,14 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 	private String lastUserAuthorizationData;
 	private String lastUserAuthorizationCookie;
 
-	private HttpResponse readResponse(HttpRequest request, HttpHolder holder, boolean mayRetry) throws HttpException,
+	private HttpResponse readResponse(HttpRequest request, boolean mayRetry) throws HttpException,
 			InvalidResponseException {
 		MakabaPaidChanConfiguration configuration = MakabaPaidChanConfiguration.get(this);
 		String[] userAuthorizationDataArray = configuration.getUserAuthorizationData();
 		String userAuthorizationData = userAuthorizationDataArray != null ? userAuthorizationDataArray[0] : null;
 		synchronized (this) {
 			if (!StringUtils.equals(userAuthorizationData, lastUserAuthorizationData)) {
-				if (!readUserAuthorization(holder, null, userAuthorizationData)) {
+				if (!readUserAuthorization(null, userAuthorizationData)) {
 					throw new HttpException(HttpURLConnection.HTTP_UNAUTHORIZED, "Unauthorized");
 				}
 			}
@@ -61,16 +60,15 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 				lastUserAuthorizationCookie = null;
 			}
 			if (mayRetry) {
-				return readResponse(request, holder, false);
+				return readResponse(request, false);
 			}
 			throw new HttpException(HttpURLConnection.HTTP_UNAUTHORIZED, "Unauthorized");
 		}
 		return response;
 	}
 
-	private HttpResponse readResponse(HttpRequest request, HttpHolder holder) throws HttpException,
-			InvalidResponseException {
-		return readResponse(request, holder, true);
+	private HttpResponse readResponse(HttpRequest request) throws HttpException, InvalidResponseException {
+		return readResponse(request, true);
 	}
 
 	@Override
@@ -78,8 +76,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 		MakabaPaidChanLocator locator = MakabaPaidChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, (data.isCatalog() ? "catalog" : data.pageNumber == 0
 				? "index" : Integer.toString(data.pageNumber)) + ".json");
-		JSONObject jsonObject = readResponse(new HttpRequest(uri, data.holder, data)
-				.setValidator(data.validator), data.holder).getJsonObject();
+		JSONObject jsonObject = readResponse(new HttpRequest(uri, data).setValidator(data.validator)).getJsonObject();
 		if (jsonObject != null) {
 			try {
 				MakabaPaidChanConfiguration configuration = MakabaPaidChanConfiguration.get(this);
@@ -107,8 +104,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 		MakabaPaidChanLocator locator = MakabaPaidChanLocator.get(this);
 		MakabaPaidChanConfiguration configuration = MakabaPaidChanConfiguration.get(this);
 		Uri uri = locator.buildPath(data.boardName, "res", data.threadNumber + ".json");
-		JSONObject jsonObject = readResponse(new HttpRequest(uri, data.holder, data)
-				.setValidator(data.validator), data.holder).getJsonObject();
+		JSONObject jsonObject = readResponse(new HttpRequest(uri, data).setValidator(data.validator)).getJsonObject();
 		if (jsonObject != null) {
 			try {
 				configuration.updateFromThreadsPostsJson(data.boardName, jsonObject);
@@ -132,8 +128,8 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 		Uri uri = locator.createFcgiUri("makaba");
 		MultipartEntity entity = new MultipartEntity("task", "search", "board", "hidden_" + data.boardName,
 				"find", data.searchQuery, "json", "1");
-		JSONObject jsonObject = readResponse(new HttpRequest(uri, data.holder, data).setPostMethod(entity)
-				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT), data.holder).getJsonObject();
+		JSONObject jsonObject = readResponse(new HttpRequest(uri, data).setPostMethod(entity)
+				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT)).getJsonObject();
 		if (jsonObject != null) {
 			try {
 				String errorMessage = jsonObject.optString("message");
@@ -153,7 +149,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException {
 		MakabaPaidChanLocator locator = MakabaPaidChanLocator.get(this);
 		Uri uri = locator.buildPath("b", "");
-		String responseText = readResponse(new HttpRequest(uri, data.holder, data), data.holder).getString();
+		String responseText = readResponse(new HttpRequest(uri, data)).getString();
 		int index = responseText.indexOf("<span class=\"nowrap\">Доски");
 		if (index == -1) {
 			throw new InvalidResponseException();
@@ -164,7 +160,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 		while (matcher.find()) {
 			String boardName = matcher.group(1);
 			uri = locator.buildPath(boardName, "index.json");
-			JSONObject jsonObject = readResponse(new HttpRequest(uri, data.holder, data), data.holder).getJsonObject();
+			JSONObject jsonObject = readResponse(new HttpRequest(uri, data)).getJsonObject();
 			if (jsonObject == null) {
 				throw new InvalidResponseException();
 			}
@@ -184,8 +180,7 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 			InvalidResponseException {
 		MakabaPaidChanLocator locator = MakabaPaidChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "res", data.threadNumber + ".json");
-		JSONObject jsonObject = readResponse(new HttpRequest(uri, data.holder, data)
-				.setValidator(data.validator), data.holder).getJsonObject();
+		JSONObject jsonObject = readResponse(new HttpRequest(uri, data).setValidator(data.validator)).getJsonObject();
 		if (jsonObject != null) {
 			try {
 				JSONArray jsonArray = jsonObject.getJSONArray("threads").getJSONObject(0).getJSONArray("posts");
@@ -205,17 +200,17 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 	@Override
 	public CheckAuthorizationResult onCheckAuthorization(CheckAuthorizationData data) throws HttpException,
 			InvalidResponseException {
-		return new CheckAuthorizationResult(readUserAuthorization(data.holder, data, data.authorizationData[0]));
+		return new CheckAuthorizationResult(readUserAuthorization(data, data.authorizationData[0]));
 	}
 
-	private boolean readUserAuthorization(HttpHolder holder, HttpRequest.Preset preset, String userAuthorizationData)
+	private boolean readUserAuthorization(HttpRequest.Preset preset, String userAuthorizationData)
 			throws HttpException, InvalidResponseException {
 		lastUserAuthorizationData = null;
 		lastUserAuthorizationCookie = null;
 		MakabaPaidChanLocator locator = MakabaPaidChanLocator.get(this);
 		Uri uri = locator.createFcgiUri("makaba");
 		UrlEncodedEntity entity = new UrlEncodedEntity("task", "auth", "usercode", userAuthorizationData, "json", "1");
-		JSONObject jsonObject = new HttpRequest(uri, holder, preset).setPostMethod(entity)
+		JSONObject jsonObject = new HttpRequest(uri, preset).setPostMethod(entity)
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
 		if (jsonObject == null) {
 			throw new InvalidResponseException();
@@ -277,8 +272,8 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 
 		MakabaPaidChanLocator locator = MakabaPaidChanLocator.get(this);
 		Uri uri = locator.createFcgiUri("posting", "json", "1");
-		String responseText = readResponse(new HttpRequest(uri, data.holder, data).setPostMethod(entity)
-				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT), data.holder).getString();
+		String responseText = readResponse(new HttpRequest(uri, data).setPostMethod(entity)
+				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT)).getString();
 		JSONObject jsonObject;
 		try {
 			jsonObject = new JSONObject(responseText);
@@ -420,9 +415,9 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 		MultipartEntity entity = new MultipartEntity("task", "report", "board", "hidden_" + data.boardName,
 				"thread", data.threadNumber, "posts", postsBuilder.toString(), "comment", data.comment, "json", "1");
 		String referer = locator.createThreadUri(data.boardName, data.threadNumber).toString();
-		JSONObject jsonObject = readResponse(new HttpRequest(uri, data.holder, data)
+		JSONObject jsonObject = readResponse(new HttpRequest(uri, data)
 				.addHeader("Referer", referer).setPostMethod(entity)
-				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT), data.holder).getJsonObject();
+				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT)).getJsonObject();
 		if (jsonObject == null) {
 			throw new InvalidResponseException();
 		}
