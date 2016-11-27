@@ -198,6 +198,11 @@ public class MakabaPaidChanPerformer extends ChanPerformer {
 	}
 
 	@Override
+	public ReadContentResult onReadContent(ReadContentData data) throws HttpException, InvalidResponseException {
+		return new ReadContentResult(readResponse(new HttpRequest(data.uri, data)));
+	}
+
+	@Override
 	public CheckAuthorizationResult onCheckAuthorization(CheckAuthorizationData data) throws HttpException,
 			InvalidResponseException {
 		return new CheckAuthorizationResult(readUserAuthorization(data.holder, data, data.authorizationData[0]));
