@@ -404,6 +404,11 @@ public class DvachChanPerformer extends ChanPerformer {
 	}
 
 	@Override
+	public ReadContentResult onReadContent(ReadContentData data) throws HttpException {
+		return new ReadContentResult(new HttpRequest(data.uri, data).addCookie(buildCookiesWithCaptchaPass()).read());
+	}
+
+	@Override
 	public CheckAuthorizationResult onCheckAuthorization(CheckAuthorizationData data) throws HttpException,
 			InvalidResponseException {
 		return new CheckAuthorizationResult(readCaptchaPass(data, data.authorizationData[0]) != null);
