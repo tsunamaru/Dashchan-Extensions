@@ -422,6 +422,7 @@ public class DvachChanPerformer extends ChanPerformer {
 		lastCaptchaPassData = null;
 		lastCaptchaPassCookie = null;
 		DvachChanConfiguration configuration = DvachChanConfiguration.get(this);
+		configuration.revokeMaxFilesCount();
 		configuration.storeCookie(COOKIE_PASSCODE_AUTH, null, null);
 		DvachChanLocator locator = DvachChanLocator.get(this);
 		Uri uri = locator.createFcgiUri("makaba");
@@ -441,6 +442,10 @@ public class DvachChanPerformer extends ChanPerformer {
 		lastCaptchaPassData = captchaPassData;
 		lastCaptchaPassCookie = captchaPassCookie;
 		if (captchaPassCookie != null) {
+			int filesCount = jsonObject.optInt("files");
+			if (filesCount > 0) {
+				configuration.setMaxFilesCount(filesCount);
+			}
 			configuration.storeCookie(COOKIE_PASSCODE_AUTH, captchaPassCookie, "Passcode Auth");
 		}
 		return captchaPassCookie;
@@ -500,6 +505,7 @@ public class DvachChanPerformer extends ChanPerformer {
 			String captchaPassData, boolean mayUseLastCaptchaPassCookie) throws HttpException,
 			InvalidResponseException {
 		DvachChanLocator locator = DvachChanLocator.get(this);
+		DvachChanConfiguration configuration = DvachChanConfiguration.get(this);
 		String captchaPassCookie = null;
 		boolean mayRelogin = false;
 		if (captchaPassData != null) {
@@ -528,14 +534,16 @@ public class DvachChanPerformer extends ChanPerformer {
 		}
 		String apiResult = jsonObject != null ? CommonUtils.optJsonString(jsonObject, "result") : null;
 		if ("3".equals(apiResult)) {
+			configuration.setMaxFilesCountEnabled(false);
 			return new ReadCaptchaResult(CaptchaState.SKIP, null);
 		} else if ("2".equals(apiResult)) {
+			configuration.setMaxFilesCountEnabled(true);
 			return makeCaptchaPassResult(captchaPassCookie);
 		} else {
 			if (mayRelogin) {
 				return onReadCaptcha(data, captchaType, overrideCaptchaType, captchaPassData, false);
 			}
-			DvachChanConfiguration configuration = DvachChanConfiguration.get(this);
+			configuration.setMaxFilesCountEnabled(false);
 			if (data.threadNumber != null && configuration.isCaptchaBypassEnabled()) {
 				DvachAppCaptcha appCaptcha = DvachAppCaptcha.getInstance();
 				if (appCaptcha != null) {
@@ -688,11 +696,12 @@ public class DvachChanPerformer extends ChanPerformer {
 				}
 				return result;
 			} else {
-				// If wakaba is swaying, but passcode is verified, let's try to use it
-				if (captchaPassCookie != null) {
-					return makeCaptchaPassResult(captchaPassCookie);
-				}
 				if (exception != null) {
+					// If wakaba is swaying, but passcode is verified, let's try to use it
+					if (captchaPassCookie != null) {
+						configuration.setMaxFilesCountEnabled(true);
+						return makeCaptchaPassResult(captchaPassCookie);
+					}
 					throw exception;
 				}
 				throw new InvalidResponseException();
