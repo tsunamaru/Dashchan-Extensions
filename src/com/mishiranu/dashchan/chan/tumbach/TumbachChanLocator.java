@@ -54,7 +54,11 @@ public class TumbachChanLocator extends ChanLocator {
 
 	@Override
 	public String getPostNumber(Uri uri) {
-		return uri.getFragment();
+		String fragment = uri.getFragment();
+		if (fragment != null && fragment.startsWith("post-")) {
+			fragment = fragment.substring(5);
+		}
+		return fragment;
 	}
 
 	@Override
@@ -69,6 +73,6 @@ public class TumbachChanLocator extends ChanLocator {
 
 	@Override
 	public Uri createPostUri(String boardName, String threadNumber, String postNumber) {
-		return createThreadUri(boardName, threadNumber).buildUpon().fragment(postNumber).build();
+		return createThreadUri(boardName, threadNumber).buildUpon().fragment("post-" + postNumber).build();
 	}
 }
