@@ -5,6 +5,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -21,6 +23,8 @@ import chan.util.CommonUtils;
 import chan.util.StringUtils;
 
 public class TumbachModelMapper {
+	private static final Pattern UA_ICON_PATTERN = Pattern.compile("(.*?) / (.*?)");
+
 	private static final Uri URI_ICON_OS = Uri.parse("chan:///res/raw/raw_os");
 	private static final Uri URI_ICON_ANDROID = Uri.parse("chan:///res/raw/raw_os_android");
 	private static final Uri URI_ICON_APPLE = Uri.parse("chan:///res/raw/raw_os_apple");
@@ -114,74 +118,55 @@ public class TumbachModelMapper {
 		ArrayList<Icon> icons = null;
 		String extraData = CommonUtils.optJsonString(jsonObject, "extraData");
 		if (extraData != null) {
-			int index1 = extraData.indexOf('(');
-			int index2 = extraData.indexOf(") ");
-			if (index1 >= 0 && index2 > index1) {
-				String[] osArray = extraData.substring(index1 + 1, index2).split("; *");
-				for (int i = 0; i < osArray.length; i++) {
-					Uri osIconUri = null;
-					if (osArray[i].startsWith("Windows")) {
+			Matcher matcher = UA_ICON_PATTERN.matcher(extraData);
+			if (matcher.matches()) {
+				String browser = matcher.group(1);
+				String os = matcher.group(2);
+				if (!"Other".equals(os)) {
+					Uri osIconUri = URI_ICON_OS;
+					if (os.startsWith("Windows")) {
 						osIconUri = URI_ICON_WINDOWS;
-					} else if (osArray[i].startsWith("Linux")) {
+					} else if (os.startsWith("Linux")) {
 						osIconUri = URI_ICON_LINUX;
-					} else if (osArray[i].startsWith("Ubuntu")) {
+					} else if (os.startsWith("Ubuntu")) {
 						osIconUri = URI_ICON_LINUX;
-					} else if (osArray[i].startsWith("Mac")) {
+					} else if (os.startsWith("Mac")) {
 						osIconUri = URI_ICON_APPLE;
-					} else if (osArray[i].startsWith("iOS")) {
+					} else if (os.startsWith("iOS")) {
 						osIconUri = URI_ICON_APPLE;
-					} else if (osArray[i].startsWith("Android")) {
+					} else if (os.startsWith("Android")) {
 						osIconUri = URI_ICON_ANDROID;
 					}
-					String os;
-					if (osIconUri == null && i == osArray.length - 1) {
-						osIconUri = URI_ICON_OS;
-						os = osArray[0];
-					} else {
-						os = osArray[i];
+					if (icons == null) {
+						icons = new ArrayList<>();
 					}
-					if (osIconUri != null) {
-						if (icons == null) {
-							icons = new ArrayList<>();
-						}
-						icons.add(new Icon(locator, osIconUri, os));
-						break;
-					}
+					icons.add(new Icon(locator, osIconUri, os));
 				}
-				String[] browserArray = extraData.substring(index2 + 2).replaceAll("\\(.*?\\)", "").split(" +");
-				for (int i = 0; i < browserArray.length; i++) {
-					Uri browserIconUri = null;
-					if (browserArray[i].startsWith("Chrom")) {
+				if (!"Other 0.0.0".equals(browser)) {
+					Uri browserIconUri = URI_ICON_BROWSER;
+					if (browser.startsWith("Chrom")) {
 						browserIconUri = URI_ICON_CHROME;
-					} else if (browserArray[i].startsWith("Firefox")) {
+					} else if (browser.startsWith("Firefox")) {
 						browserIconUri = URI_ICON_FIREFOX;
-					} else if (browserArray[i].startsWith("Iceweasel")) {
+					} else if (browser.startsWith("Iceweasel")) {
 						browserIconUri = URI_ICON_FIREFOX;
-					} else if (browserArray[i].startsWith("Edge")) {
+					} else if (browser.startsWith("Edge")) {
 						browserIconUri = URI_ICON_EDGE;
-					} else if (browserArray[i].startsWith("IE")) {
+					} else if (browser.startsWith("IE")) {
 						browserIconUri = URI_ICON_EDGE;
-					} else if (browserArray[i].startsWith("Opera")) {
+					} else if (browser.startsWith("Opera")) {
 						browserIconUri = URI_ICON_OPERA;
-					} else if (browserArray[i].startsWith("Vivaldi")) {
+					} else if (browser.startsWith("Vivaldi")) {
 						browserIconUri = URI_ICON_VIVALDI;
-					} else if (browserArray[i].startsWith("Safari")) {
+					} else if (browser.startsWith("Safari")) {
+						browserIconUri = URI_ICON_SAFARI;
+					} else if (browser.startsWith("Mobile Safari")) {
 						browserIconUri = URI_ICON_SAFARI;
 					}
-					String browser;
-					if (browserIconUri == null && i == browserArray.length - 1) {
-						browserIconUri = URI_ICON_BROWSER;
-						browser = browserArray[0];
-					} else {
-						browser = browserArray[i];
+					if (icons == null) {
+						icons = new ArrayList<>();
 					}
-					if (browserIconUri != null) {
-						if (icons == null) {
-							icons = new ArrayList<>();
-						}
-						icons.add(new Icon(locator, browserIconUri, browser));
-						break;
-					}
+					icons.add(new Icon(locator, browserIconUri, browser));
 				}
 			}
 		}
