@@ -4,12 +4,12 @@
 	android:height="24dp"
 	android:viewportWidth="44"
 	android:viewportHeight="44">
-	
+
 	<path
 		android:fillColor="#ffffffff"
 		android:pathData="M30 40C30 40 14 40 14 40C11.791 40 10 38.209 10 36C10 36 10 8 10 8C10 5.791 11.791 4 14 4
 			C14 4 30 4 30 4C32.209 4 34 5.791 34 8C34 8 34 36 34 36C34 38.209 32.209 40 30 40ZM14 33C14 33 27 8 27 8
 			C27 8 16 8 16 8C14.895 8 14 8.895 14 10C14 10 14 33 14 33ZM30 11C30 11 17 36 17 36C17 36 28 36 28 36
 			C29.105 36 30 35.105 30 34C30 34 30 11 30 11Z" />
-	
+
 </vector>
