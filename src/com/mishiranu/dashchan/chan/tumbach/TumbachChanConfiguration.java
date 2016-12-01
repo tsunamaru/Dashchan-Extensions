@@ -9,15 +9,13 @@ import android.util.Pair;
 import chan.content.ChanConfiguration;
 import chan.util.CommonUtils;
 
-public class TumbachChanConfiguration extends ChanConfiguration
-{
+public class TumbachChanConfiguration extends ChanConfiguration {
 	public static final String CAPTCHA_TYPE_NODE_CAPTCHA = "node_captcha";
 
 	private static final String KEY_ATTACHMENTS_COUNT = "attachments_count";
 	private static final String KEY_MAX_COMMENT_LENGTH = "max_comment_length";
 
-	public TumbachChanConfiguration()
-	{
+	public TumbachChanConfiguration() {
 		request(OPTION_READ_THREAD_PARTIALLY);
 		request(OPTION_READ_SINGLE_POST);
 		request(OPTION_READ_POSTS_COUNT);
@@ -29,8 +27,7 @@ public class TumbachChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Board obtainBoardConfiguration(String boardName)
-	{
+	public Board obtainBoardConfiguration(String boardName) {
 		Board board = new Board();
 		board.allowSearch = true;
 		board.allowCatalog = true;
@@ -40,10 +37,8 @@ public class TumbachChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Captcha obtainCustomCaptchaConfiguration(String captchaType)
-	{
-		if (CAPTCHA_TYPE_NODE_CAPTCHA.equals(captchaType))
-		{
+	public Captcha obtainCustomCaptchaConfiguration(String captchaType) {
+		if (CAPTCHA_TYPE_NODE_CAPTCHA.equals(captchaType)) {
 			Captcha captcha = new Captcha();
 			captcha.title = "Node Captcha";
 			captcha.input = Captcha.Input.NUMERIC;
@@ -54,8 +49,7 @@ public class TumbachChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Posting obtainPostingConfiguration(String boardName, boolean newThread)
-	{
+	public Posting obtainPostingConfiguration(String boardName, boolean newThread) {
 		Posting posting = new Posting();
 		posting.allowName = true;
 		posting.allowEmail = true;
@@ -76,21 +70,17 @@ public class TumbachChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Deleting obtainDeletingConfiguration(String boardName)
-	{
+	public Deleting obtainDeletingConfiguration(String boardName) {
 		Deleting deleting = new Deleting();
 		deleting.password = true;
 		deleting.optionFilesOnly = true;
 		return deleting;
 	}
 
-	public void updateFromBoardsJson(JSONObject jsonObject)
-	{
-		try
-		{
+	public void updateFromBoardsJson(JSONObject jsonObject) {
+		try {
 			JSONArray jsonArray = jsonObject.getJSONArray("boards");
-			for (int i = 0; i < jsonArray.length(); i++)
-			{
+			for (int i = 0; i < jsonArray.length(); i++) {
 				jsonObject = jsonArray.getJSONObject(i);
 				String boardName = CommonUtils.getJsonString(jsonObject, "name");
 				String defaultName = CommonUtils.getJsonString(jsonObject, "defaultUserName");
@@ -99,13 +89,15 @@ public class TumbachChanConfiguration extends ChanConfiguration
 				int maxCommentLength = jsonObject.optInt("maxTextLength");
 				storeDefaultName(boardName, defaultName);
 				set(boardName, KEY_ATTACHMENTS_COUNT, attachmentsCount);
-				if (bumpLimit != 0) storeBumpLimit(boardName, bumpLimit);
-				if (maxCommentLength > 0) set(boardName, KEY_MAX_COMMENT_LENGTH, maxCommentLength);
+				if (bumpLimit != 0) {
+					storeBumpLimit(boardName, bumpLimit);
+				}
+				if (maxCommentLength > 0) {
+					set(boardName, KEY_MAX_COMMENT_LENGTH, maxCommentLength);
+				}
 			}
-		}
-		catch (JSONException e)
-		{
-
+		} catch (JSONException e) {
+			// Ignore exception
 		}
 	}
 }
