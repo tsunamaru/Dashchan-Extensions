@@ -6,10 +6,10 @@ import java.util.Locale;
 
 import chan.content.model.Board;
 import chan.content.model.BoardCategory;
-import chan.text.GroupParser;
 import chan.text.ParseException;
+import chan.text.TemplateParser;
 
-public class NulleuBoardsParser implements GroupParser.Callback {
+public class NulleuBoardsParser {
 	private final String source;
 
 	private final ArrayList<BoardCategory> boardCategories = new ArrayList<>();
@@ -22,11 +22,7 @@ public class NulleuBoardsParser implements GroupParser.Callback {
 	}
 
 	public ArrayList<BoardCategory> convert() throws ParseException {
-		try {
-			GroupParser.parse(source, this);
-		} catch (FinishedException e) {
-			// Ignore exception
-		}
+		PARSER.parse(source, this);
 		closeCategory();
 		for (BoardCategory boardCategory : boardCategories) {
 			Arrays.sort(boardCategory.getBoards());
@@ -44,48 +40,28 @@ public class NulleuBoardsParser implements GroupParser.Callback {
 		}
 	}
 
-	private static class FinishedException extends ParseException {
-		private static final long serialVersionUID = 1L;
-	}
-
-	@Override
-	public boolean onStartElement(GroupParser parser, String tagName, String attrs) throws FinishedException {
-		if ("div".equals(tagName)) {
-			String cssClass = parser.getAttr(attrs, "class");
-			if ("menu-sect".equals(cssClass)) {
-				closeCategory();
-				String id = parser.getAttr(attrs, "id");
-				if (id != null && id.startsWith("ms-")) {
-					String title = id.substring(3);
-					if ("20".equals(title)) {
-						return false;
-					}
-					if ("_options".equals(title)) {
-						throw new FinishedException();
-					}
-					boardCategoryTitle = title.substring(0, 1).toUpperCase(Locale.US) + title.substring(1);
-				}
-			}
-		} else if (boardCategoryTitle != null) {
-			if ("a".equals(tagName)) {
-				String cssClass = parser.getAttr(attrs, "class");
-				if ("menu-item".equals(cssClass)) {
-					String title = parser.getAttr(attrs, "title");
-					String href = parser.getAttr(attrs, "href");
-					String boardName = href.substring(1, href.length() - 1);
-					boards.add(new Board(boardName, title));
+	private static final TemplateParser<NulleuBoardsParser> PARSER = new TemplateParser<NulleuBoardsParser>()
+			.equals("div", "class", "menu-sect").open((instance, holder, tagName, attributes) -> {
+		holder.closeCategory();
+		String id = attributes.get("id");
+		if (id != null && id.startsWith("ms-")) {
+			String title = id.substring(3);
+			if (!"20".equals(title)) {
+				if ("_options".equals(title)) {
+					instance.finish();
+				} else {
+					holder.boardCategoryTitle = title.substring(0, 1).toUpperCase(Locale.US) + title.substring(1);
 				}
 			}
 		}
 		return false;
-	}
-
-	@Override
-	public void onEndElement(GroupParser parser, String tagName) {}
-
-	@Override
-	public void onText(GroupParser parser, String source, int start, int end) {}
-
-	@Override
-	public void onGroupComplete(GroupParser parser, String text) {}
+	}).equals("a", "class", "menu-item").open((instance, holder, tagName, attributes) -> {
+		if (holder.boardCategoryTitle != null) {
+			String title = attributes.get("title");
+			String href = attributes.get("href");
+			String boardName = href.substring(1, href.length() - 1);
+			holder.boards.add(new Board(boardName, title));
+		}
+		return false;
+	}).prepare();
 }
