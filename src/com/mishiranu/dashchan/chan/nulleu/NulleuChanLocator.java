@@ -13,7 +13,9 @@ public class NulleuChanLocator extends ChanLocator {
 	private static final Pattern ATTACHMENT_PATH = Pattern.compile("/[\\w_]+/src/\\d+\\.\\w+");
 
 	public NulleuChanLocator() {
+		addChanHost("0chan.ru.net");
 		addChanHost("0chan.eu");
+		addConvertableChanHost("www.0chan.ru.net");
 		addConvertableChanHost("www.0chan.eu");
 		setHttpsMode(HttpsMode.CONFIGURABLE);
 	}
