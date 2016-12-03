@@ -144,8 +144,10 @@ public class DvachChanPerformer extends ChanPerformer {
 			archiveDate = threadUri[0].getPath();
 			int index1 = archiveDate.indexOf("arch/");
 			int index2 = archiveDate.indexOf("/res");
-			if (index2 >= index1 && index1 >= 0) {
+			if (index1 >= 0 && index2 - index1 > 5) {
 				archiveDate = archiveDate.substring(index1 + 5, index2);
+			} else {
+				throw HttpException.createNotFoundException();
 			}
 		}
 		JSONObject jsonObject = response.getJsonObject();
