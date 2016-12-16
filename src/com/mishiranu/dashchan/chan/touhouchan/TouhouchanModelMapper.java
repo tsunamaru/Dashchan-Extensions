@@ -66,7 +66,7 @@ public class TouhouchanModelMapper {
 			id = StringUtils.nullIfEmpty(StringUtils.clearHtml(id).trim());
 			post.setIdentifier(id);
 		}
-		int capcode = jsonObject.optInt("adminpost");
+		int capcode = jsonObject.optInt("admin_post");
 		if (capcode == 1) {
 			post.setCapcode("Team");
 		} else if (capcode == 2) {
