@@ -87,7 +87,6 @@ public class DvachModelMapper {
 			comment = comment.replace(" (OP)</a>", "</a>");
 			comment = comment.replace("&#47;", "/");
 		}
-		comment = fixApiEscapeCharacters(comment);
 		if ("pr".equals(boardName) && comment != null) {
 			comment = CODE_PATTERN.matcher(comment).replaceAll("<fakecode>$1</fakecode>");
 		}
@@ -334,15 +333,5 @@ public class DvachModelMapper {
 			post.setAttachments(attachments);
 		}
 		return post;
-	}
-
-	public static String fixApiEscapeCharacters(String text) {
-		if (text != null) {
-			text = text.replace("\\t", "\t");
-			text = text.replace("\\n", "\n");
-			text = text.replace("\\r", "\r");
-			text = text.replace("\\b", "\b");
-		}
-		return text;
 	}
 }
