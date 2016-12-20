@@ -86,7 +86,6 @@ public class MakabaPaidModelMapper {
 			comment = comment.replace(" (OP)</a>", "</a>");
 			comment = comment.replace("&#47;", "/");
 		}
-		comment = fixApiEscapeCharacters(comment);
 
 		boolean sage = sageEnabled && !StringUtils.isEmpty(email) && email.equals("mailto:sage");
 		if (sage) {
@@ -181,15 +180,5 @@ public class MakabaPaidModelMapper {
 		}
 		postsCount += posts.length;
 		return new Posts(posts).addPostsCount(postsCount).addPostsWithFilesCount(postsWithFilesCount);
-	}
-
-	public static String fixApiEscapeCharacters(String text) {
-		if (text != null) {
-			text = text.replace("\\t", "\t");
-			text = text.replace("\\n", "\n");
-			text = text.replace("\\r", "\r");
-			text = text.replace("\\b", "\b");
-		}
-		return text;
 	}
 }
