@@ -10,12 +10,11 @@ import android.net.Uri;
 import chan.content.ChanLocator;
 import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
-import chan.content.ThreadRedirectException;
+import chan.content.RedirectException;
 import chan.content.model.Board;
 import chan.content.model.BoardCategory;
 import chan.content.model.Post;
 import chan.content.model.Posts;
-import chan.content.model.Threads;
 import chan.http.HttpException;
 import chan.http.HttpHolder;
 import chan.http.HttpRequest;
@@ -31,7 +30,7 @@ public class ArchiveRbtChanPerformer extends ChanPerformer
 		String responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator).read().getString();
 		try
 		{
-			Threads threads = new ArchiveRbtPostsParser(responseText, this).convertThreads();
+			ArrayList<Posts> threads = new ArchiveRbtPostsParser(responseText, this).convertThreads();
 			checkResponseAsNotFound(threads, responseText);
 			return new ReadThreadsResult(threads);
 		}
@@ -42,8 +41,8 @@ public class ArchiveRbtChanPerformer extends ChanPerformer
 	}
 	
 	@Override
-	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, ThreadRedirectException,
-			InvalidResponseException
+	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException,
+			RedirectException
 	{
 		final ArchiveRbtChanLocator locator = ChanLocator.get(this);
 		// Check post->thread redirect if thread opened first time
@@ -71,7 +70,7 @@ public class ArchiveRbtChanPerformer extends ChanPerformer
 			}).execute();
 			if (realThreadNumber[0] != null && !data.threadNumber.equals(realThreadNumber[0]))
 			{
-				throw new ThreadRedirectException(realThreadNumber[0], realThreadNumber[1]);
+				throw RedirectException.toThread(data.boardName, realThreadNumber[0], realThreadNumber[1]);
 			}
 			data.holder.checkResponseCode();
 			responseText = data.holder.read().getString();

@@ -10,7 +10,6 @@ import chan.content.ChanLocator;
 import chan.content.model.FileAttachment;
 import chan.content.model.Post;
 import chan.content.model.Posts;
-import chan.content.model.Threads;
 import chan.text.GroupParser;
 import chan.text.ParseException;
 import chan.util.StringUtils;
@@ -57,12 +56,12 @@ public class ArchiveRbtPostsParser implements GroupParser.Callback
 		}
 	}
 	
-	public Threads convertThreads() throws ParseException
+	public ArrayList<Posts> convertThreads() throws ParseException
 	{
 		mThreads = new ArrayList<>();
 		GroupParser.parse(mSource, this);
 		closeThread();
-		return mThreads.size() > 0 ? new Threads(mThreads) : null;
+		return mThreads.isEmpty() ? null : mThreads;
 	}
 	
 	public Posts convertPosts(Uri threadUri) throws ParseException
