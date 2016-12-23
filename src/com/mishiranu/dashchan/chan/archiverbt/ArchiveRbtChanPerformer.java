@@ -13,7 +13,6 @@ import chan.content.InvalidResponseException;
 import chan.content.RedirectException;
 import chan.content.model.Board;
 import chan.content.model.BoardCategory;
-import chan.content.model.Post;
 import chan.content.model.Posts;
 import chan.http.HttpException;
 import chan.http.HttpHolder;
@@ -105,24 +104,17 @@ public class ArchiveRbtChanPerformer extends ChanPerformer
 			InvalidResponseException
 	{
 		ArchiveRbtChanLocator locator = ChanLocator.get(this);
-		ArrayList<Post> posts = new ArrayList<>();
-		for (int i = 0; i < 5; i++)
+		Uri uri = locator.buildQuery(data.boardName + "/", "task", "search", "search_text", data.searchQuery,
+				"offset", Integer.toString(24 * data.pageNumber));
+		String responseText = new HttpRequest(uri, data.holder, data).read().getString();
+		try
 		{
-			Uri uri = locator.buildQuery(data.boardName + "/", "task", "search", "search_text", data.searchQuery,
-					"offset", Integer.toString(24 * i));
-			String responseText = new HttpRequest(uri, data.holder, data).read().getString();
-			try
-			{
-				ArrayList<Post> result = new ArchiveRbtPostsParser(responseText, this).convertSearch();
-				if (result == null) break;
-				posts.addAll(result);
-			}
-			catch (ParseException e)
-			{
-				throw new InvalidResponseException(e);
-			}
+			return new ReadSearchPostsResult(new ArchiveRbtPostsParser(responseText, this).convertSearch());
 		}
-		return posts.size() > 0 ? new ReadSearchPostsResult(posts) : null;
+		catch (ParseException e)
+		{
+			throw new InvalidResponseException(e);
+		}
 	}
 	
 	private static final HashMap<String, String> DEFAULT_BOARD_TITLES;
