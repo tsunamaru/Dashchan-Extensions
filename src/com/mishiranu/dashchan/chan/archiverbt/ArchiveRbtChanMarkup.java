@@ -7,27 +7,22 @@ import android.util.Pair;
 
 import chan.content.ChanMarkup;
 
-public class ArchiveRbtChanMarkup extends ChanMarkup
-{
-	public ArchiveRbtChanMarkup()
-	{
+public class ArchiveRbtChanMarkup extends ChanMarkup {
+	public ArchiveRbtChanMarkup() {
 		addTag("code", TAG_CODE);
 		addTag("span", "unkfunc", TAG_QUOTE);
 		addPreformatted("code", true);
 	}
-	
+
 	private static final Pattern THREAD_LINK = Pattern.compile("(?:^|(?:thread|post)/(\\d+))(?:#p(\\d+))?$");
-	
+
 	@Override
-	public Pair<String, String> obtainPostLinkThreadPostNumbers(String uriString)
-	{
+	public Pair<String, String> obtainPostLinkThreadPostNumbers(String uriString) {
 		Matcher matcher = THREAD_LINK.matcher(uriString);
-		if (matcher.find())
-		{
+		if (matcher.find()) {
 			String threadNumber = matcher.group(1);
 			String postNumber = matcher.group(2);
-			if (postNumber == null && uriString.contains("/post/"))
-			{
+			if (postNumber == null && uriString.contains("/post/")) {
 				postNumber = threadNumber;
 				threadNumber = null;
 			}
