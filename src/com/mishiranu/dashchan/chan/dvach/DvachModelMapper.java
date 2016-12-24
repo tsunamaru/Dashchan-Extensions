@@ -37,10 +37,25 @@ public class DvachModelMapper {
 	private static final Uri URI_ICON_OPERA = Uri.parse("chan:///res/raw/raw_browser_opera");
 	private static final Uri URI_ICON_SAFARI = Uri.parse("chan:///res/raw/raw_browser_safari");
 
+	private static String fixAttachmentPath(String boardName, String path) {
+		if (!StringUtils.isEmpty(path)) {
+			if (!path.startsWith("/")) {
+				path = "/" + path;
+			}
+			String start = "/" + boardName;
+			if (!path.startsWith(start)) {
+				path = start + path;
+			}
+			return path;
+		} else {
+			return null;
+		}
+	}
+
 	public static FileAttachment createFileAttachment(JSONObject jsonObject, DvachChanLocator locator,
-			String archiveDate) throws JSONException {
-		String file = CommonUtils.getJsonString(jsonObject, "path");
-		String thumbnail = CommonUtils.optJsonString(jsonObject, "thumbnail");
+			String boardName, String archiveDate) throws JSONException {
+		String file = fixAttachmentPath(boardName, CommonUtils.getJsonString(jsonObject, "path"));
+		String thumbnail = fixAttachmentPath(boardName, CommonUtils.optJsonString(jsonObject, "thumbnail"));
 		String originalName = StringUtils.nullIfEmpty(CommonUtils.optJsonString(jsonObject, "fullname"));
 		Uri fileUri = file != null ? locator.buildPath(archiveDate != null
 				? file.replace("/src/", "/arch/" + archiveDate + "/src/") : file) : null;
@@ -99,7 +114,7 @@ public class DvachModelMapper {
 					if (attachments == null) {
 						attachments = new ArrayList<>();
 					}
-					attachments.add(createFileAttachment(filesArray.getJSONObject(i), locator, archiveDate));
+					attachments.add(createFileAttachment(filesArray.getJSONObject(i), locator, boardName, archiveDate));
 				}
 			}
 		} catch (JSONException e) {
