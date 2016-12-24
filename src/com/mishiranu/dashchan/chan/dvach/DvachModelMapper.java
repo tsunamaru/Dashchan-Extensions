@@ -106,6 +106,13 @@ public class DvachModelMapper {
 			comment = CODE_PATTERN.matcher(comment).replaceAll("<fakecode>$1</fakecode>");
 		}
 		post.setComment(comment);
+		// TODO Remove this after server side fix of subjects
+		if (post.getParentPostNumber() == null && post.getSubject() != null) {
+			String clearComment = StringUtils.clearHtml(comment).replaceAll("\\s", "");
+			if (clearComment.startsWith(post.getSubject().replaceAll("\\s", ""))) {
+				post.setSubject(null);
+			}
+		}
 		ArrayList<Attachment> attachments = null;
 		try {
 			JSONArray filesArray = jsonObject.getJSONArray("files");
