@@ -42,9 +42,8 @@ public class DvachModelMapper {
 			if (!path.startsWith("/")) {
 				path = "/" + path;
 			}
-			String start = "/" + boardName;
-			if (!path.startsWith(start)) {
-				path = start + path;
+			if (path.startsWith("/src/") || path.startsWith("/thumb/")) {
+				path = "/" + boardName + path;
 			}
 			return path;
 		} else {
