@@ -14,21 +14,19 @@ import chan.text.ParseException;
 import chan.text.TemplateParser;
 import chan.util.StringUtils;
 
-public class CirnoBoardsParser
-{
-	private final String mSource;
+public class CirnoBoardsParser {
+	private final String source;
 
-	private final LinkedHashMap<String, BoardCategory> mBoardCategories = new LinkedHashMap<>();
-	private final ArrayList<Board> mBoards = new ArrayList<>();
+	private final LinkedHashMap<String, BoardCategory> boardCategories = new LinkedHashMap<>();
+	private final ArrayList<Board> boards = new ArrayList<>();
 
-	private String mBoardCategoryTitle;
+	private String boardCategoryTitle;
 
 	private static final Pattern PATTERN_BOARD = Pattern.compile("(.*) \\[(\\w+)\\]");
 
 	private static final HashMap<String, String> VALID_BOARD_TITLES = new HashMap<>();
 
-	static
-	{
+	static {
 		VALID_BOARD_TITLES.put("tv", "Кино и ТВ");
 		VALID_BOARD_TITLES.put("bro", "My Little Pony");
 		VALID_BOARD_TITLES.put("m", "Картинки-макросы и копипаста");
@@ -40,58 +38,50 @@ public class CirnoBoardsParser
 		VALID_BOARD_TITLES.put("hau", "Higurashi no Naku Koro ni");
 	}
 
-	public CirnoBoardsParser(String source)
-	{
-		mSource = source;
+	public CirnoBoardsParser(String source) {
+		this.source = source;
 	}
 
-	public ArrayList<BoardCategory> convert() throws ParseException
-	{
-		PARSER.parse(mSource, this);
+	public ArrayList<BoardCategory> convert() throws ParseException {
+		PARSER.parse(source, this);
 		closeCategory();
-		for (BoardCategory boardCategory : mBoardCategories.values()) Arrays.sort(boardCategory.getBoards());
-		BoardCategory boardCategory = mBoardCategories.remove("Обсуждения");
-		if (boardCategory != null) mBoardCategories.put(boardCategory.getTitle(), boardCategory);
-		return new ArrayList<>(mBoardCategories.values());
+		for (BoardCategory boardCategory : boardCategories.values()) {
+			Arrays.sort(boardCategory.getBoards());
+		}
+		BoardCategory boardCategory = boardCategories.remove("Обсуждения");
+		if (boardCategory != null) {
+			boardCategories.put(boardCategory.getTitle(), boardCategory);
+		}
+		return new ArrayList<>(boardCategories.values());
 	}
 
-	private void closeCategory()
-	{
-		if (mBoardCategoryTitle != null)
-		{
-			if (mBoards.size() > 0)
-			{
-				mBoardCategories.put(mBoardCategoryTitle, new BoardCategory(mBoardCategoryTitle, mBoards));
+	private void closeCategory() {
+		if (boardCategoryTitle != null) {
+			if (boards.size() > 0) {
+				boardCategories.put(boardCategoryTitle, new BoardCategory(boardCategoryTitle, boards));
 			}
-			mBoardCategoryTitle = null;
-			mBoards.clear();
+			boardCategoryTitle = null;
+			boards.clear();
 		}
 	}
 
 	private static final TemplateParser<CirnoBoardsParser> PARSER = new TemplateParser<CirnoBoardsParser>()
-			.equals("td", "class", "header").content((instance, holder, text) ->
-	{
+			.equals("td", "class", "header").content((instance, holder, text) -> {
 		holder.closeCategory();
-		holder.mBoardCategoryTitle = StringUtils.clearHtml(text);
-
-	}).equals("a", "target", "board").content((instance, holder, text) ->
-	{
+		holder.boardCategoryTitle = StringUtils.clearHtml(text);
+	}).equals("a", "target", "board").content((instance, holder, text) -> {
 		Matcher matcher = PATTERN_BOARD.matcher(StringUtils.clearHtml(text));
-		if (matcher.matches())
-		{
+		if (matcher.matches()) {
 			String boardName = matcher.group(2);
 			String title = VALID_BOARD_TITLES.get(boardName);
-			if (title == null)
-			{
+			if (title == null) {
 				title = matcher.group(1);
-				if (!title.isEmpty())
-				{
+				if (!title.isEmpty()) {
 					title = title.toLowerCase(Locale.getDefault());
 					title = title.substring(0, 1).toUpperCase(Locale.getDefault()) + title.substring(1);
 				}
 			}
-			holder.mBoards.add(new Board(boardName, title));
+			holder.boards.add(new Board(boardName, title));
 		}
-
 	}).prepare();
 }

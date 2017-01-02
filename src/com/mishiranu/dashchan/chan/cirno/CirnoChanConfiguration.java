@@ -2,15 +2,13 @@ package com.mishiranu.dashchan.chan.cirno;
 
 import chan.content.ChanConfiguration;
 
-public class CirnoChanConfiguration extends ChanConfiguration
-{
+public class CirnoChanConfiguration extends ChanConfiguration {
 	private static final String KEY_IMAGES_ENABLED = "images_enabled";
 	private static final String KEY_EMAILS_ENABLED = "emails_enabled";
 	private static final String KEY_NAMES_ENABLED = "names_enabled";
 	private static final String KEY_IMAGE_SPOILERS_ENABLED = "image_spoilers_enabled";
 
-	public CirnoChanConfiguration()
-	{
+	public CirnoChanConfiguration() {
 		request(OPTION_READ_POSTS_COUNT);
 		setDefaultName("Аноним");
 		setDefaultName("an", "Кот Синкая");
@@ -52,8 +50,7 @@ public class CirnoChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Board obtainBoardConfiguration(String boardName)
-	{
+	public Board obtainBoardConfiguration(String boardName) {
 		Board board = new Board();
 		board.allowCatalog = !"d".equals(boardName);
 		board.allowArchive = true;
@@ -63,10 +60,8 @@ public class CirnoChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Captcha obtainCustomCaptchaConfiguration(String captchaType)
-	{
-		if ("wakaba".equals(captchaType))
-		{
+	public Captcha obtainCustomCaptchaConfiguration(String captchaType) {
+		if ("wakaba".equals(captchaType)) {
 			Captcha captcha = new Captcha();
 			captcha.title = "Wakaba";
 			captcha.input = Captcha.Input.LATIN;
@@ -77,8 +72,7 @@ public class CirnoChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Posting obtainPostingConfiguration(String boardName, boolean newThread)
-	{
+	public Posting obtainPostingConfiguration(String boardName, boolean newThread) {
 		Posting posting = new Posting();
 		posting.allowName = posting.allowTripcode = get(boardName, KEY_NAMES_ENABLED, true);
 		posting.allowEmail = get(boardName, KEY_EMAILS_ENABLED, true);
@@ -90,8 +84,7 @@ public class CirnoChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Deleting obtainDeletingConfiguration(String boardName)
-	{
+	public Deleting obtainDeletingConfiguration(String boardName) {
 		Deleting deleting = new Deleting();
 		deleting.password = true;
 		deleting.multiplePosts = true;
@@ -100,8 +93,7 @@ public class CirnoChanConfiguration extends ChanConfiguration
 	}
 
 	public void storeNamesEmailsImagesSpoilersEnabled(String boardName, boolean namesEnabled, boolean emailsEnabled,
-			boolean imagesEnabled, boolean imageSpoilersEnabled)
-	{
+			boolean imagesEnabled, boolean imageSpoilersEnabled) {
 		set(boardName, KEY_NAMES_ENABLED, namesEnabled);
 		set(boardName, KEY_EMAILS_ENABLED, emailsEnabled);
 		set(boardName, KEY_IMAGES_ENABLED, imagesEnabled);

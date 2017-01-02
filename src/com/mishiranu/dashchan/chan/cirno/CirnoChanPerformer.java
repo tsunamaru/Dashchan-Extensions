@@ -26,86 +26,76 @@ import chan.http.UrlEncodedEntity;
 import chan.text.ParseException;
 import chan.util.CommonUtils;
 
-public class CirnoChanPerformer extends ChanPerformer
-{
+public class CirnoChanPerformer extends ChanPerformer {
 	private static final Pattern PATTERN_REDIRECT = Pattern.compile("<meta http-equiv=\"Refresh\" " +
 			"content=\"0; ?url=(.*?)\" />");
 
 	@Override
 	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException,
-			RedirectException
-	{
+			RedirectException {
 		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = data.isCatalog() ? locator.buildPath(data.boardName, "catalogue.html")
 				: locator.createBoardUri(data.boardName, data.pageNumber);
 		String responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
 		Matcher matcher = PATTERN_REDIRECT.matcher(responseText);
-		if (matcher.find()) throw RedirectException.toUri(Uri.parse(matcher.group(1)));
-		try
-		{
+		if (matcher.find()) {
+			throw RedirectException.toUri(Uri.parse(matcher.group(1)));
+		}
+		try {
 			return new ReadThreadsResult(data.isCatalog() ? new CirnoCatalogParser(responseText, this).convert()
 					: new CirnoPostsParser(responseText, this, data.boardName).convertThreads());
-		}
-		catch (ParseException e)
-		{
+		} catch (ParseException e) {
 			throw new InvalidResponseException(e);
 		}
 	}
 
 	@Override
-	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException
-	{
+	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException {
 		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = locator.createThreadUri(data.boardName, data.threadNumber);
 		String responseText;
 		boolean[] archived = {false};
-		try
-		{
+		try {
 			responseText = new HttpRequest(uri, data).setValidator(data.validator)
-					.setRedirectHandler((responseCode, requestedUri, redirectedUri, holder) ->
-			{
+					.setRedirectHandler((responseCode, requestedUri, redirectedUri, holder) -> {
 				String path = redirectedUri.getPath();
-				if (path != null && path.contains("/arch/")) archived[0] = true;
+				if (path != null && path.contains("/arch/")) {
+					archived[0] = true;
+				}
 				return HttpRequest.RedirectHandler.BROWSER.onRedirectReached(responseCode,
 						requestedUri, redirectedUri, holder);
-
 			}).read().getString();
-		}
-		catch (HttpException e)
-		{
-			if (e.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND)
-			{
+		} catch (HttpException e) {
+			if (e.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND) {
 				uri = locator.createThreadArchiveUri(data.boardName, data.threadNumber);
 				responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
 				archived[0] = true;
+			} else {
+				throw e;
 			}
-			else throw e;
 		}
-		try
-		{
+		try {
 			ArrayList<Post> posts = new CirnoPostsParser(responseText, this, data.boardName).convertPosts();
-			if (posts == null || posts.isEmpty()) throw new InvalidResponseException();
-			if (archived[0]) posts.get(0).setArchived(true);
+			if (posts == null || posts.isEmpty()) {
+				throw new InvalidResponseException();
+			}
+			if (archived[0]) {
+				posts.get(0).setArchived(true);
+			}
 			return new ReadPostsResult(posts);
-		}
-		catch (ParseException e)
-		{
+		} catch (ParseException e) {
 			throw new InvalidResponseException(e);
 		}
 	}
 
 	@Override
-	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException
-	{
+	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException {
 		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = locator.buildPath("n", "list_ru_m.html");
 		String responseText = new HttpRequest(uri, data).read().getString();
-		try
-		{
+		try {
 			return new ReadBoardsResult(new CirnoBoardsParser(responseText).convert());
-		}
-		catch (ParseException e)
-		{
+		} catch (ParseException e) {
 			throw new InvalidResponseException(e);
 		}
 	}
@@ -115,15 +105,13 @@ public class CirnoChanPerformer extends ChanPerformer
 
 	@Override
 	public ReadThreadSummariesResult onReadThreadSummaries(ReadThreadSummariesData data) throws HttpException,
-			InvalidResponseException
-	{
+			InvalidResponseException {
 		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = locator.createBoardUri(data.boardName, 0).buildUpon().appendEncodedPath("arch/res").build();
 		String responseText = new HttpRequest(uri, data).read().getString();
 		ArrayList<ThreadSummary> threadSummaries = new ArrayList<>();
 		Matcher matcher = PATTERN_ARCHIVED_THREAD.matcher(responseText);
-		while (matcher.find())
-		{
+		while (matcher.find()) {
 			threadSummaries.add(new ThreadSummary(data.boardName, matcher.group(1), "#" + matcher.group(1) + ", "
 					+ matcher.group(2).trim()));
 		}
@@ -131,42 +119,42 @@ public class CirnoChanPerformer extends ChanPerformer
 	}
 
 	@Override
-	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException
-	{
+	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException,
+			InvalidResponseException {
 		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = locator.createThreadUri(data.boardName, data.threadNumber);
 		String responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
-		if (!responseText.contains("<form id=\"delform\"")) throw new InvalidResponseException();
+		if (!responseText.contains("<form id=\"delform\"")) {
+			throw new InvalidResponseException();
+		}
 		int count = 0;
 		int index = 0;
-		while (index != -1)
-		{
+		while (index != -1) {
 			count++;
 			index = responseText.indexOf("<td class=\"reply\"", index + 1);
 		}
 		return new ReadPostsCountResult(count);
 	}
 
-	private final HashSet<String> mNoCaptchaBoards = new HashSet<>(Arrays
+	private final HashSet<String> noCaptchaBoards = new HashSet<>(Arrays
 			.asList("mu", "o", "ph", "tv", "vg", "a", "tan", "to"));
 
 	private static final ColorMatrixColorFilter CAPTCHA_FILTER = new ColorMatrixColorFilter(new float[]
 			{0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f});
 
 	@Override
-	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
-	{
-		synchronized (mNoCaptchaBoards)
-		{
-			if (mNoCaptchaBoards.contains(data.boardName)) return new ReadCaptchaResult(CaptchaState.SKIP, null);
+	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException {
+		synchronized (noCaptchaBoards) {
+			if (noCaptchaBoards.contains(data.boardName)) {
+				return new ReadCaptchaResult(CaptchaState.SKIP, null);
+			}
 		}
 		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		String script = "a".equals(data.boardName) || "b".equals(data.boardName) ? "captcha1.pl" : "captcha.pl";
 		Uri uri = locator.buildQuery("cgi-bin/" + script + "/" + data.boardName + "/", "key",
 				data.threadNumber == null ? "mainpage" : "res" + data.threadNumber);
 		Bitmap image = new HttpRequest(uri, data).read().getBitmap();
-		if (image != null)
-		{
+		if (image != null) {
 			Bitmap newImage = Bitmap.createBitmap(image.getWidth(), 32, Bitmap.Config.ARGB_8888);
 			Canvas canvas = new Canvas(newImage);
 			canvas.drawColor(0xffffffff);
@@ -182,8 +170,7 @@ public class CirnoChanPerformer extends ChanPerformer
 	private static final Pattern PATTERN_POST_ERROR = Pattern.compile("<h1 style=\"text-align: center\">(.*?)<br />");
 
 	@Override
-	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException
-	{
+	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException {
 		MultipartEntity entity = new MultipartEntity();
 		entity.add("task", "post");
 		entity.add("parent", data.threadNumber);
@@ -193,98 +180,81 @@ public class CirnoChanPerformer extends ChanPerformer
 		entity.add("nya4", data.comment);
 		entity.add("postredir", "1");
 		entity.add("password", data.password);
-		if (data.attachments != null)
-		{
+		if (data.attachments != null) {
 			SendPostData.Attachment attachment = data.attachments[0];
 			attachment.addToEntity(entity, "file");
-			if (attachment.optionSpoiler) entity.add("spoiler", "on");
+			if (attachment.optionSpoiler) {
+				entity.add("spoiler", "on");
+			}
+		} else {
+			entity.add("nofile", "1");
 		}
-		else entity.add("nofile", "1");
-		if (data.captchaData != null) entity.add("captcha", data.captchaData.get(CaptchaData.INPUT));
+		if (data.captchaData != null) {
+			entity.add("captcha", data.captchaData.get(CaptchaData.INPUT));
+		}
 
 		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = locator.buildPath("cgi-bin", "wakaba.pl", data.boardName);
 		String responseText;
-		try
-		{
+		try {
 			new HttpRequest(uri, data).setPostMethod(entity)
 					.setRedirectHandler(HttpRequest.RedirectHandler.NONE).execute();
-			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_SEE_OTHER)
-			{
+			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_SEE_OTHER) {
 				uri = data.holder.getRedirectedUri();
 				String threadNumber = locator.getThreadNumber(uri);
 				String postNumber = locator.getPostNumber(uri);
-				if (threadNumber.equals(postNumber)) postNumber = null;
+				if (threadNumber.equals(postNumber)) {
+					postNumber = null;
+				}
 				return new SendPostResult(threadNumber, postNumber);
 			}
 			responseText = data.holder.read().getString();
-		}
-		finally
-		{
+		} finally {
 			data.holder.disconnect();
 		}
 
 		Matcher matcher = PATTERN_POST_ERROR.matcher(responseText);
-		if (matcher.find())
-		{
+		if (matcher.find()) {
 			String errorMessage = matcher.group(1);
-			if (errorMessage != null)
-			{
+			if (errorMessage != null) {
 				int errorType = 0;
 				int flags = 0;
 				if (errorMessage.contains("Введён неверный код подтверждения") ||
-						errorMessage.contains("Код подтверждения не найден в базе"))
-				{
-					synchronized (mNoCaptchaBoards)
-					{
-						mNoCaptchaBoards.remove(data.boardName);
+						errorMessage.contains("Код подтверждения не найден в базе")) {
+					synchronized (noCaptchaBoards) {
+						noCaptchaBoards.remove(data.boardName);
 					}
 					errorType = ApiException.SEND_ERROR_CAPTCHA;
-				}
-				else if (errorMessage.contains("Пустое поле сообщения"))
-				{
+				} else if (errorMessage.contains("Пустое поле сообщения")) {
 					errorType = ApiException.SEND_ERROR_EMPTY_COMMENT;
 					flags |= ApiException.FLAG_KEEP_CAPTCHA;
-				}
-				else if (errorMessage.contains("Сообщения без изображений запрещены"))
-				{
+				} else if (errorMessage.contains("Сообщения без изображений запрещены")) {
 					errorType = ApiException.SEND_ERROR_EMPTY_FILE;
 					flags |= ApiException.FLAG_KEEP_CAPTCHA;
-				}
-				else if (errorMessage.contains("Изображение слишком большое"))
-				{
+				} else if (errorMessage.contains("Изображение слишком большое")) {
 					errorType = ApiException.SEND_ERROR_FILE_TOO_BIG;
 					flags |= ApiException.FLAG_KEEP_CAPTCHA;
-				}
-				else if (errorMessage.contains("превышает заданный предел"))
-				{
+				} else if (errorMessage.contains("превышает заданный предел")) {
 					errorType = ApiException.SEND_ERROR_FIELD_TOO_LONG;
 					flags |= ApiException.FLAG_KEEP_CAPTCHA;
-				}
-				else if (errorMessage.contains("Этот файл уже был запощен"))
-				{
+				} else if (errorMessage.contains("Этот файл уже был запощен")) {
 					errorType = ApiException.SEND_ERROR_FILE_EXISTS;
-				}
-				else if (errorMessage.contains("Тред не существует"))
-				{
+				} else if (errorMessage.contains("Тред не существует")) {
 					errorType = ApiException.SEND_ERROR_NO_THREAD;
-				}
-				else if (errorMessage.contains("Флуд"))
-				{
+				} else if (errorMessage.contains("Флуд")) {
 					errorType = ApiException.SEND_ERROR_TOO_FAST;
-				}
-				else if (errorMessage.contains("Строка отклонена"))
-				{
+				} else if (errorMessage.contains("Строка отклонена")) {
 					errorType = ApiException.SEND_ERROR_SPAM_LIST;
 					flags |= ApiException.FLAG_KEEP_CAPTCHA;
 				}
-				if (errorType != 0) throw new ApiException(errorType, flags);
+				if (errorType != 0) {
+					throw new ApiException(errorType, flags);
+				}
 			}
 			CommonUtils.writeLog("Cirno send message", errorMessage);
 			throw new ApiException(errorMessage);
 		}
-		if (responseText.contains("<h1>Anti-spam filters triggered.</h1>"))
-		{
+		if (responseText.contains("<h1>Anti-spam filters triggered.</h1>")) {
 			throw new ApiException(ApiException.SEND_ERROR_SPAM_LIST, ApiException.FLAG_KEEP_CAPTCHA);
 		}
 		throw new InvalidResponseException();
@@ -292,37 +262,38 @@ public class CirnoChanPerformer extends ChanPerformer
 
 	@Override
 	public SendDeletePostsResult onSendDeletePosts(SendDeletePostsData data) throws HttpException, ApiException,
-			InvalidResponseException
-	{
+			InvalidResponseException {
 		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = locator.buildPath("cgi-bin", "wakaba.pl", data.boardName);
 		UrlEncodedEntity entity = new UrlEncodedEntity("task", "delete", "password", data.password);
-		for (String postNumber : data.postNumbers) entity.add("delete", postNumber);
-		if (data.optionFilesOnly) entity.add("fileonly", "on");
+		for (String postNumber : data.postNumbers) {
+			entity.add("delete", postNumber);
+		}
+		if (data.optionFilesOnly) {
+			entity.add("fileonly", "on");
+		}
 		String responseText;
-		try
-		{
+		try {
 			new HttpRequest(uri, data).setPostMethod(entity)
 					.setRedirectHandler(HttpRequest.RedirectHandler.NONE).execute();
-			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_SEE_OTHER) return null;
+			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_SEE_OTHER) {
+				return null;
+			}
 			responseText = data.holder.read().getString();
-		}
-		finally
-		{
+		} finally {
 			data.holder.disconnect();
 		}
 		Matcher matcher = PATTERN_POST_ERROR.matcher(responseText);
-		if (matcher.find())
-		{
+		if (matcher.find()) {
 			String errorMessage = matcher.group(1);
-			if (errorMessage != null)
-			{
+			if (errorMessage != null) {
 				int errorType = 0;
-				if (errorMessage.contains("Введён неверный пароль для удаления"))
-				{
+				if (errorMessage.contains("Введён неверный пароль для удаления")) {
 					errorType = ApiException.DELETE_ERROR_PASSWORD;
 				}
-				if (errorType != 0) throw new ApiException(errorType);
+				if (errorType != 0) {
+					throw new ApiException(errorType);
+				}
 			}
 			CommonUtils.writeLog("Cirno delete message", errorMessage);
 			throw new ApiException(errorMessage);
