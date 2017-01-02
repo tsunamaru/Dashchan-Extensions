@@ -54,7 +54,7 @@ public class CirnoPostsParser
 	private static final Pattern FILE_SIZE = Pattern.compile("([\\d\\.]+) (\\w+), (\\d+)x(\\d+)(?:, (.+))?");
 	private static final Pattern NAME_EMAIL = Pattern.compile("<a href=\"(.*?)\">(.*)</a>");
 	private static final Pattern ADMIN_NAME = Pattern.compile("<span class=\"adminname\">(.*)</span>");
-	private static final Pattern NUMBER = Pattern.compile("(\\d+)");
+	private static final Pattern NUMBER = Pattern.compile("\\d+");
 	private static final Pattern BUMP_LIMIT = Pattern.compile("Максимальное количество бампов треда: (\\d+).");
 
 	public CirnoPostsParser(String source, Object linked, String boardName)
@@ -260,8 +260,8 @@ public class CirnoPostsParser
 			Matcher matcher = NUMBER.matcher(text);
 			if (matcher.find())
 			{
-				holder.mThread.addPostsCount(Integer.parseInt(matcher.group(1)));
-				if (matcher.find()) holder.mThread.addPostsWithFilesCount(Integer.parseInt(matcher.group(1)));
+				holder.mThread.addPostsCount(Integer.parseInt(matcher.group()));
+				if (matcher.find()) holder.mThread.addPostsWithFilesCount(Integer.parseInt(matcher.group()));
 			}
 		}
 
