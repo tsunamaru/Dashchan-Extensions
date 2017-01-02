@@ -20,6 +20,7 @@ import chan.content.RedirectException;
 import chan.content.model.Post;
 import chan.content.model.ThreadSummary;
 import chan.http.HttpException;
+import chan.http.HttpHolder;
 import chan.http.HttpRequest;
 import chan.http.MultipartEntity;
 import chan.http.UrlEncodedEntity;
@@ -49,27 +50,36 @@ public class CirnoChanPerformer extends ChanPerformer {
 		}
 	}
 
+	private static class ArchiveRedirectHandler implements HttpRequest.RedirectHandler {
+		public boolean archived = false;
+
+		@Override
+		public Action onRedirectReached(int responseCode, Uri requestedUri, Uri redirectedUri, HttpHolder holder)
+				throws HttpException {
+			String path = redirectedUri.getPath();
+			if (path != null && path.contains("/arch/")) {
+				archived = true;
+			}
+			return BROWSER.onRedirectReached(responseCode, requestedUri, redirectedUri, holder);
+		}
+	}
+
 	@Override
 	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException {
 		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = locator.createThreadUri(data.boardName, data.threadNumber);
 		String responseText;
-		boolean[] archived = {false};
+		ArchiveRedirectHandler redirectHandler = new ArchiveRedirectHandler();
+		boolean archived = false;
 		try {
 			responseText = new HttpRequest(uri, data).setValidator(data.validator)
-					.setRedirectHandler((responseCode, requestedUri, redirectedUri, holder) -> {
-				String path = redirectedUri.getPath();
-				if (path != null && path.contains("/arch/")) {
-					archived[0] = true;
-				}
-				return HttpRequest.RedirectHandler.BROWSER.onRedirectReached(responseCode,
-						requestedUri, redirectedUri, holder);
-			}).read().getString();
+					.setRedirectHandler(redirectHandler).read().getString();
+			archived = redirectHandler.archived;
 		} catch (HttpException e) {
 			if (e.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND) {
 				uri = locator.createThreadArchiveUri(data.boardName, data.threadNumber);
 				responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
-				archived[0] = true;
+				archived = true;
 			} else {
 				throw e;
 			}
@@ -79,7 +89,7 @@ public class CirnoChanPerformer extends ChanPerformer {
 			if (posts == null || posts.isEmpty()) {
 				throw new InvalidResponseException();
 			}
-			if (archived[0]) {
+			if (archived) {
 				posts.get(0).setArchived(true);
 			}
 			return new ReadPostsResult(posts);
@@ -123,7 +133,12 @@ public class CirnoChanPerformer extends ChanPerformer {
 			InvalidResponseException {
 		CirnoChanLocator locator = CirnoChanLocator.get(this);
 		Uri uri = locator.createThreadUri(data.boardName, data.threadNumber);
-		String responseText = new HttpRequest(uri, data).setValidator(data.validator).read().getString();
+		ArchiveRedirectHandler redirectHandler = new ArchiveRedirectHandler();
+		String responseText = new HttpRequest(uri, data).setValidator(data.validator)
+				.setRedirectHandler(redirectHandler).read().getString();
+		if (redirectHandler.archived) {
+			throw HttpException.createNotFoundException();
+		}
 		if (!responseText.contains("<form id=\"delform\"")) {
 			throw new InvalidResponseException();
 		}
