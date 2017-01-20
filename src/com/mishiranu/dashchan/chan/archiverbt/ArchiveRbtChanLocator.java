@@ -63,7 +63,7 @@ public class ArchiveRbtChanLocator extends ChanLocator {
 	public String getPostNumber(Uri uri) {
 		String fragment = uri.getFragment();
 		if (fragment != null && fragment.startsWith("p")) {
-			fragment = fragment.substring(1);
+			fragment = fragment.substring(1).replace('_', '.');
 		}
 		return fragment;
 	}
@@ -81,6 +81,6 @@ public class ArchiveRbtChanLocator extends ChanLocator {
 
 	@Override
 	public Uri createPostUri(String boardName, String threadNumber, String postNumber) {
-		return createThreadUri(boardName, threadNumber).buildUpon().fragment(postNumber).build();
+		return createThreadUri(boardName, threadNumber).buildUpon().fragment(postNumber.replace('.', '_')).build();
 	}
 }

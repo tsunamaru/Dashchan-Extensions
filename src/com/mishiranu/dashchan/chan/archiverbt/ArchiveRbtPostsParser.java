@@ -97,7 +97,7 @@ public class ArchiveRbtPostsParser implements GroupParser.Callback {
 			if (cssClass != null && cssClass.contains("reply")) {
 				String id = parser.getAttr(attrs, "id");
 				if (id != null) {
-					String number = id.substring(1);
+					String number = id.substring(1).replace('_', '.');
 					Post post = new Post();
 					post.setParentPostNumber(resTo);
 					post.setPostNumber(number);
@@ -213,17 +213,7 @@ public class ArchiveRbtPostsParser implements GroupParser.Callback {
 			}
 			case EXPECT_COMMENT: {
 				post.setComment(text);
-				boolean canAdd;
-				try {
-					Integer.parseInt(post.getPostNumber());
-					canAdd = true;
-				} catch (Exception e) {
-					// Avoid numbers like 123213123_10
-					canAdd = false;
-				}
-				if (canAdd) {
-					posts.add(post);
-				}
+				posts.add(post);
 				post = null;
 				attachment = null;
 				break;
