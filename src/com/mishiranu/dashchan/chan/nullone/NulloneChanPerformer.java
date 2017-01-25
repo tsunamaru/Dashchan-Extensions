@@ -211,8 +211,18 @@ public class NulloneChanPerformer extends ChanPerformer {
 		if (data.mayShowLoadButton) {
 			return new ReadCaptchaResult(CaptchaState.NEED_LOAD, null);
 		}
-		Uri uri = locator.buildPath("myata.php");
-		Bitmap image = new HttpRequest(uri, data.holder, data).read().getBitmap();
+		Uri uri = locator.buildPath("captcha.php");
+		String lang;
+		if (NulloneChanConfiguration.CAPTCHA_TYPE_INCH_NUMERIC.equals(data.captchaType)) {
+			lang = "num";
+		} else if (NulloneChanConfiguration.CAPTCHA_TYPE_INCH_LATIN.equals(data.captchaType)) {
+			lang = "en";
+		} else if (NulloneChanConfiguration.CAPTCHA_TYPE_INCH_CYRILLIC.equals(data.captchaType)) {
+			lang = "ru";
+		} else {
+			throw new InvalidResponseException();
+		}
+		Bitmap image = new HttpRequest(uri, data.holder, data).addCookie("captchalang", lang).read().getBitmap();
 		if (image != null) {
 			Bitmap newImage = Bitmap.createBitmap(image.getWidth(), image.getHeight(), Bitmap.Config.ARGB_8888);
 			Canvas canvas = new Canvas(newImage);
