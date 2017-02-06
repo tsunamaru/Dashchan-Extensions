@@ -366,7 +366,11 @@ public class InfiniteChanPerformer extends ChanPerformer {
 		InfiniteChanConfiguration configuration = InfiniteChanConfiguration.get(this);
 		String torCookie = configuration.getCookie(COOKIE_TOR);
 		InfiniteChanLocator locator = InfiniteChanLocator.get(this);
-		Uri uri = locator.buildPath("post.php");
+		String host = locator.buildPath().getHost();
+		if ("8ch.net".equals(host)) {
+			host = "sys." + host;
+		}
+		Uri uri = locator.buildPathWithHost(host, "post.php");
 		String responseText = new HttpRequest(uri, data.holder, data).setPostMethod(entity)
 				.addCookie(COOKIE_TOR, torCookie).addHeader("Referer", locator.buildPath().toString())
 				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getString();
