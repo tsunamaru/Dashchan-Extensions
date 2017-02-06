@@ -17,27 +17,24 @@ import chan.content.model.Posts;
 import chan.util.CommonUtils;
 import chan.util.StringUtils;
 
-public class InfiniteModelMapper
-{
+public class InfiniteModelMapper {
 	public static FileAttachment createFileAttachment(JSONObject jsonObject, InfiniteChanLocator locator,
-			String boardName, long time) throws JSONException
-	{
-		FileAttachment attachment = new FileAttachment();
+			String boardName, long time) throws JSONException {
 		String tim = CommonUtils.getJsonString(jsonObject, "tim");
-		if (StringUtils.isEmpty(tim)) return null;
+		if (StringUtils.isEmpty(tim)) {
+			return null;
+		}
+		FileAttachment attachment = new FileAttachment();
 		String filename = CommonUtils.getJsonString(jsonObject, "filename");
 		String ext = CommonUtils.getJsonString(jsonObject, "ext");
 		attachment.setSize(jsonObject.optInt("fsize"));
 		attachment.setWidth(jsonObject.optInt("w"));
 		attachment.setHeight(jsonObject.optInt("h"));
-		if (tim.length() == 64)
-		{
+		if (tim.length() == 64) {
 			attachment.setFileUri(locator, locator.buildPath("file_store", tim + ext));
 			attachment.setThumbnailUri(locator, locator.buildPath("file_store", "thumb", tim +
 					(locator.isImageExtension(ext) ? ext : ".jpg")));
-		}
-		else
-		{
+		} else {
 			// last same: 2015-01-28T07:43:34.000Z (1422431014000)
 			// first jpg: 2015-01-28T10:53:18.000Z (1422442398000)
 			boolean forceJpegThumbnail = time >= 1422442398000L;
@@ -49,29 +46,34 @@ public class InfiniteModelMapper
 		return attachment;
 	}
 
-	public static String fixCommentLineBreaks(String comment)
-	{
+	public static String fixCommentLineBreaks(String comment) {
 		// Paragraphs has "min-height: 1.16em;" in css: this weird trick allows browsers to make empty lines
 		// Dashchan can't handle it because it doesn't work with any css, so I replace these paragraphs with brs
 		return comment.replace("<p class=\"body-line empty \"></p>", "<br />");
 	}
 
 	public static Post createPost(JSONObject jsonObject, InfiniteChanLocator locator, String boardName)
-			throws JSONException
-	{
+			throws JSONException {
 		Post post = new Post();
-		if (jsonObject.optInt("sticky") != 0) post.setSticky(true);
-		if (jsonObject.optInt("locked") != 0) post.setClosed(true);
-		if (jsonObject.optInt("cyclical") != 0) post.setCyclical(true);
+		if (jsonObject.optInt("sticky") != 0) {
+			post.setSticky(true);
+		}
+		if (jsonObject.optInt("locked") != 0) {
+			post.setClosed(true);
+		}
+		if (jsonObject.optInt("cyclical") != 0) {
+			post.setCyclical(true);
+		}
 		String no = CommonUtils.getJsonString(jsonObject, "no");
 		String resto = CommonUtils.getJsonString(jsonObject, "resto");
 		post.setPostNumber(no);
-		if (!"0".equals(resto)) post.setParentPostNumber(resto);
+		if (!"0".equals(resto)) {
+			post.setParentPostNumber(resto);
+		}
 		long time = jsonObject.getLong("time") * 1000L;
 		post.setTimestamp(time);
 		String name = CommonUtils.optJsonString(jsonObject, "name");
-		if (name != null)
-		{
+		if (name != null) {
 			name = StringUtils.nullIfEmpty(StringUtils.clearHtml(name).trim());
 			post.setName(name);
 		}
@@ -79,90 +81,83 @@ public class InfiniteModelMapper
 		post.setIdentifier(CommonUtils.optJsonString(jsonObject, "id"));
 		post.setCapcode(CommonUtils.optJsonString(jsonObject, "capcode"));
 		String email = CommonUtils.optJsonString(jsonObject, "email");
-		if (email != null)
-		{
-			if (email.equalsIgnoreCase("sage")) post.setSage(true);
-			else post.setEmail(StringUtils.nullIfEmpty(StringUtils.clearHtml(email).trim()));
+		if (email != null) {
+			if (email.equalsIgnoreCase("sage")) {
+				post.setSage(true);
+			} else {
+				post.setEmail(StringUtils.nullIfEmpty(StringUtils.clearHtml(email).trim()));
+			}
 		}
 		String country = CommonUtils.optJsonString(jsonObject, "country");
 		String countryName = CommonUtils.optJsonString(jsonObject, "country_name");
-		if (country != null)
-		{
+		if (country != null) {
 			Uri uri = locator.buildPath("static", "flags", country.toLowerCase(Locale.US) + ".png");
 			String title = countryName == null ? country.toUpperCase(Locale.US) : countryName;
 			post.setIcons(new Icon(locator, uri, title));
 		}
 		String sub = CommonUtils.optJsonString(jsonObject, "sub");
-		if (sub != null)
-		{
+		if (sub != null) {
 			sub = StringUtils.nullIfEmpty(StringUtils.clearHtml(sub).trim());
 			post.setSubject(sub);
 		}
 		String com = CommonUtils.optJsonString(jsonObject, "com");
-		if (com != null)
-		{
+		if (com != null) {
 			// Vichan JSON API bug, sometimes comment is broken
 			com = com.replace("<a  ", "<a ").replaceAll("href=\"\\?", "href=\"");
 			com = fixCommentLineBreaks(com);
 			post.setComment(com);
 		}
 		String embed = StringUtils.nullIfEmpty(CommonUtils.optJsonString(jsonObject, "embed"));
-		if (embed != null)
-		{
+		if (embed != null) {
 			EmbeddedAttachment attachment = EmbeddedAttachment.obtain(embed);
-			if (attachment != null) post.setAttachments(attachment);
-		}
-		else
-		{
-			try
-			{
+			if (attachment != null) {
+				post.setAttachments(attachment);
+			}
+		} else {
+			try {
 				ArrayList<FileAttachment> attachments = new ArrayList<>();
 				FileAttachment attachment = createFileAttachment(jsonObject, locator, boardName, time);
-				if (attachment != null) attachments.add(attachment);
+				if (attachment != null) {
+					attachments.add(attachment);
+				}
 				JSONArray filesArray = jsonObject.optJSONArray("extra_files");
-				if (filesArray != null)
-				{
-					for (int i = 0; i < filesArray.length(); i++)
-					{
+				if (filesArray != null) {
+					for (int i = 0; i < filesArray.length(); i++) {
 						JSONObject fileObject = filesArray.getJSONObject(i);
 						attachment = createFileAttachment(fileObject, locator, boardName, time);
-						if (attachment != null) attachments.add(attachment);
+						if (attachment != null) {
+							attachments.add(attachment);
+						}
 					}
 				}
-				if (attachments.size() > 0) post.setAttachments(attachments);
-			}
-			catch (JSONException e)
-			{
-
+				if (attachments.size() > 0) {
+					post.setAttachments(attachments);
+				}
+			} catch (JSONException e) {
+				// Ignore exception
 			}
 		}
 		return post;
 	}
 
 	public static Posts createThread(JSONObject jsonObject, InfiniteChanLocator locator, String boardName,
-			boolean fromCatalog) throws JSONException
-	{
+			boolean fromCatalog) throws JSONException {
 		Post[] posts;
 		int postsCount = 0;
 		int filesCount = 0;
-		if (fromCatalog)
-		{
+		if (fromCatalog) {
 			Post post = createPost(jsonObject, locator, boardName);
 			postsCount = jsonObject.getInt("replies") + 1;
 			filesCount = jsonObject.getInt("omitted_images") + jsonObject.getInt("images");
 			filesCount += post.getAttachmentsCount();
 			posts = new Post[] {post};
-		}
-		else
-		{
+		} else {
 			JSONArray jsonArray = jsonObject.getJSONArray("posts");
 			posts = new Post[jsonArray.length()];
-			for (int i = 0; i < posts.length; i++)
-			{
+			for (int i = 0; i < posts.length; i++) {
 				jsonObject = jsonArray.getJSONObject(i);
 				posts[i] = createPost(jsonObject, locator, boardName);
-				if (i == 0)
-				{
+				if (i == 0) {
 					postsCount = jsonObject.getInt("replies") + 1;
 					filesCount = jsonObject.getInt("omitted_images") + jsonObject.getInt("images");
 					filesCount += posts[0].getAttachmentsCount();
