@@ -246,22 +246,45 @@ public class DvachChanPerformer extends ChanPerformer {
 			InvalidResponseException {
 		DvachChanLocator locator = DvachChanLocator.get(this);
 		DvachChanConfiguration configuration = DvachChanConfiguration.get(this);
-		Uri uri = locator.createFcgiUri("makaba");
-		MultipartEntity entity = new MultipartEntity("task", "search", "board", data.boardName,
-				"find", data.searchQuery, "json", "1");
-		JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass())
-				.setPostMethod(entity).setRedirectHandler(HttpRequest.RedirectHandler.STRICT)
-				.read().getJsonObject();
-		if (jsonObject != null) {
+		if (data.searchQuery.startsWith("#")) {
+			Uri uri = locator.buildPath(data.boardName, "catalog.json");
+			JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass())
+					.read().getJsonObject();
 			try {
-				String errorMessage = jsonObject.optString("message");
-				if (!StringUtils.isEmpty(errorMessage)) {
-					throw new HttpException(0, errorMessage);
+				String tag = data.searchQuery.substring(1);
+				JSONArray threadsArray = jsonObject.getJSONArray("threads");
+				ArrayList<Post> posts = new ArrayList<>();
+				if (threadsArray != null && threadsArray.length() > 0) {
+					for (int i = 0; i < threadsArray.length(); i++) {
+						jsonObject = threadsArray.getJSONObject(i);
+						if (tag.equals(CommonUtils.optJsonString(jsonObject, "tags"))) {
+							posts.add(DvachModelMapper.createPost(jsonObject, locator, data.boardName, null,
+									configuration.isSageEnabled(data.boardName)));
+						}
+					}
 				}
-				return new ReadSearchPostsResult(DvachModelMapper.createPosts(jsonObject.getJSONArray("posts"),
-						locator, data.boardName, null, configuration.isSageEnabled(data.boardName)));
+				return new ReadSearchPostsResult(posts);
 			} catch (JSONException e) {
 				throw new InvalidResponseException(e);
+			}
+		} else {
+			Uri uri = locator.createFcgiUri("makaba");
+			MultipartEntity entity = new MultipartEntity("task", "search", "board", data.boardName,
+					"find", data.searchQuery, "json", "1");
+			JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass())
+					.setPostMethod(entity).setRedirectHandler(HttpRequest.RedirectHandler.STRICT)
+					.read().getJsonObject();
+			if (jsonObject != null) {
+				try {
+					String errorMessage = jsonObject.optString("message");
+					if (!StringUtils.isEmpty(errorMessage)) {
+						throw new HttpException(0, errorMessage);
+					}
+					return new ReadSearchPostsResult(DvachModelMapper.createPosts(jsonObject.getJSONArray("posts"),
+							locator, data.boardName, null, configuration.isSageEnabled(data.boardName)));
+				} catch (JSONException e) {
+					throw new InvalidResponseException(e);
+				}
 			}
 		}
 		throw new InvalidResponseException();

@@ -20,9 +20,11 @@ import chan.util.CommonUtils;
 import chan.util.StringUtils;
 
 public class DvachModelMapper {
-	private static final Pattern BADGE_PATTERN = Pattern.compile("<img.+?src=\"(.+?)\".+?(?:title=\"(.+?)\")?.+?/?>");
-	private static final Pattern CODE_PATTERN = Pattern.compile("\\[code(?:\\s+lang=.+?)?\\](?:<br ?/?>)*(.+?)" +
+	private static final Pattern PATTERN_BADGE = Pattern.compile("<img.+?src=\"(.+?)\".+?(?:title=\"(.+?)\")?.+?/?>");
+	private static final Pattern PATTERN_CODE = Pattern.compile("\\[code(?:\\s+lang=.+?)?\\](?:<br ?/?>)*(.+?)" +
 			"(?:<br ?/?>)*\\[/code\\]", Pattern.CASE_INSENSITIVE);
+	private static final Pattern PATTERN_HASHLINK = Pattern.compile("<a [^<>]*class=\"hashlink\"[^<>]*>");
+	private static final Pattern PATTERN_HASHLINK_TITLE = Pattern.compile("title=\"(.*?)\"");
 
 	private static final Uri URI_ICON_OS = Uri.parse("chan:///res/raw/raw_os");
 	private static final Uri URI_ICON_ANDROID = Uri.parse("chan:///res/raw/raw_os_android");
@@ -101,8 +103,22 @@ public class DvachModelMapper {
 			comment = comment.replace(" (OP)</a>", "</a>");
 			comment = comment.replace("&#47;", "/");
 		}
+		comment = StringUtils.replaceAll(comment, PATTERN_HASHLINK, matcher -> {
+			String title = null;
+			Matcher matcher2 = PATTERN_HASHLINK_TITLE.matcher(matcher.group());
+			if (matcher2.find()) {
+				title = matcher2.group(1);
+			}
+			if (title != null) {
+				Uri uri = locator.createCatalogSearchUri(boardName, title);
+				String encodedUri = uri.toString().replace("&", "&amp;").replace("\"", "&quot;");
+				return "<a href=\"" + encodedUri + "\">";
+			} else {
+				return matcher.group();
+			}
+		});
 		if ("pr".equals(boardName) && comment != null) {
-			comment = CODE_PATTERN.matcher(comment).replaceAll("<fakecode>$1</fakecode>");
+			comment = PATTERN_CODE.matcher(comment).replaceAll("<fakecode>$1</fakecode>");
 		}
 		post.setComment(comment);
 		// TODO Remove this after server side fix of subjects
@@ -177,7 +193,7 @@ public class DvachModelMapper {
 		String icon = CommonUtils.optJsonString(jsonObject, "icon");
 		ArrayList<Icon> icons = null;
 		if (!StringUtils.isEmpty(icon)) {
-			Matcher matcher = BADGE_PATTERN.matcher(icon);
+			Matcher matcher = PATTERN_BADGE.matcher(icon);
 			while (matcher.find()) {
 				String path = matcher.group(1);
 				String title = matcher.group(2);

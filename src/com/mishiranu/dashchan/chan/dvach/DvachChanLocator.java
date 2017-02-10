@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import android.net.Uri;
+import android.util.Pair;
 
 import chan.content.ChanLocator;
 
@@ -81,5 +82,26 @@ public class DvachChanLocator extends ChanLocator {
 
 	public Uri createFcgiUri(String name, String... alternation) {
 		return buildQuery("makaba/" + name + ".fcgi", alternation);
+	}
+
+	public Uri createCatalogSearchUri(String boardName, String query) {
+		return buildQuery(boardName + "/dashchan-query", "query", query);
+	}
+
+	private Pair<String, String> getCatalogSearchQuery(Uri uri) {
+		List<String> segments = uri.getPathSegments();
+		if (segments.size() == 2 && segments.get(1).equals("dashchan-query")) {
+			return new Pair<>(segments.get(0), uri.getQueryParameter("query"));
+		}
+		return null;
+	}
+
+	@Override
+	public NavigationData handleUriClickSpecial(Uri uri) {
+		Pair<String, String> pair = getCatalogSearchQuery(uri);
+		if (pair != null) {
+			return new NavigationData(NavigationData.TARGET_SEARCH, pair.first, null, null, "#" + pair.second);
+		}
+		return null;
 	}
 }
