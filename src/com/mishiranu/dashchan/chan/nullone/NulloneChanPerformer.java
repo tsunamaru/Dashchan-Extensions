@@ -194,7 +194,7 @@ public class NulloneChanPerformer extends ChanPerformer {
 				Uri uri = locator.createBoardUri(data.boardName, 0);
 				String responseText = new HttpRequest(uri, data.holder, data).setValidator(pair != null
 						? pair.first : null).setSuccessOnly(false).read().getString();
-				needCaptcha = responseText.contains("<span class=\"captcha_status");
+				needCaptcha = responseText.contains("<img class=\"captchaimage\"");
 				pair = new Pair<>(data.holder.getValidator(), needCaptcha);
 				readCaptchaValidators.put(data.boardName, pair);
 			} catch (HttpException e) {
