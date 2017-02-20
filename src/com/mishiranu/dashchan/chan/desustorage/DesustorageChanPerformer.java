@@ -9,7 +9,7 @@ import android.net.Uri;
 import chan.content.ChanLocator;
 import chan.content.ChanPerformer;
 import chan.content.InvalidResponseException;
-import chan.content.ThreadRedirectException;
+import chan.content.RedirectException;
 import chan.http.HttpException;
 import chan.http.HttpRequest;
 import chan.text.ParseException;
@@ -30,8 +30,8 @@ public class DesustorageChanPerformer extends ChanPerformer {
 	private static final Pattern PATTERN_REDIRECT = Pattern.compile("You are being redirected to .*?/thread/(\\d+)/#");
 
 	@Override
-	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, ThreadRedirectException,
-			InvalidResponseException {
+	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException,
+			RedirectException {
 		DesustorageChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createThreadUri(data.boardName, data.threadNumber);
 		String responseText = new HttpRequest(uri, data.holder, data).setValidator(data.validator)
@@ -41,7 +41,7 @@ public class DesustorageChanPerformer extends ChanPerformer {
 			responseText = new HttpRequest(uri, data.holder, data).read().getString();
 			Matcher matcher = PATTERN_REDIRECT.matcher(responseText);
 			if (matcher.find()) {
-				throw new ThreadRedirectException(matcher.group(1), data.threadNumber);
+				throw RedirectException.toThread(data.boardName, matcher.group(1), data.threadNumber);
 			}
 			throw HttpException.createNotFoundException();
 		} else {
