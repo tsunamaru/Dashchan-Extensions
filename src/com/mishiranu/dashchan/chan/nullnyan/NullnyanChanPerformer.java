@@ -71,6 +71,22 @@ public class NullnyanChanPerformer extends ChanPerformer {
 	}
 
 	@Override
+	public ReadSearchPostsResult onReadSearchPosts(ReadSearchPostsData data) throws HttpException,
+			InvalidResponseException {
+		NullnyanChanLocator locator = NullnyanChanLocator.get(this);
+		Uri uri = locator.buildPath("search.php");
+		String responseText = new HttpRequest(uri, data.holder, data)
+				.setPostMethod(new UrlEncodedEntity("board", data.boardName, "query", data.searchQuery))
+				.read().getString();
+		try {
+			return new ReadSearchPostsResult(new NullnyanPostsParser(responseText, this, data.boardName)
+					.convertSearchPosts());
+		} catch (ParseException e) {
+			throw new InvalidResponseException(e);
+		}
+	}
+
+	@Override
 	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException {
 		NullnyanChanLocator locator = NullnyanChanLocator.get(this);
 		Uri uri = locator.createBoardUri("b", 0);

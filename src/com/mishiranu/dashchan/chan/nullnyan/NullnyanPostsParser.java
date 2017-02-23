@@ -8,6 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.annotation.SuppressLint;
+import android.net.Uri;
 
 import chan.content.model.EmbeddedAttachment;
 import chan.content.model.FileAttachment;
@@ -33,6 +34,7 @@ public class NullnyanPostsParser {
 
 	private boolean headerHandling = false;
 	private boolean parentFromDataParent = false;
+	private boolean parentFromRefLink = false;
 
 	private static final SimpleDateFormat[] DATE_FORMATS;
 
@@ -85,6 +87,13 @@ public class NullnyanPostsParser {
 		return posts;
 	}
 
+	public ArrayList<Post> convertSearchPosts() throws ParseException {
+		parentFromRefLink = true;
+		PARSER.parse(source, this);
+		closePost();
+		return posts;
+	}
+
 	public Post convertSinglePost() throws ParseException {
 		parentFromDataParent = true;
 		PARSER.parse(source, this);
@@ -113,6 +122,17 @@ public class NullnyanPostsParser {
 			holder.post.setParentPostNumber(attributes.get("data-parent"));
 		}
 		return false;
+	}).equals("span", "class", "reflink").open((instance, holder, tagName, attributes) -> holder.parentFromRefLink)
+			.content((instance, holder, text) -> {
+		int start = text.indexOf("<a href=\"");
+		int end = text.indexOf('"', start + 9);
+		if (end > start && start >= 0) {
+			Uri uri = Uri.parse(text.substring(start + 9, end));
+			String threadNumber = holder.locator.getThreadNumber(uri);
+			if (threadNumber != null) {
+				holder.post.setParentPostNumber(threadNumber);
+			}
+		}
 	}).contains("div", "class", "managePost").open((instance, holder, tagName, attributes) -> {
 		holder.headerHandling = true;
 		return true; // Skip content
@@ -195,31 +215,27 @@ public class NullnyanPostsParser {
 		holder.post.setName(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
 	}).equals("span", "class", "postertrip").content((instance, holder, text) -> {
 		holder.post.setTripcode(StringUtils.nullIfEmpty(StringUtils.clearHtml(text).trim()));
-	}).text((instance, holder, source, start, end) -> {
-		if (holder.headerHandling) {
-			String text = source.substring(start, end).trim();
-			if (text.length() > 0) {
-				if (text.contains("/")) {
-					// e.g. "Mon 16/05/16 21:13:18" -> "16/05/16 21:13:18"
-					text = text.substring(text.indexOf(' ') + 1);
-				} else {
-					int index = text.indexOf(", ");
-					if (index >= 0) {
-						// e.g. "Saturday, 9 July 2016 05:05:10" -> "9 July 2016 05:05:10"
-						text = text.substring(index + 2);
-					}
-				}
-				for (SimpleDateFormat dateFormat : DATE_FORMATS) {
-					try {
-						holder.post.setTimestamp(dateFormat.parse(text).getTime());
-						break;
-					} catch (java.text.ParseException e) {
-						// Ignore exception
-					}
-				}
-				holder.headerHandling = false;
+	}).name("time").content((instance, holder, text) -> {
+		text = text.trim();
+		if (text.contains("/")) {
+			// e.g. "Mon 16/05/16 21:13:18" -> "16/05/16 21:13:18"
+			text = text.substring(text.indexOf(' ') + 1);
+		} else {
+			int index = text.indexOf(", ");
+			if (index >= 0) {
+				// e.g. "Saturday, 9 July 2016 05:05:10" -> "9 July 2016 05:05:10"
+				text = text.substring(index + 2);
 			}
 		}
+		for (SimpleDateFormat dateFormat : DATE_FORMATS) {
+			try {
+				holder.post.setTimestamp(dateFormat.parse(text).getTime());
+				break;
+			} catch (java.text.ParseException e) {
+				// Ignore exception
+			}
+		}
+		holder.headerHandling = false;
 	}).contains("i", "class", "iconStickied").open((instance, holder, tagName, attributes) -> {
 		holder.post.setSticky(true);
 		return false;
