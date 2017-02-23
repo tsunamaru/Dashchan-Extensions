@@ -4,6 +4,7 @@ import chan.content.ChanConfiguration;
 
 public class NullnyanChanConfiguration extends ChanConfiguration {
 	public NullnyanChanConfiguration() {
+		request(OPTION_READ_SINGLE_POST);
 		request(OPTION_READ_POSTS_COUNT);
 		setDefaultName("Anonymous");
 		addCaptchaType("nullnyan");

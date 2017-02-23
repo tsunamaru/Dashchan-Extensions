@@ -32,6 +32,7 @@ public class NullnyanPostsParser {
 	private final ArrayList<Post> posts = new ArrayList<>();
 
 	private boolean headerHandling = false;
+	private boolean parentFromDataParent = false;
 
 	private static final SimpleDateFormat[] DATE_FORMATS;
 
@@ -84,6 +85,13 @@ public class NullnyanPostsParser {
 		return posts;
 	}
 
+	public Post convertSinglePost() throws ParseException {
+		parentFromDataParent = true;
+		PARSER.parse(source, this);
+		closePost();
+		return !posts.isEmpty() ? posts.get(0) : null;
+	}
+
 	private static final TemplateParser<NullnyanPostsParser> PARSER = new TemplateParser<NullnyanPostsParser>()
 			.starts("div", "id", "p").open((instance, holder, tagName, attributes) -> {
 		holder.closePost();
@@ -98,6 +106,11 @@ public class NullnyanPostsParser {
 			}
 		} else {
 			holder.post.setParentPostNumber(holder.parent);
+		}
+		return false;
+	}).contains("a", "data-parent", "").open((instance, holder, tagName, attributes) -> {
+		if (holder.parentFromDataParent) {
+			holder.post.setParentPostNumber(attributes.get("data-parent"));
 		}
 		return false;
 	}).contains("div", "class", "managePost").open((instance, holder, tagName, attributes) -> {

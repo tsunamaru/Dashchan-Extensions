@@ -52,6 +52,25 @@ public class NullnyanChanPerformer extends ChanPerformer {
 	}
 
 	@Override
+	public ReadSinglePostResult onReadSinglePost(ReadSinglePostData data) throws HttpException,
+			InvalidResponseException {
+		NullnyanChanLocator locator = NullnyanChanLocator.get(this);
+		Uri uri = locator.buildPath("read.php");
+		String responseText = new HttpRequest(uri, data.holder, data).addHeader("X-AJAX-Perform", "true")
+				.addHeader("what", "post").addHeader("board", data.boardName).addHeader("id", data.postNumber)
+				.read().getString();
+		try {
+			Post post = new NullnyanPostsParser(responseText, this, data.boardName).convertSinglePost();
+			if (post == null) {
+				throw HttpException.createNotFoundException();
+			}
+			return new ReadSinglePostResult(post);
+		} catch (ParseException e) {
+			throw new InvalidResponseException(e);
+		}
+	}
+
+	@Override
 	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException {
 		NullnyanChanLocator locator = NullnyanChanLocator.get(this);
 		Uri uri = locator.createBoardUri("b", 0);
