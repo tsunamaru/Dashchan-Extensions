@@ -161,22 +161,6 @@ public class ErlachChanPerformer extends ChanPerformer {
 		}
 	}
 
-	@Override
-	public ReadContentResult onReadContent(ReadContentData data) throws HttpException, InvalidResponseException {
-		if ("thumbnail".equals(data.uri.getFragment())) {
-			// Don't load large thumbnails
-			new HttpRequest(data.uri, data.holder).setHeadMethod()
-					.addHeader("Accept-Encoding", "").read();
-			List<String> contentLengthList = data.holder.getHeaderFields().get("Content-Length");
-			long contentLength = !contentLengthList.isEmpty()
-					? Long.parseLong(contentLengthList.get(0)) : Long.MAX_VALUE;
-			if (contentLength >= 100 * 1024) {
-				throw HttpException.createNotFoundException();
-			}
-		}
-		return super.onReadContent(data);
-	}
-
 	private static final Pattern PATTERN_PAGE_ID = Pattern.compile("init\\('(-?\\d+)'\\);");
 	private static final Pattern PATTERN_CREATE_THREAD = Pattern.compile("<button id=\"([^\"]*?)\" type=\"button\" " +
 			"class=\"black\">.*?\\bCreate thread\\b.*?</button>");
