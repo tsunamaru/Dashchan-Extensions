@@ -9,8 +9,8 @@ import chan.content.ChanLocator;
 import chan.util.StringUtils;
 
 public class ErlachChanLocator extends ChanLocator {
-	private static final Pattern BOARD_PATH = Pattern.compile("/\\w+/?");
-	private static final Pattern THREAD_PATH = Pattern.compile("/\\w+/\\w+(?:/\\w+)?/?");
+	private static final Pattern BOARD_PATH = Pattern.compile("/[^/]+/?");
+	private static final Pattern THREAD_PATH = Pattern.compile("/[^/]+/\\w+(?:/\\w+)?/?");
 	private static final Pattern ATTACHMENT_PATH = Pattern.compile("/static/attachments/[^/]+/[^/]+/[^/]+\\.\\w+");
 
 	public ErlachChanLocator() {
