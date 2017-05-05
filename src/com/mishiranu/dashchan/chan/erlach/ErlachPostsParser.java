@@ -88,7 +88,7 @@ public class ErlachPostsParser {
 			String imgSrc = attributes.get("src");
 			holder.attachment.setFileUri(holder.locator, Uri.parse(imgSrc));
 			holder.attachment.setThumbnailUri(holder.locator,
-					Uri.parse(imgSrc.substring(0, imgSrc.length() - 4) + "-R128.jpg"));
+					Uri.parse(imgSrc.substring(0, imgSrc.length() - 4) + "-R256.jpg"));
 			holder.post.setAttachments(holder.attachment);
 		}
 		return false;
