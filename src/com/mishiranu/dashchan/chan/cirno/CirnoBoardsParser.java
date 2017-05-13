@@ -65,7 +65,7 @@ public class CirnoBoardsParser {
 		}
 	}
 
-	private static final TemplateParser<CirnoBoardsParser> PARSER = new TemplateParser<CirnoBoardsParser>()
+	private static final TemplateParser<CirnoBoardsParser> PARSER = TemplateParser.<CirnoBoardsParser>builder()
 			.equals("td", "class", "header").content((instance, holder, text) -> {
 		holder.closeCategory();
 		holder.boardCategoryTitle = StringUtils.clearHtml(text);

@@ -103,7 +103,7 @@ public class CirnoPostsParser {
 		}
 	}
 
-	private static final TemplateParser<CirnoPostsParser> PARSER = new TemplateParser<CirnoPostsParser>()
+	private static final TemplateParser<CirnoPostsParser> PARSER = TemplateParser.<CirnoPostsParser>builder()
 			.equals("input", "name", "delete").open((instance, holder, tagName, attributes) -> {
 		if ("checkbox".equals(attributes.get("type"))) {
 			holder.headerHandling = true;

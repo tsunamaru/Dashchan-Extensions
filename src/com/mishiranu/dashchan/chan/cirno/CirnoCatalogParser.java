@@ -32,7 +32,7 @@ public class CirnoCatalogParser {
 		return threads;
 	}
 
-	private static final TemplateParser<CirnoCatalogParser> PARSER = new TemplateParser<CirnoCatalogParser>()
+	private static final TemplateParser<CirnoCatalogParser> PARSER = TemplateParser.<CirnoCatalogParser>builder()
 			.starts("a", "title", "#").open((instance, holder, tagName, attributes) -> {
 		Matcher matcher = LINK_TITLE.matcher(attributes.get("title"));
 		if (matcher.matches()) {
