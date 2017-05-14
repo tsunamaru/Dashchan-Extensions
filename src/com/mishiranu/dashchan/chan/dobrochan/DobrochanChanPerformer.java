@@ -31,65 +31,53 @@ import chan.http.UrlEncodedEntity;
 import chan.text.ParseException;
 import chan.util.CommonUtils;
 
-public class DobrochanChanPerformer extends ChanPerformer
-{
+public class DobrochanChanPerformer extends ChanPerformer {
 	private static final int DELAY = 1000;
 	private static final String COOKIE_HANABIRA = "hanabira";
 	private static final String COOKIE_HANABIRA_TEMP = "hanabira_temp";
 
-	private HttpResponse readResponseRepeatable(HttpRequest request) throws HttpException
-	{
+	private HttpResponse readResponseRepeatable(HttpRequest request) throws HttpException {
 		HttpException exception = null;
-		for (int i = 0; i < 5; i++)
-		{
-			try
-			{
+		for (int i = 0; i < 5; i++) {
+			try {
 				return request.read();
-			}
-			catch (HttpException e)
-			{
+			} catch (HttpException e) {
 				exception = e;
-				if (e.getResponseCode() != HttpURLConnection.HTTP_UNAVAILABLE) break;
+				if (e.getResponseCode() != HttpURLConnection.HTTP_UNAVAILABLE) {
+					break;
+				}
 			}
 		}
 		throw exception;
 	}
 
-	private CookieBuilder buildCookies()
-	{
+	private CookieBuilder buildCookies() {
 		DobrochanChanConfiguration configuration = ChanConfiguration.get(this);
 		return new CookieBuilder().append(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA))
 				.append(COOKIE_HANABIRA_TEMP, configuration.getCookie(COOKIE_HANABIRA_TEMP));
 	}
 
 	@Override
-	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException
-	{
+	public ReadThreadsResult onReadThreads(ReadThreadsData data) throws HttpException, InvalidResponseException {
 		DobrochanChanLocator locator = ChanLocator.get(this);
 		DobrochanChanConfiguration configuration = ChanConfiguration.get(this);
 		Uri uri = locator.buildPath(data.boardName, data.pageNumber + ".json");
-		JSONObject response = readResponseRepeatable(new HttpRequest(uri, data.holder, data)
-				.setValidator(data.validator).addCookie(buildCookies()).setDelay(DELAY)).getJsonObject();
-		if (response != null)
-		{
-			try
-			{
-				JSONObject jsonObject = ((JSONObject) response).getJSONObject("boards").getJSONObject(data.boardName);
+		JSONObject response = readResponseRepeatable(new HttpRequest(uri, data).setValidator(data.validator)
+				.addCookie(buildCookies()).setDelay(DELAY)).getJsonObject();
+		if (response != null) {
+			try {
+				JSONObject jsonObject = response.getJSONObject("boards").getJSONObject(data.boardName);
 				configuration.updateFromThreadsJson(data.boardName, jsonObject);
 				JSONArray threadsArray = jsonObject.getJSONArray("threads");
 				Posts[] threads = null;
-				if (threadsArray != null && threadsArray.length() > 0)
-				{
+				if (threadsArray != null && threadsArray.length() > 0) {
 					threads = new Posts[threadsArray.length()];
-					for (int i = 0; i < threads.length; i++)
-					{
+					for (int i = 0; i < threads.length; i++) {
 						threads[i] = DobrochanModelMapper.createThread(threadsArray.getJSONObject(i), locator);
 					}
 				}
 				return new ReadThreadsResult(threads);
-			}
-			catch (JSONException e)
-			{
+			} catch (JSONException e) {
 				throw new InvalidResponseException(e);
 			}
 		}
@@ -97,107 +85,90 @@ public class DobrochanChanPerformer extends ChanPerformer
 	}
 
 	@Override
-	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException
-	{
+	public ReadPostsResult onReadPosts(ReadPostsData data) throws HttpException, InvalidResponseException {
 		DobrochanChanLocator locator = ChanLocator.get(this);
 		DobrochanChanConfiguration configuration = ChanConfiguration.get(this);
 		Uri uri;
-		if (data.partialThreadLoading && data.lastPostNumber != null)
-		{
+		if (data.partialThreadLoading && data.lastPostNumber != null) {
 			uri = locator.createApiUri("thread", data.boardName, data.threadNumber + "/new.json",
 					"last_post", data.lastPostNumber, "new_format", "1", "message_html", "1", "board", "1");
-		}
-		else
-		{
+		} else {
 			uri = locator.createApiUri("thread", data.boardName, data.threadNumber + "/all.json",
 					"new_format", "1", "message_html", "1", "board", "1");
 		}
-		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data.holder, data)
-				.setValidator(data.validator).addCookie(buildCookies()).setDelay(DELAY)).getJsonObject();
+		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data).setValidator(data.validator)
+				.addCookie(buildCookies()).setDelay(DELAY)).getJsonObject();
 		handleMobileApiError(jsonObject);
-		try
-		{
+		try {
 			jsonObject = jsonObject.getJSONObject("result");
 			configuration.updateFromPostsJson(data.boardName, jsonObject);
 			jsonObject = jsonObject.getJSONArray("threads").getJSONObject(0);
 			JSONArray jsonArray = jsonObject.optJSONArray("posts");
-			if (jsonArray == null) return null;
+			if (jsonArray == null) {
+				return null;
+			}
 			return new ReadPostsResult(DobrochanModelMapper.createPosts(jsonArray, locator, data.threadNumber));
-		}
-		catch (JSONException e)
-		{
+		} catch (JSONException e) {
 			throw new InvalidResponseException(e);
 		}
 	}
 
 	@Override
-	public ReadSinglePostResult onReadSinglePost(ReadSinglePostData data) throws HttpException, InvalidResponseException
-	{
+	public ReadSinglePostResult onReadSinglePost(ReadSinglePostData data) throws HttpException,
+			InvalidResponseException {
 		DobrochanChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createApiUri("post", data.boardName, data.postNumber + ".json",
 				"new_format", "1", "message_html", "1", "thread", "1");
-		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data.holder, data)
+		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data)
 				.addCookie(buildCookies()).setDelay(DELAY)).getJsonObject();
 		handleMobileApiError(jsonObject);
-		try
-		{
+		try {
 			jsonObject = jsonObject.getJSONObject("result").getJSONArray("threads").getJSONObject(0);
 			String threadNumber = CommonUtils.getJsonString(jsonObject, "display_id");
 			return new ReadSinglePostResult(DobrochanModelMapper.createPost(jsonObject.getJSONArray("posts")
 					.getJSONObject(0), locator, threadNumber));
-		}
-		catch (JSONException e)
-		{
+		} catch (JSONException e) {
 			throw new InvalidResponseException(e);
 		}
 	}
 
 	@Override
-	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException
-	{
+	public ReadBoardsResult onReadBoards(ReadBoardsData data) throws HttpException, InvalidResponseException {
 		DobrochanChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.buildPath("frame.xhtml");
-		String responseText = new HttpRequest(uri, data.holder, data).read().getString();
-		try
-		{
+		String responseText = new HttpRequest(uri, data).read().getString();
+		try {
 			return new ReadBoardsResult(new DobrochanBoardsParser(responseText).convert());
-		}
-		catch (ParseException e)
-		{
+		} catch (ParseException e) {
 			throw new InvalidResponseException(e);
 		}
 	}
 
 	@Override
-	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException, InvalidResponseException
-	{
+	public ReadPostsCountResult onReadPostsCount(ReadPostsCountData data) throws HttpException,
+			InvalidResponseException {
 		DobrochanChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createApiUri("thread", data.boardName, data.threadNumber + "/last.json",
 				"count", "0", "new_format", "1");
-		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data.holder, data)
-				.setValidator(data.validator).addCookie(buildCookies()).setDelay(DELAY)).getJsonObject();
+		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data).setValidator(data.validator)
+				.addCookie(buildCookies()).setDelay(DELAY)).getJsonObject();
 		handleMobileApiError(jsonObject);
-		try
-		{
+		try {
 			return new ReadPostsCountResult(jsonObject.getJSONObject("result").getInt("posts_count"));
-		}
-		catch (JSONException e)
-		{
+		} catch (JSONException e) {
 			throw new InvalidResponseException(e);
 		}
 	}
 
-	private void handleMobileApiError(JSONObject jsonObject) throws HttpException, InvalidResponseException
-	{
-		if (jsonObject == null) throw new InvalidResponseException();
+	private void handleMobileApiError(JSONObject jsonObject) throws HttpException, InvalidResponseException {
+		if (jsonObject == null) {
+			throw new InvalidResponseException();
+		}
 		JSONObject errorObject = jsonObject.optJSONObject("error");
-		if (errorObject != null)
-		{
+		if (errorObject != null) {
 			String message = CommonUtils.optJsonString(errorObject, "message");
-			if (message != null)
-			{
-				if ("Specified element does not exist.".equals(message) || "Post is deleted.".equals(message))
-				{
+			if (message != null) {
+				if ("Specified element does not exist.".equals(message) || "Post is deleted.".equals(message)) {
 					throw HttpException.createNotFoundException();
 				}
 				throw new HttpException(0, message);
@@ -209,58 +180,55 @@ public class DobrochanChanPerformer extends ChanPerformer
 	private static final ColorMatrixColorFilter CAPTCHA_FILTER = new ColorMatrixColorFilter(new float[]
 			{0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 1f, 0f});
 
-	private final HashSet<String> mForceCaptcha = new HashSet<>();
+	private final HashSet<String> forceCaptcha = new HashSet<>();
 
-	private boolean isForceCaptcha(String boardName, String threadNumber)
-	{
-		return mForceCaptcha.contains(boardName + "," + threadNumber);
+	private boolean isForceCaptcha(String boardName, String threadNumber) {
+		return forceCaptcha.contains(boardName + "," + threadNumber);
 	}
 
-	private void setForceCaptcha(String boardName, String threadNumber, boolean forceCaptcha)
-	{
+	private void setForceCaptcha(String boardName, String threadNumber, boolean forceCaptcha) {
 		String key = boardName + "," + threadNumber;
-		if (forceCaptcha) mForceCaptcha.add(key); else mForceCaptcha.remove(key);
+		if (forceCaptcha) {
+			this.forceCaptcha.add(key);
+		} else {
+			this.forceCaptcha.remove(key);
+		}
 	}
 
 	@Override
-	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException
-	{
+	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException {
 		DobrochanChanLocator locator = ChanLocator.get(this);
 		DobrochanChanConfiguration configuration = ChanConfiguration.get(this);
-		if (!configuration.isAlwaysLoadCaptcha())
-		{
-			if (!isForceCaptcha(data.boardName, data.threadNumber))
-			{
+		if (!configuration.isAlwaysLoadCaptcha()) {
+			if (!isForceCaptcha(data.boardName, data.threadNumber)) {
 				Uri uri = locator.buildPath("api", "user.json");
-				JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data.holder, data)
+				JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, data)
 						.addCookie(buildCookies()).setDelay(DELAY)).getJsonObject();
-				if (jsonObject != null)
-				{
+				if (jsonObject != null) {
 					JSONArray jsonArray = jsonObject.optJSONArray("tokens");
-					if (jsonArray != null)
-					{
-						for (int i = 0; i < jsonArray.length(); i++)
-						{
+					if (jsonArray != null) {
+						for (int i = 0; i < jsonArray.length(); i++) {
 							jsonObject = jsonArray.optJSONObject(i);
-							if (jsonObject != null)
-							{
+							if (jsonObject != null) {
 								String token = CommonUtils.optJsonString(jsonObject, "token");
-								if ("no_user_captcha".equals(token))
-								{
+								if ("no_user_captcha".equals(token)) {
 									return new ReadCaptchaResult(CaptchaState.SKIP, new CaptchaData());
 								}
 							}
 						}
 					}
 				}
+			} else {
+				setForceCaptcha(data.boardName, data.threadNumber, false);
 			}
-			else setForceCaptcha(data.boardName, data.threadNumber, false);
 		}
 		Uri uri = locator.buildPath("captcha", data.boardName, System.currentTimeMillis() + ".png");
-		Bitmap image = readResponseRepeatable(new HttpRequest(uri, data.holder, data).addCookie(buildCookies())
+		Bitmap image = readResponseRepeatable(new HttpRequest(uri, data).addCookie(buildCookies())
 				.setDelay(DELAY)).getBitmap();
 		Bitmap trimmed = CommonUtils.trimBitmap(image, 0xffffffff);
-		if (trimmed == null) trimmed = image;
+		if (trimmed == null) {
+			trimmed = image;
+		}
 		Bitmap newImage = Bitmap.createBitmap(trimmed.getWidth(), 32, Bitmap.Config.ARGB_8888);
 		Canvas canvas = new Canvas(newImage);
 		int shift = (newImage.getHeight() - trimmed.getHeight()) / 2;
@@ -268,30 +236,31 @@ public class DobrochanChanPerformer extends ChanPerformer
 		Paint paint = new Paint();
 		paint.setColorFilter(CAPTCHA_FILTER);
 		canvas.drawBitmap(trimmed, 0, shift, paint);
-		if (trimmed != image) trimmed.recycle();
+		if (trimmed != image) {
+			trimmed.recycle();
+		}
 		image.recycle();
 		String hanabira = data.holder.getCookieValue(COOKIE_HANABIRA);
-		if (hanabira != null) configuration.storeCookie(COOKIE_HANABIRA, hanabira, "Hanabira");
+		if (hanabira != null) {
+			configuration.storeCookie(COOKIE_HANABIRA, hanabira, "Hanabira");
+		}
 		String hanabiraTemp = data.holder.getCookieValue(COOKIE_HANABIRA_TEMP);
-		if (hanabiraTemp != null) configuration.storeCookie(COOKIE_HANABIRA_TEMP, hanabiraTemp, "Hanabira Temp");
+		if (hanabiraTemp != null) {
+			configuration.storeCookie(COOKIE_HANABIRA_TEMP, hanabiraTemp, "Hanabira Temp");
+		}
 		return new ReadCaptchaResult(CaptchaState.CAPTCHA, new CaptchaData()).setImage(newImage);
 	}
 
-	public String readThreadId(String boardName, String threadNumber, HttpHolder holder, HttpRequest.Preset preset)
-			throws HttpException, InvalidResponseException
-	{
+	public String readThreadId(String boardName, String threadNumber, HttpHolder holder) throws HttpException,
+			InvalidResponseException {
 		DobrochanChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.createApiUri("thread", boardName, threadNumber + "/last.json",
 				"count", "0", "new_format", "1");
-		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, holder, preset).setDelay(DELAY))
-				.getJsonObject();
+		JSONObject jsonObject = readResponseRepeatable(new HttpRequest(uri, holder).setDelay(DELAY)).getJsonObject();
 		handleMobileApiError(jsonObject);
-		try
-		{
+		try {
 			return CommonUtils.getJsonString(jsonObject.getJSONObject("result"), "thread_id");
-		}
-		catch (JSONException e)
-		{
+		} catch (JSONException e) {
 			throw new InvalidResponseException(e);
 		}
 	}
@@ -300,8 +269,7 @@ public class DobrochanChanPerformer extends ChanPerformer
 	private static final Pattern PATTERN_POST_ERROR = Pattern.compile("<td.*?class='post-error'>(.*?)</td>");
 
 	@Override
-	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException
-	{
+	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException {
 		MultipartEntity entity = new MultipartEntity();
 		entity.add("thread_id", data.threadNumber);
 		entity.add("name", data.name);
@@ -309,85 +277,79 @@ public class DobrochanChanPerformer extends ChanPerformer
 		entity.add("message", data.comment);
 		entity.add("password", data.password);
 		entity.add("goto", "thread");
-		if (data.optionSage) entity.add("sage", "on");
-		if (data.attachments != null)
-		{
-			for (int i = 0; i < data.attachments.length; i++)
-			{
+		if (data.optionSage) {
+			entity.add("sage", "on");
+		}
+		if (data.attachments != null) {
+			for (int i = 0; i < data.attachments.length; i++) {
 				SendPostData.Attachment attachment = data.attachments[i];
 				attachment.addToEntity(entity, "file_" + (i + 1));
 				entity.add("file_" + (i + 1) + "_rating", attachment.rating);
 			}
 			entity.add("post_files_count", Integer.toString(data.attachments.length));
 		}
-		if (data.captchaData != null) entity.add("captcha", data.captchaData.get(CaptchaData.INPUT));
+		if (data.captchaData != null) {
+			entity.add("captcha", data.captchaData.get(CaptchaData.INPUT));
+		}
 
 		DobrochanChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "post", "new.xhtml");
 		String responseText;
-		try
-		{
-			new HttpRequest(uri, data.holder, data).setPostMethod(entity).addCookie(buildCookies())
+		try {
+			new HttpRequest(uri, data).setPostMethod(entity).addCookie(buildCookies())
 					.setRedirectHandler(HttpRequest.RedirectHandler.NONE).execute();
-			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_MOVED_TEMP)
-			{
+			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_MOVED_TEMP) {
 				uri = data.holder.getRedirectedUri();
 				String path = uri.getPath();
-				if (path == null) throw new InvalidResponseException();
-				if (!path.startsWith("/error"))
-				{
+				if (path == null) {
+					throw new InvalidResponseException();
+				}
+				if (!path.startsWith("/error")) {
 					String threadNumber = locator.getThreadNumber(uri);
-					if (threadNumber == null) throw new InvalidResponseException();
+					if (threadNumber == null) {
+						throw new InvalidResponseException();
+					}
 					return new SendPostResult(threadNumber, null);
 				}
-				responseText = new HttpRequest(uri, data.holder, data).addCookie(buildCookies()).read().getString();
+				responseText = new HttpRequest(uri, data.holder).addCookie(buildCookies()).read().getString();
+			} else {
+				responseText = data.holder.read().getString();
 			}
-			else responseText = data.holder.read().getString();
-		}
-		finally
-		{
+		} finally {
 			data.holder.disconnect();
 		}
 
 		String errorMessage = null;
 		Matcher matcher = PATTERN_POST_ERROR.matcher(responseText);
-		if (matcher.find()) errorMessage = matcher.group(1); else
-		{
+		if (matcher.find()) {
+			errorMessage = matcher.group(1);
+		} else {
 			matcher = PATTERN_POST_ERROR_UNCOMMON.matcher(responseText);
-			if (matcher.find()) errorMessage = matcher.group(1);
+			if (matcher.find()) {
+				errorMessage = matcher.group(1);
+			}
 		}
-		if (errorMessage != null)
-		{
+		if (errorMessage != null) {
 			int errorType = 0;
 			if (errorMessage.contains("Неверная капча") || errorMessage.contains("Нужно включить кукисы")
-					|| errorMessage.contains("подтвердите, что вы человек"))
-			{
+					|| errorMessage.contains("подтвердите, что вы человек")) {
 				setForceCaptcha(data.boardName, data.threadNumber, true);
 				errorType = ApiException.SEND_ERROR_CAPTCHA;
-			}
-			else if (errorMessage.contains("Вы должны указать тему или написать сообщение")
-					|| errorMessage.contains("Вы должны написать текст"))
-			{
+			} else if (errorMessage.contains("Вы должны указать тему или написать сообщение")
+					|| errorMessage.contains("Вы должны написать текст")) {
 				errorType = ApiException.SEND_ERROR_EMPTY_COMMENT;
-			}
-			else if (errorMessage.contains("Вы должны прикрепить"))
-			{
+			} else if (errorMessage.contains("Вы должны прикрепить")) {
 				errorType = ApiException.SEND_ERROR_EMPTY_FILE;
-			}
-			else if (errorMessage.contains("Сообщение не должно превышать"))
-			{
+			} else if (errorMessage.contains("Сообщение не должно превышать")) {
 				errorType = ApiException.SEND_ERROR_FIELD_TOO_LONG;
-			}
-			else if (errorMessage.contains("не существует"))
-			{
+			} else if (errorMessage.contains("не существует")) {
 				errorType = ApiException.SEND_ERROR_NO_THREAD;
-			}
-			else if (errorMessage.contains("закрыт"))
-			{
+			} else if (errorMessage.contains("закрыт")) {
 				errorType = ApiException.SEND_ERROR_CLOSED;
 			}
-			if (errorType != 0) throw new ApiException(errorType); else
-			{
+			if (errorType != 0) {
+				throw new ApiException(errorType);
+			} else {
 				CommonUtils.writeLog("Dobrochan send message", errorMessage);
 				throw new ApiException(errorMessage);
 			}
@@ -397,37 +359,36 @@ public class DobrochanChanPerformer extends ChanPerformer
 
 	@Override
 	public SendDeletePostsResult onSendDeletePosts(SendDeletePostsData data) throws HttpException, ApiException,
-			InvalidResponseException
-	{
-		String threadId = readThreadId(data.boardName, data.threadNumber, data.holder, data);
+			InvalidResponseException {
+		String threadId = readThreadId(data.boardName, data.threadNumber, data.holder);
 		DobrochanChanLocator locator = ChanLocator.get(this);
 		Uri uri = locator.buildPath(data.boardName, "delete");
 		UrlEncodedEntity entity = new UrlEncodedEntity("task", "delete", "password", data.password);
-		for (String postNumber : data.postNumbers) entity.add(postNumber, threadId);
-		String responseText;
-		try
-		{
-			new HttpRequest(uri, data.holder, data).setPostMethod(entity)
-					.setRedirectHandler(HttpRequest.RedirectHandler.NONE).execute();
-			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_MOVED_TEMP) return null;
-			responseText = data.holder.read().getString();
+		for (String postNumber : data.postNumbers) {
+			entity.add(postNumber, threadId);
 		}
-		finally
-		{
+		String responseText;
+		try {
+			new HttpRequest(uri, data).setPostMethod(entity)
+					.setRedirectHandler(HttpRequest.RedirectHandler.NONE).execute();
+			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_MOVED_TEMP) {
+				return null;
+			}
+			responseText = data.holder.read().getString();
+		} finally {
 			data.holder.disconnect();
 		}
 		Matcher matcher = PATTERN_POST_ERROR_UNCOMMON.matcher(responseText);
-		if (matcher.find())
-		{
+		if (matcher.find()) {
 			String errorMessage = matcher.group(1);
-			if (errorMessage != null)
-			{
+			if (errorMessage != null) {
 				int errorType = 0;
-				if (errorMessage.contains("Неправильный пароль"))
-				{
+				if (errorMessage.contains("Неправильный пароль")) {
 					errorType = ApiException.DELETE_ERROR_PASSWORD;
 				}
-				if (errorType != 0) throw new ApiException(errorType);
+				if (errorType != 0) {
+					throw new ApiException(errorType);
+				}
 			}
 			CommonUtils.writeLog("Dobrochan delete message", errorMessage);
 			throw new ApiException(errorMessage);

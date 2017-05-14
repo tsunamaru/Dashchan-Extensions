@@ -7,16 +7,14 @@ import android.util.Pair;
 
 import chan.content.ChanConfiguration;
 
-public class DobrochanChanConfiguration extends ChanConfiguration
-{
+public class DobrochanChanConfiguration extends ChanConfiguration {
 	private static final String KEY_ALWAYS_LOAD_CAPTCHA = "always_load_captcha";
 
 	private static final String KEY_NAMES_ENABLED = "names_enabled";
 	private static final String KEY_TRIPCODES_ENABLED = "tripcodes_enabled";
 	private static final String KEY_ATTACHMENTS_COUNT = "attachments_count";
 
-	public DobrochanChanConfiguration()
-	{
+	public DobrochanChanConfiguration() {
 		request(OPTION_READ_THREAD_PARTIALLY);
 		request(OPTION_READ_SINGLE_POST);
 		request(OPTION_READ_POSTS_COUNT);
@@ -31,8 +29,7 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Board obtainBoardConfiguration(String boardName)
-	{
+	public Board obtainBoardConfiguration(String boardName) {
 		Board board = new Board();
 		board.allowPosting = true;
 		board.allowDeleting = true;
@@ -40,10 +37,8 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Captcha obtainCustomCaptchaConfiguration(String captchaType)
-	{
-		if ("dobrochan".equals(captchaType))
-		{
+	public Captcha obtainCustomCaptchaConfiguration(String captchaType) {
+		if ("dobrochan".equals(captchaType)) {
 			Captcha captcha = new Captcha();
 			captcha.title = "Dobrochan";
 			captcha.input = Captcha.Input.ALL;
@@ -54,8 +49,7 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Posting obtainPostingConfiguration(String boardName, boolean newThread)
-	{
+	public Posting obtainPostingConfiguration(String boardName, boolean newThread) {
 		Posting posting = new Posting();
 		posting.allowName = get(boardName, KEY_NAMES_ENABLED, true);
 		posting.allowTripcode = get(boardName, KEY_TRIPCODES_ENABLED, true);
@@ -78,8 +72,7 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public Deleting obtainDeletingConfiguration(String boardName)
-	{
+	public Deleting obtainDeletingConfiguration(String boardName) {
 		Deleting deleting = new Deleting();
 		deleting.password = true;
 		deleting.multiplePosts = true;
@@ -87,10 +80,8 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 	}
 
 	@Override
-	public CustomPreference obtainCustomPreferenceConfiguration(String key)
-	{
-		if (KEY_ALWAYS_LOAD_CAPTCHA.equals(key))
-		{
+	public CustomPreference obtainCustomPreferenceConfiguration(String key) {
+		if (KEY_ALWAYS_LOAD_CAPTCHA.equals(key)) {
 			Resources resources = getResources();
 			CustomPreference customPreference = new CustomPreference();
 			customPreference.title = resources.getString(R.string.pref_always_load_captcha);
@@ -100,19 +91,18 @@ public class DobrochanChanConfiguration extends ChanConfiguration
 		return null;
 	}
 
-	public boolean isAlwaysLoadCaptcha()
-	{
+	public boolean isAlwaysLoadCaptcha() {
 		return get(null, KEY_ALWAYS_LOAD_CAPTCHA, false);
 	}
 
-	public void updateFromThreadsJson(String boardName, JSONObject jsonObject)
-	{
+	public void updateFromThreadsJson(String boardName, JSONObject jsonObject) {
 		int pagesCount = jsonObject.optInt("pages");
-		if (pagesCount > 0) storePagesCount(boardName, pagesCount);
+		if (pagesCount > 0) {
+			storePagesCount(boardName, pagesCount);
+		}
 	}
 
-	public void updateFromPostsJson(String boardName, JSONObject jsonObject)
-	{
+	public void updateFromPostsJson(String boardName, JSONObject jsonObject) {
 		boolean filesEnabled = jsonObject.optBoolean("allow_files", true);
 		boolean namesEnabled = jsonObject.optBoolean("allow_names", true);
 		boolean tripcodesEnabled = !jsonObject.optBoolean("restrict_trip", false);

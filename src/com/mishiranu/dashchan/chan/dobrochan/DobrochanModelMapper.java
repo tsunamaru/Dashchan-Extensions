@@ -16,33 +16,27 @@ import chan.content.model.Posts;
 import chan.util.CommonUtils;
 import chan.util.StringUtils;
 
-public class DobrochanModelMapper
-{
+public class DobrochanModelMapper {
 	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
 
-	public static FileAttachment createFileAttachment(JSONObject jsonObject, ChanLocator locator) throws JSONException
-	{
+	public static FileAttachment createFileAttachment(JSONObject jsonObject, ChanLocator locator) throws JSONException {
 		FileAttachment attachment = new FileAttachment();
 		String src = CommonUtils.getJsonString(jsonObject, "src");
 		attachment.setFileUri(locator, locator.buildPath(src));
 		attachment.setSize(jsonObject.optInt("size"));
 		JSONObject metadata = jsonObject.optJSONObject("metadata");
-		if (metadata != null)
-		{
+		if (metadata != null) {
 			int width = metadata.optInt("width");
 			int height = metadata.optInt("height");
-			if (width == 0 || height == 0)
-			{
+			if (width == 0 || height == 0) {
 				width = metadata.optInt("Image Width");
 				height = metadata.optInt("Image Height");
 			}
-			if (width == 0 || height == 0)
-			{
+			if (width == 0 || height == 0) {
 				width = metadata.optInt("Display Width");
 				height = metadata.optInt("Display Height");
 			}
-			if (width > 0 && height > 0)
-			{
+			if (width > 0 && height > 0) {
 				attachment.setWidth(width);
 				attachment.setHeight(height);
 				String thumb = CommonUtils.optJsonString(jsonObject, "thumb");
@@ -52,24 +46,21 @@ public class DobrochanModelMapper
 		return attachment;
 	}
 
-	public static Post createPost(JSONObject jsonObject, ChanLocator locator, String threadId) throws JSONException
-	{
+	public static Post createPost(JSONObject jsonObject, ChanLocator locator, String threadId) throws JSONException {
 		Post post = new Post();
 		String displayId = CommonUtils.getJsonString(jsonObject, "display_id");
-		if (threadId != null && !threadId.equals(displayId)) post.setParentPostNumber(threadId);
+		if (threadId != null && !threadId.equals(displayId)) {
+			post.setParentPostNumber(threadId);
+		}
 		post.setPostNumber(displayId);
 		post.setName(CommonUtils.optJsonString(jsonObject, "name"));
 		post.setSubject(CommonUtils.optJsonString(jsonObject, "subject"));
-		String message = null;
-		try
-		{
+		String message;
+		try {
 			message = CommonUtils.getJsonString(jsonObject, "message_html");
-		}
-		catch (JSONException e)
-		{
+		} catch (JSONException e) {
 			message = CommonUtils.getJsonString(jsonObject, "message");
-			if (message != null)
-			{
+			if (message != null) {
 				// Make simple mark for unparsed message field
 				message = message.replaceAll("\r", "");
 				message = message.replaceAll(">>(\\d+)", "<a href=\"#i$1\">&gt;&gt;$1</a>");
@@ -80,58 +71,45 @@ public class DobrochanModelMapper
 		}
 		post.setComment(message);
 		String date = CommonUtils.getJsonString(jsonObject, "date");
-		try
-		{
+		try {
 			post.setTimestamp(DATE_FORMAT.parse(date).getTime());
+		} catch (ParseException e) {
+			// Ignore exception
 		}
-		catch (ParseException e)
-		{
-
-		}
-		try
-		{
+		try {
 			JSONArray filesArray = jsonObject.getJSONArray("files");
-			if (filesArray.length() > 0)
-			{
+			if (filesArray.length() > 0) {
 				FileAttachment[]  attachments = new FileAttachment[filesArray.length()];
-				for (int i = 0; i < attachments.length; i++)
-				{
+				for (int i = 0; i < attachments.length; i++) {
 					attachments[i] = createFileAttachment(filesArray.getJSONObject(i), locator);
 				}
 				post.setAttachments(attachments);
 			}
-		}
-		catch (JSONException e)
-		{
-
+		} catch (JSONException e) {
+			// Ignore exception
 		}
 		return post;
 	}
 
-	public static Post[] createPosts(JSONArray jsonArray, ChanLocator locator, String threadId) throws JSONException
-	{
-		if (jsonArray.length() > 0)
-		{
+	public static Post[] createPosts(JSONArray jsonArray, ChanLocator locator, String threadId) throws JSONException {
+		if (jsonArray.length() > 0) {
 			HashSet<String> postNumbers = new HashSet<>();
 			Post[] posts = new Post[jsonArray.length()];
-			for (int i = 0; i < posts.length; i++)
-			{
+			for (int i = 0; i < posts.length; i++) {
 				Post post = createPost(jsonArray.getJSONObject(i), locator, threadId);
 				String postNumber = post.getPostNumber();
-				if (postNumbers.contains(postNumber))
-				{
-					for (int j = 1;; j++)
-					{
+				if (postNumbers.contains(postNumber)) {
+					for (int j = 1;; j++) {
 						String newPostNumber = postNumber + '.' + j;
-						if (!postNumbers.contains(newPostNumber))
-						{
+						if (!postNumbers.contains(newPostNumber)) {
 							postNumbers.add(newPostNumber);
 							post.setPostNumber(newPostNumber);
 							break;
 						}
 					}
+				} else {
+					postNumbers.add(postNumber);
 				}
-				else postNumbers.add(postNumber);
 				posts[i] = post;
 			}
 			return posts;
@@ -139,15 +117,13 @@ public class DobrochanModelMapper
 		return null;
 	}
 
-	public static Posts createThread(JSONObject jsonObject, ChanLocator locator) throws JSONException
-	{
+	public static Posts createThread(JSONObject jsonObject, ChanLocator locator) throws JSONException {
 		String threadId = CommonUtils.getJsonString(jsonObject, "display_id");
 		int postsCount = jsonObject.getInt("posts_count");
 		int filesCount = jsonObject.getInt("files_count");
 		JSONArray postsArray = jsonObject.getJSONArray("posts");
 		Post[] posts = new Post[postsArray.length()];
-		for (int i = 0; i < posts.length; i++)
-		{
+		for (int i = 0; i < posts.length; i++) {
 			posts[i] = createPost(postsArray.getJSONObject(i), locator, threadId);
 		}
 		return new Posts(posts).addPostsCount(postsCount).addPostsWithFilesCount(filesCount);
