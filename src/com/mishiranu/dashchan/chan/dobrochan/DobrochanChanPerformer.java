@@ -51,10 +51,21 @@ public class DobrochanChanPerformer extends ChanPerformer {
 		throw exception;
 	}
 
-	private CookieBuilder buildCookies() {
+	private CookieBuilder buildCookies(CaptchaData captchaData) {
 		DobrochanChanConfiguration configuration = ChanConfiguration.get(this);
-		return new CookieBuilder().append(COOKIE_HANABIRA, configuration.getCookie(COOKIE_HANABIRA))
-				.append(COOKIE_HANABIRA_TEMP, configuration.getCookie(COOKIE_HANABIRA_TEMP));
+		String hanabira = configuration.getCookie(COOKIE_HANABIRA);
+		if (hanabira == null && captchaData != null) {
+			hanabira = captchaData.get(COOKIE_HANABIRA);
+		}
+		String hanabiraTemp = configuration.getCookie(COOKIE_HANABIRA_TEMP);
+		if (hanabiraTemp == null && captchaData != null) {
+			hanabiraTemp = captchaData.get(COOKIE_HANABIRA_TEMP);
+		}
+		return new CookieBuilder().append(COOKIE_HANABIRA, hanabira).append(COOKIE_HANABIRA_TEMP, hanabiraTemp);
+	}
+
+	private CookieBuilder buildCookies() {
+		return buildCookies(null);
 	}
 
 	@Override
@@ -240,15 +251,18 @@ public class DobrochanChanPerformer extends ChanPerformer {
 			trimmed.recycle();
 		}
 		image.recycle();
+		CaptchaData captchaData = new CaptchaData();
 		String hanabira = data.holder.getCookieValue(COOKIE_HANABIRA);
 		if (hanabira != null) {
 			configuration.storeCookie(COOKIE_HANABIRA, hanabira, "Hanabira");
+			captchaData.put(COOKIE_HANABIRA, hanabira);
 		}
 		String hanabiraTemp = data.holder.getCookieValue(COOKIE_HANABIRA_TEMP);
 		if (hanabiraTemp != null) {
 			configuration.storeCookie(COOKIE_HANABIRA_TEMP, hanabiraTemp, "Hanabira Temp");
+			captchaData.put(COOKIE_HANABIRA_TEMP, hanabiraTemp);
 		}
-		return new ReadCaptchaResult(CaptchaState.CAPTCHA, new CaptchaData()).setImage(newImage);
+		return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData).setImage(newImage);
 	}
 
 	public String readThreadId(String boardName, String threadNumber, HttpHolder holder) throws HttpException,
@@ -296,7 +310,7 @@ public class DobrochanChanPerformer extends ChanPerformer {
 		Uri uri = locator.buildPath(data.boardName, "post", "new.xhtml");
 		String responseText;
 		try {
-			new HttpRequest(uri, data).setPostMethod(entity).addCookie(buildCookies())
+			new HttpRequest(uri, data).setPostMethod(entity).addCookie(buildCookies(data.captchaData))
 					.setRedirectHandler(HttpRequest.RedirectHandler.NONE).execute();
 			if (data.holder.getResponseCode() == HttpURLConnection.HTTP_MOVED_TEMP) {
 				uri = data.holder.getRedirectedUri();
@@ -311,7 +325,8 @@ public class DobrochanChanPerformer extends ChanPerformer {
 					}
 					return new SendPostResult(threadNumber, null);
 				}
-				responseText = new HttpRequest(uri, data.holder).addCookie(buildCookies()).read().getString();
+				responseText = new HttpRequest(uri, data.holder).addCookie(buildCookies(data.captchaData))
+						.read().getString();
 			} else {
 				responseText = data.holder.read().getString();
 			}
