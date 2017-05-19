@@ -188,16 +188,16 @@ public class NullonePostsParser {
 		}
 	}).contains("a", "href", "/src/").open((instance, holder, tagName, attributes) -> {
 		if (holder.attachment != null) {
-			String path = holder.convertUriString(attributes.get("href"));
-			holder.attachment.setFileUri(holder.locator, holder.locator.buildPath(path));
+			String uriString = holder.convertUriString(attributes.get("href"));
+			holder.attachment.setFileUri(holder.locator, Uri.parse(uriString));
 			holder.post.setAttachments(holder.attachment);
 		}
 		return false;
 	}).equals("img", "class", "thumb").open((instance, holder, tagName, attributes) -> {
 		if (holder.attachment != null) {
-			String path = holder.convertUriString(attributes.get("src"));
-			if (path != null && !path.contains("/inc/filetypes/")) {
-				holder.attachment.setThumbnailUri(holder.locator, holder.locator.buildPath(path));
+			String uriString = holder.convertUriString(attributes.get("src"));
+			if (uriString != null && !uriString.contains("/inc/filetypes/")) {
+				holder.attachment.setThumbnailUri(holder.locator, Uri.parse(uriString));
 			}
 		}
 		return false;
