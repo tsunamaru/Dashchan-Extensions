@@ -40,7 +40,7 @@ public class NulloneBoardsParser {
 		}
 	}
 
-	private static final TemplateParser<NulloneBoardsParser> PARSER = new TemplateParser<NulloneBoardsParser>()
+	private static final TemplateParser<NulloneBoardsParser> PARSER = TemplateParser.<NulloneBoardsParser>builder()
 			.equals("div", "class", "menu-sect").open((instance, holder, tagName, attributes) -> {
 		holder.closeCategory();
 		String id = attributes.get("id");

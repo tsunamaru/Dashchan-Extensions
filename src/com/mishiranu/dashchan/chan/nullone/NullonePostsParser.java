@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.Locale;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,7 +14,6 @@ import chan.content.ChanConfiguration;
 import chan.content.ChanLocator;
 import chan.content.model.EmbeddedAttachment;
 import chan.content.model.FileAttachment;
-import chan.content.model.Icon;
 import chan.content.model.Post;
 import chan.content.model.Posts;
 import chan.text.ParseException;
@@ -103,7 +101,7 @@ public class NullonePostsParser {
 		return uriString;
 	}
 
-	private static final TemplateParser<NullonePostsParser> PARSER = new TemplateParser<NullonePostsParser>()
+	private static final TemplateParser<NullonePostsParser> PARSER = TemplateParser.<NullonePostsParser>builder()
 			.starts("div", "id", "thread").open((instance, holder, tagName, attributes) -> {
 		String id = attributes.get("id");
 		String number = id.substring(6, id.length() - holder.boardName.length());
