@@ -66,7 +66,7 @@ public class YakujiMoeBoardsParser {
 		}
 	}
 
-	private static final TemplateParser<YakujiMoeBoardsParser> PARSER = new TemplateParser<YakujiMoeBoardsParser>()
+	private static final TemplateParser<YakujiMoeBoardsParser> PARSER = TemplateParser.<YakujiMoeBoardsParser>builder()
 			.equals("td", "class", "header").content((instance, holder, text) -> {
 		holder.closeCategory();
 		holder.boardCategoryTitle = StringUtils.clearHtml(text);

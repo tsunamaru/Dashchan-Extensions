@@ -82,7 +82,7 @@ public class YakujiMoePostsParser {
 		return posts;
 	}
 
-	private static final TemplateParser<YakujiMoePostsParser> PARSER = new TemplateParser<YakujiMoePostsParser>()
+	private static final TemplateParser<YakujiMoePostsParser> PARSER = TemplateParser.<YakujiMoePostsParser>builder()
 			.equals("input", "name", "delete").open((instance, holder, tagName, attributes) -> {
 		if ("checkbox".equals(attributes.get("type"))) {
 			holder.headerHandling = true;
