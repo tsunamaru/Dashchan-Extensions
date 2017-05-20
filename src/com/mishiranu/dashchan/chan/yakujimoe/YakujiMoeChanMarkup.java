@@ -14,7 +14,7 @@ public class YakujiMoeChanMarkup extends ChanMarkup {
 	public YakujiMoeChanMarkup() {
 		addTag("strong", TAG_BOLD);
 		addTag("em", TAG_ITALIC);
-		addTag("blockquote", TAG_QUOTE);
+		addTag("blockquote", "unkfunc", TAG_QUOTE);
 		addTag("code", TAG_CODE);
 		addTag("del", TAG_STRIKE);
 		addTag("span", "spoiler", TAG_SPOILER);
