@@ -16,7 +16,6 @@ import chan.content.model.FileAttachment;
 import chan.content.model.Icon;
 import chan.content.model.Post;
 import chan.content.model.Posts;
-import chan.content.model.Threads;
 import chan.util.CommonUtils;
 import chan.util.StringUtils;
 
@@ -148,14 +147,14 @@ public class EndchanModelMapper {
 		}
 	}
 
-	public static Threads createThreads(JSONArray jsonArray, EndchanChanLocator locator) throws JSONException,
+	public static Posts[] createThreads(JSONArray jsonArray, EndchanChanLocator locator) throws JSONException,
 			ParseException {
 		if (jsonArray != null && jsonArray.length() > 0) {
 			Posts[] threads = new Posts[jsonArray.length()];
 			for (int i = 0; i < jsonArray.length(); i++) {
 				threads[i] = createPosts(jsonArray.getJSONObject(i), locator);
 			}
-			return new Threads(threads);
+			return threads;
 		}
 		return null;
 	}
