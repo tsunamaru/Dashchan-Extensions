@@ -5,17 +5,14 @@ import java.util.regex.Pattern;
 
 import android.util.Pair;
 
-import chan.content.ChanConfiguration;
 import chan.content.ChanMarkup;
 import chan.text.CommentEditor;
 
-public class EndchanChanMarkup extends ChanMarkup
-{
+public class EndchanChanMarkup extends ChanMarkup {
 	private static final int SUPPORTED_TAGS = TAG_BOLD | TAG_ITALIC | TAG_UNDERLINE | TAG_STRIKE | TAG_SPOILER
 			| TAG_CODE | TAG_ASCII_ART | TAG_HEADING;
-	
-	public EndchanChanMarkup()
-	{
+
+	public EndchanChanMarkup() {
 		addTag("strong", TAG_BOLD);
 		addTag("em", TAG_ITALIC);
 		addTag("u", TAG_UNDERLINE);
@@ -28,10 +25,9 @@ public class EndchanChanMarkup extends ChanMarkup
 		addTag("pre", TAG_CODE);
 		addBlock("span", "aa", true, false);
 	}
-	
+
 	@Override
-	public CommentEditor obtainCommentEditor(String boardName)
-	{
+	public CommentEditor obtainCommentEditor(String boardName) {
 		CommentEditor commentEditor = new CommentEditor();
 		commentEditor.addTag(TAG_BOLD, "'''", "'''", CommentEditor.FLAG_ONE_LINE);
 		commentEditor.addTag(TAG_ITALIC, "''", "''", CommentEditor.FLAG_ONE_LINE);
@@ -43,25 +39,24 @@ public class EndchanChanMarkup extends ChanMarkup
 		commentEditor.addTag(TAG_HEADING, "==", "==", CommentEditor.FLAG_ONE_LINE);
 		return commentEditor;
 	}
-	
+
 	@Override
-	public boolean isTagSupported(String boardName, int tag)
-	{
-		if (tag == TAG_CODE)
-		{
-			EndchanChanConfiguration configuration = ChanConfiguration.get(this);
+	public boolean isTagSupported(String boardName, int tag) {
+		if (tag == TAG_CODE) {
+			EndchanChanConfiguration configuration = EndchanChanConfiguration.get(this);
 			return configuration.isTagSupported(boardName, tag);
 		}
 		return (SUPPORTED_TAGS & tag) == tag;
 	}
-	
+
 	private static final Pattern THREAD_LINK = Pattern.compile("(\\d+).html(?:#(\\d+))?$");
-	
+
 	@Override
-	public Pair<String, String> obtainPostLinkThreadPostNumbers(String uriString)
-	{
+	public Pair<String, String> obtainPostLinkThreadPostNumbers(String uriString) {
 		Matcher matcher = THREAD_LINK.matcher(uriString);
-		if (matcher.find()) return new Pair<>(matcher.group(1), matcher.group(2));
+		if (matcher.find()) {
+			return new Pair<>(matcher.group(1), matcher.group(2));
+		}
 		return null;
 	}
 }

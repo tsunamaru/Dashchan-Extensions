@@ -8,27 +8,23 @@ import android.content.res.Resources;
 import android.util.Pair;
 
 import chan.content.ChanConfiguration;
-import chan.content.ChanMarkup;
 import chan.util.CommonUtils;
 
-public class EndchanChanConfiguration extends ChanConfiguration
-{
+public class EndchanChanConfiguration extends ChanConfiguration {
 	private static final String KEY_NAMES_ENABLED = "names_enabled";
 	private static final String KEY_FLAGS_ENABLED = "flags_enabled";
 	private static final String KEY_DELETE_ENABLED = "delete_enabled";
 	private static final String KEY_CODE_ENABLED = "code_enabled";
-	
-	public EndchanChanConfiguration()
-	{
+
+	public EndchanChanConfiguration() {
 		request(OPTION_READ_POSTS_COUNT);
 		request(OPTION_READ_USER_BOARDS);
 		setDefaultName("Anonymous");
 		addCaptchaType("endchan");
 	}
-	
+
 	@Override
-	public Board obtainBoardConfiguration(String boardName)
-	{
+	public Board obtainBoardConfiguration(String boardName) {
 		Board board = new Board();
 		board.allowCatalog = true;
 		board.allowPosting = true;
@@ -36,12 +32,10 @@ public class EndchanChanConfiguration extends ChanConfiguration
 		board.allowReporting = true;
 		return board;
 	}
-	
+
 	@Override
-	public Captcha obtainCustomCaptchaConfiguration(String captchaType)
-	{
-		if ("endchan".equals(captchaType))
-		{
+	public Captcha obtainCustomCaptchaConfiguration(String captchaType) {
+		if ("endchan".equals(captchaType)) {
 			Captcha captcha = new Captcha();
 			captcha.title = "Endchan";
 			captcha.input = Captcha.Input.ALL;
@@ -50,10 +44,9 @@ public class EndchanChanConfiguration extends ChanConfiguration
 		}
 		return null;
 	}
-	
+
 	@Override
-	public Posting obtainPostingConfiguration(String boardName, boolean newThread)
-	{
+	public Posting obtainPostingConfiguration(String boardName, boolean newThread) {
 		Posting posting = new Posting();
 		posting.allowName = posting.allowTripcode = get(boardName, KEY_NAMES_ENABLED, true);
 		posting.allowEmail = true;
@@ -80,47 +73,41 @@ public class EndchanChanConfiguration extends ChanConfiguration
 		posting.hasCountryFlags = get(boardName, KEY_FLAGS_ENABLED, false);
 		return posting;
 	}
-	
+
 	@Override
-	public Deleting obtainDeletingConfiguration(String boardName)
-	{
+	public Deleting obtainDeletingConfiguration(String boardName) {
 		Deleting deleting = new Deleting();
 		deleting.password = true;
 		deleting.multiplePosts = true;
 		deleting.optionFilesOnly = true;
 		return deleting;
 	}
-	
+
 	@Override
-	public Reporting obtainReportingConfiguration(String boardName)
-	{
+	public Reporting obtainReportingConfiguration(String boardName) {
 		Resources resources = getResources();
 		Reporting reporting = new Reporting();
 		reporting.comment = true;
 		reporting.options.add(new Pair<>("global", resources.getString(R.string.text_global_report)));
 		return reporting;
 	}
-	
-	public boolean isTagSupported(String boardName, int tag)
-	{
-		if (tag == ChanMarkup.TAG_CODE) return get(boardName, KEY_CODE_ENABLED, false);
+
+	public boolean isTagSupported(String boardName, int tag) {
+		if (tag == EndchanChanMarkup.TAG_CODE) {
+			return get(boardName, KEY_CODE_ENABLED, false);
+		}
 		return false;
 	}
-	
-	public void updateFromThreadsJson(String boardName, JSONObject jsonObject, boolean updateTitle)
-	{
-		if (updateTitle)
-		{
-			try
-			{
+
+	public void updateFromThreadsJson(String boardName, JSONObject jsonObject, boolean updateTitle) {
+		if (updateTitle) {
+			try {
 				String title = CommonUtils.getJsonString(jsonObject, "boardName");
 				String description = CommonUtils.optJsonString(jsonObject, "boardDescription");
 				storeBoardTitle(boardName, title);
 				storeBoardDescription(boardName, description);
-			}
-			catch (JSONException e)
-			{
-				
+			} catch (JSONException e) {
+				// Ignore exception
 			}
 		}
 		boolean namesEnabled = true;
@@ -128,19 +115,27 @@ public class EndchanChanConfiguration extends ChanConfiguration
 		boolean deleteEnabled = true;
 		boolean codeEnabled = false;
 		JSONArray jsonArray = jsonObject.optJSONArray("settings");
-		if (jsonArray != null)
-		{
-			for (int i = 0; i < jsonArray.length(); i++)
-			{
+		if (jsonArray != null) {
+			for (int i = 0; i < jsonArray.length(); i++) {
 				String setting = jsonArray.optString(i);
-				if (setting != null)
-				{
-					switch (setting)
-					{
-						case "forceAnonymity": namesEnabled = false; break;
-						case "locationFlags": flagsEnabled = true; break;
-						case "blockDeletion": deleteEnabled = false; break;
-						case "allowCode": codeEnabled = true;
+				if (setting != null) {
+					switch (setting) {
+						case "forceAnonymity": {
+							namesEnabled = false;
+							break;
+						}
+						case "locationFlags": {
+							flagsEnabled = true;
+							break;
+						}
+						case "blockDeletion": {
+							deleteEnabled = false;
+							break;
+						}
+						case "allowCode": {
+							codeEnabled = true;
+							break;
+						}
 					}
 				}
 			}

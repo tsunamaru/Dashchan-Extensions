@@ -8,96 +8,85 @@ import android.webkit.MimeTypeMap;
 
 import chan.content.ChanLocator;
 
-public class EndchanChanLocator extends ChanLocator
-{
+public class EndchanChanLocator extends ChanLocator {
 	private static final Pattern BOARD_PATH = Pattern.compile("/\\w+(?:/(?:(?:catalog|\\d+)\\.html)?)?");
 	private static final Pattern THREAD_PATH = Pattern.compile("/\\w+/res/(\\d+)\\.html");
 	private static final Pattern ATTACHMENT_PATH = Pattern.compile("/\\.media/.*");
-	
-	public EndchanChanLocator()
-	{
+
+	public EndchanChanLocator() {
 		addChanHost("endchan.xyz");
 		addChanHost("endchan.pw");
 		addChanHost("endchan.net");
 		setHttpsMode(HttpsMode.CONFIGURABLE);
 	}
-	
+
 	@Override
-	public boolean isBoardUri(Uri uri)
-	{
+	public boolean isBoardUri(Uri uri) {
 		return isChanHostOrRelative(uri) && isPathMatches(uri, BOARD_PATH);
 	}
-	
+
 	@Override
-	public boolean isThreadUri(Uri uri)
-	{
+	public boolean isThreadUri(Uri uri) {
 		return isChanHostOrRelative(uri) && isPathMatches(uri, THREAD_PATH);
 	}
-	
+
 	@Override
-	public boolean isAttachmentUri(Uri uri)
-	{
+	public boolean isAttachmentUri(Uri uri) {
 		return isChanHostOrRelative(uri) && isPathMatches(uri, ATTACHMENT_PATH);
 	}
-	
+
 	@Override
-	public String getBoardName(Uri uri)
-	{
-		if (uri != null)
-		{
+	public String getBoardName(Uri uri) {
+		if (uri != null) {
 			List<String> segments = uri.getPathSegments();
-			if (segments.size() > 0)
-			{
+			if (segments.size() > 0) {
 				String boardName = segments.get(0);
-				if (!boardName.startsWith(".")) return boardName;
+				if (!boardName.startsWith(".")) {
+					return boardName;
+				}
 			}
 		}
 		return null;
 	}
-	
+
 	@Override
-	public String getThreadNumber(Uri uri)
-	{
+	public String getThreadNumber(Uri uri) {
 		return uri != null ? getGroupValue(uri.getPath(), THREAD_PATH, 1) : null;
 	}
-	
+
 	@Override
-	public String getPostNumber(Uri uri)
-	{
+	public String getPostNumber(Uri uri) {
 		return uri.getFragment();
 	}
-	
+
 	@Override
-	public Uri createBoardUri(String boardName, int pageNumber)
-	{
+	public Uri createBoardUri(String boardName, int pageNumber) {
 		return pageNumber > 0 ? buildPath(boardName, (pageNumber + 1) + ".html") : buildPath(boardName, "");
 	}
-	
+
 	@Override
-	public Uri createThreadUri(String boardName, String threadNumber)
-	{
+	public Uri createThreadUri(String boardName, String threadNumber) {
 		return buildPath(boardName, "res", threadNumber + ".html");
 	}
-	
+
 	@Override
-	public Uri createPostUri(String boardName, String threadNumber, String postNumber)
-	{
+	public Uri createPostUri(String boardName, String threadNumber, String postNumber) {
 		return createThreadUri(boardName, threadNumber).buildUpon().fragment(postNumber).build();
 	}
-	
+
 	@Override
-	public String createAttachmentForcedName(Uri fileUri)
-	{
+	public String createAttachmentForcedName(Uri fileUri) {
 		String fileName = fileUri.getLastPathSegment();
 		int index = fileName.indexOf('-');
-		if (index >= 0)
-		{
+		if (index >= 0) {
 			String mimeType = fileName.substring(index + 1);
 			fileName = fileName.substring(0, index);
 			int insert = mimeType.startsWith("text") ? 4 : mimeType.equals("application") ? 11 : 5;
 			mimeType = mimeType.substring(0, insert) + '/' + mimeType.substring(insert);
 			String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
-			if (extension != null) return fileName + '.' + extension;
+			if (extension != null) {
+				return fileName + '.' + extension;
+			}
 		}
 		return fileName;
 	}
