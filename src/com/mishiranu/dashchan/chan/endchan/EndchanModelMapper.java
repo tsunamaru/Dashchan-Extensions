@@ -129,22 +129,15 @@ public class EndchanModelMapper {
 			ParseException {
 		Post originalPost = createPost(jsonObject, locator, null);
 		JSONArray jsonArray = jsonObject.optJSONArray("posts");
+		ArrayList<Post> posts = new ArrayList<>(1 + (jsonArray != null ? jsonArray.length() : 0));
+		posts.add(originalPost);
 		if (jsonArray != null && jsonArray.length() > 0) {
-			Post[] posts = new Post[jsonArray.length() + 1];
-			posts[0] = originalPost;
 			String threadNumber = originalPost.getPostNumber();
 			for (int i = 0; i < jsonArray.length(); i++) {
-				posts[i + 1] = createPost(jsonArray.getJSONObject(i), locator, threadNumber);
+				posts.add(createPost(jsonArray.getJSONObject(i), locator, threadNumber));
 			}
-			return new Posts(posts);
-		} else {
-			int replies = jsonObject.optInt("postCount", -1);
-			Posts posts = new Posts(originalPost);
-			if (replies >= 0) {
-				posts.addPostsCount(1 + replies);
-			}
-			return posts;
 		}
+		return new Posts(posts);
 	}
 
 	public static Posts[] createThreads(JSONArray jsonArray, EndchanChanLocator locator) throws JSONException,
@@ -152,7 +145,10 @@ public class EndchanModelMapper {
 		if (jsonArray != null && jsonArray.length() > 0) {
 			Posts[] threads = new Posts[jsonArray.length()];
 			for (int i = 0; i < jsonArray.length(); i++) {
-				threads[i] = createPosts(jsonArray.getJSONObject(i), locator);
+				JSONObject jsonObject = jsonArray.getJSONObject(i);
+				Posts posts = createPosts(jsonArray.getJSONObject(i), locator);
+				posts.addPostsCount(jsonObject.optInt("ommitedPosts") + posts.getPosts().length);
+				threads[i] = posts;
 			}
 			return threads;
 		}
