@@ -81,9 +81,12 @@ public class EndchanChanLocator extends ChanLocator {
 		if (index >= 0) {
 			String mimeType = fileName.substring(index + 1);
 			fileName = fileName.substring(0, index);
-			int insert = mimeType.startsWith("text") ? 4 : mimeType.equals("application") ? 11 : 5;
-			mimeType = mimeType.substring(0, insert) + '/' + mimeType.substring(insert);
-			String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+			String extension = getFileExtension(mimeType);
+			if (extension == null) {
+				int insert = mimeType.startsWith("text") ? 4 : mimeType.equals("application") ? 11 : 5;
+				mimeType = mimeType.substring(0, insert) + '/' + mimeType.substring(insert);
+				extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+			}
 			if (extension != null) {
 				return fileName + '.' + extension;
 			}
