@@ -28,7 +28,7 @@ public class EndchanChanConfiguration extends ChanConfiguration {
 		Board board = new Board();
 		board.allowCatalog = true;
 		board.allowPosting = true;
-		//board.allowDeleting = get(boardName, KEY_DELETE_ENABLED, false) || boardName == null;
+		board.allowDeleting = get(boardName, KEY_DELETE_ENABLED, false) || boardName == null;
 		board.allowReporting = true;
 		return board;
 	}

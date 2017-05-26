@@ -120,7 +120,7 @@ public class EndchanChanPerformer extends ChanPerformer {
 			try {
 				HashSet<String> ignoreBoardNames = new HashSet<>();
 				Collections.addAll(ignoreBoardNames, BOARDS_GENERAL);
-				ArrayList<Board> boards = new ArrayList<Board>();
+				ArrayList<Board> boards = new ArrayList<>();
 				for (int i = 0, count = jsonObject.getInt("pageCount"); i < count; i++) {
 					if (i > 0) {
 						uri = locator.buildQuery("boards.js", "json", "1", "page", Integer.toString(i + 1));
@@ -183,6 +183,11 @@ public class EndchanChanPerformer extends ChanPerformer {
 		return new ReadCaptchaResult(CaptchaState.SKIP, null);
 	}
 
+	private String trimPassword(String password) {
+		// Max password length: 8
+		return password != null && password.length() > 8 ? password.substring(0, 8) : password;
+	}
+
 	@Override
 	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException {
 		EndchanChanLocator locator = EndchanChanLocator.get(this);
@@ -204,7 +209,7 @@ public class EndchanChanPerformer extends ChanPerformer {
 					parametersObject.put("subject", data.subject);
 				}
 				if (data.password != null) {
-					parametersObject.put("password", data.password);
+					parametersObject.put("password", trimPassword(data.password));
 				}
 				parametersObject.put("message", StringUtils.emptyIfNull(data.comment));
 			} catch (JSONException e) {
@@ -335,7 +340,6 @@ public class EndchanChanPerformer extends ChanPerformer {
 		parametersObject.put("postings", jsonArray);
 	}
 
-	/* TODO Implement deleting when it will be fixed
 	@Override
 	public SendDeletePostsResult onSendDeletePosts(SendDeletePostsData data) throws HttpException, ApiException,
 			InvalidResponseException {
@@ -343,7 +347,7 @@ public class EndchanChanPerformer extends ChanPerformer {
 		JSONObject parametersObject = new JSONObject();
 		try {
 			jsonObject.put("parameters", parametersObject);
-			parametersObject.put("password", data.password);
+			parametersObject.put("password", trimPassword(data.password));
 			parametersObject.put("deleteMedia", true);
 			if (data.optionFilesOnly) {
 				parametersObject.put("deleteUploads", true);
@@ -362,7 +366,27 @@ public class EndchanChanPerformer extends ChanPerformer {
 		if (jsonObject == null) {
 			throw new InvalidResponseException();
 		}
-	}*/
+		if ("error".equals(CommonUtils.optJsonString(jsonObject, "status"))) {
+			String errorMessage = CommonUtils.optJsonString(jsonObject, "data");
+			if (errorMessage != null) {
+				if (errorMessage.contains("Invalid account")) {
+					throw new ApiException(ApiException.DELETE_ERROR_PASSWORD);
+				}
+				CommonUtils.writeLog("Endchan delete message", errorMessage);
+				throw new ApiException(errorMessage);
+			}
+		}
+		try {
+			jsonObject = jsonObject.getJSONObject("data");
+		} catch (JSONException e) {
+			throw new InvalidResponseException(e);
+		}
+		if (jsonObject.optInt("removedThreads") + jsonObject.optInt("removedPosts") > 0) {
+			return new SendDeletePostsResult();
+		} else {
+			throw new ApiException(ApiException.DELETE_ERROR_PASSWORD);
+		}
+	}
 
 	@Override
 	public SendReportPostsResult onSendReportPosts(SendReportPostsData data) throws HttpException, ApiException,
