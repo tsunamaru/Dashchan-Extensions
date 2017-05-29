@@ -78,13 +78,13 @@ public class DvachModelMapper {
 		if (!"0".equals(parent)) {
 			post.setParentPostNumber(parent);
 		}
-		if (jsonObject.getInt("op") != 0) {
+		if (jsonObject.optInt("op") != 0) {
 			post.setOriginalPoster(true);
 		}
-		if (jsonObject.getInt("sticky") != 0) {
+		if (jsonObject.optInt("sticky") != 0) {
 			post.setSticky(true);
 		}
-		if (jsonObject.getInt("closed") != 0) {
+		if (jsonObject.optInt("closed") != 0) {
 			post.setClosed(true);
 		}
 		if (jsonObject.optInt("endless") != 0) {
@@ -96,7 +96,7 @@ public class DvachModelMapper {
 		} else if (banned == 2) {
 			post.setPosterWarned(true);
 		}
-		post.setTimestamp(jsonObject.getLong("timestamp") * 1000L);
+		post.setTimestamp(jsonObject.optLong("timestamp") * 1000L);
 		String subject = CommonUtils.optJsonString(jsonObject, "subject");
 		if (!StringUtils.isEmpty(subject)) {
 			post.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(subject).trim()));
@@ -317,13 +317,13 @@ public class DvachModelMapper {
 		if (!"0".equals(parent)) {
 			post.setParentPostNumber(parent);
 		}
-		if (jsonObject.getInt("op") != 0) {
+		if (jsonObject.optInt("op") != 0) {
 			post.setOriginalPoster(true);
 		}
-		if (jsonObject.getInt("sticky") != 0) {
+		if (jsonObject.optInt("sticky") != 0) {
 			post.setSticky(true);
 		}
-		if (jsonObject.getInt("closed") != 0) {
+		if (jsonObject.optInt("closed") != 0) {
 			post.setClosed(true);
 		}
 		int banned = jsonObject.optInt("banned");
@@ -341,7 +341,7 @@ public class DvachModelMapper {
 		if (!StringUtils.isEmpty(subject)) {
 			post.setSubject(StringUtils.nullIfEmpty(StringUtils.clearHtml(subject).trim()));
 		}
-		post.setTimestamp(jsonObject.getLong("timestamp") * 1000L);
+		post.setTimestamp(jsonObject.optLong("timestamp") * 1000L);
 		ArrayList<Attachment> attachments = null;
 		String image = CommonUtils.optJsonString(jsonObject, "image");
 		if (!StringUtils.isEmpty(image)) {
