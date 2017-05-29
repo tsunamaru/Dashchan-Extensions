@@ -87,6 +87,9 @@ public class DvachModelMapper {
 		if (jsonObject.getInt("closed") != 0) {
 			post.setClosed(true);
 		}
+		if (jsonObject.optInt("endless") != 0) {
+			post.setCyclical(true);
+		}
 		int banned = jsonObject.optInt("banned");
 		if (banned == 1) {
 			post.setPosterBanned(true);
