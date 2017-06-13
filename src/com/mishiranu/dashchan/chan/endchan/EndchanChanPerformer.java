@@ -168,7 +168,19 @@ public class EndchanChanPerformer extends ChanPerformer {
 
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException {
+		boolean needCaptcha = false;
 		if (REQUIRE_REPORT.equals(data.requirement)) {
+			needCaptcha = true;
+		} else if (data.threadNumber == null) {
+			EndchanChanLocator locator = EndchanChanLocator.get(this);
+			Uri uri = locator.createBoardUri(data.boardName, 0);
+			String responseText = new HttpRequest(uri, data).read().getString();
+			if (responseText.contains("<div id=\"captchaDiv\">")) {
+				needCaptcha = true;
+			}
+		}
+
+		if (needCaptcha) {
 			EndchanChanLocator locator = EndchanChanLocator.get(this);
 			Uri uri = locator.buildPath("captcha.js");
 			Bitmap image = new HttpRequest(uri, data).read().getBitmap();
@@ -179,8 +191,9 @@ public class EndchanChanPerformer extends ChanPerformer {
 			CaptchaData captchaData = new CaptchaData();
 			captchaData.put(CaptchaData.CHALLENGE, captchaId);
 			return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData).setImage(image);
+		} else {
+			return new ReadCaptchaResult(CaptchaState.SKIP, null);
 		}
-		return new ReadCaptchaResult(CaptchaState.SKIP, null);
 	}
 
 	private String trimPassword(String password) {
@@ -215,6 +228,17 @@ public class EndchanChanPerformer extends ChanPerformer {
 			} catch (JSONException e) {
 				throw new RuntimeException(e);
 			}
+
+			String captchaId = data.captchaData != null ? data.captchaData.get(CaptchaData.CHALLENGE) : null;
+			if (captchaId != null) {
+				try {
+					jsonObject.put("captchaId", captchaId);
+					parametersObject.put("captcha", StringUtils.emptyIfNull(data.captchaData.get(CaptchaData.INPUT)));
+				} catch (JSONException e) {
+					throw new RuntimeException(e);
+				}
+			}
+
 			if (data.attachments != null) {
 				JSONArray jsonArray = new JSONArray();
 				MessageDigest messageDigest;
@@ -306,7 +330,9 @@ public class EndchanChanPerformer extends ChanPerformer {
 		String errorMessage = jsonObject.optString("data");
 		if (errorMessage != null) {
 			int errorType = 0;
-			if (errorMessage.contains("Flood detected")) {
+			if (errorMessage.contains("Wrong captcha") || errorMessage.contains("Expired captcha")) {
+				errorType = ApiException.SEND_ERROR_CAPTCHA;
+			} else if (errorMessage.contains("Flood detected")) {
 				errorType = ApiException.SEND_ERROR_TOO_FAST;
 			} else if (errorMessage.contains("Either a message or a file is required")
 					|| "message".equals(errorMessage)) {

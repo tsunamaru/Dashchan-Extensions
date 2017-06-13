@@ -39,7 +39,7 @@ public class EndchanChanConfiguration extends ChanConfiguration {
 			Captcha captcha = new Captcha();
 			captcha.title = "Endchan";
 			captcha.input = Captcha.Input.ALL;
-			captcha.validity = Captcha.Validity.LONG_LIFETIME;
+			captcha.validity = Captcha.Validity.IN_BOARD_SEPARATELY;
 			return captcha;
 		}
 		return null;
