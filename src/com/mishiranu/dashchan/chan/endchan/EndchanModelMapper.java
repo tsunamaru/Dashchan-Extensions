@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -46,6 +47,9 @@ public class EndchanModelMapper {
 	static {
 		DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
+
+	private static final Pattern PATTERN_BROKEN_LINK = Pattern.compile("(<a [^>]*?href=\"/[^/]+/res/)" +
+			"(\\d+)(.html#\\2\")");
 
 	public static Post createPost(JSONObject jsonObject, EndchanChanLocator locator, String threadNumber)
 			throws JSONException, ParseException {
@@ -111,6 +115,8 @@ public class EndchanModelMapper {
 		String comment = CommonUtils.getJsonString(jsonObject, "markdown");
 		if (!StringUtils.isEmpty(comment)) {
 			comment = comment.replaceAll("(<a class=\"quoteLink\".*?>)&gt&gt", "$1&gt;&gt;"); // Fix html
+			comment = StringUtils.replaceAll(comment, PATTERN_BROKEN_LINK,
+					m -> m.group(1) + threadNumber + m.group(3));
 		}
 		post.setComment(comment);
 		post.setCommentMarkup(CommonUtils.optJsonString(jsonObject, "message"));
