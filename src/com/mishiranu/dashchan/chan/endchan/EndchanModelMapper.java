@@ -117,6 +117,9 @@ public class EndchanModelMapper {
 			comment = comment.replaceAll("(<a class=\"quoteLink\".*?>)&gt&gt", "$1&gt;&gt;"); // Fix html
 			comment = StringUtils.replaceAll(comment, PATTERN_BROKEN_LINK,
 					m -> m.group(1) + threadNumber + m.group(3));
+			comment = comment.replace("<span class=\"orangeText\">", "<span colored=\"true\" style=\"color: #ffaa00\">")
+					.replace("<span class=\"memeText\">", "<span colored=\"true\" style=\"color: #ff0000\">")
+					.replace("<span class=\"autismText\">", "<span colored=\"true\" style=\"color: #aa44ff\">");
 		}
 		post.setComment(comment);
 		post.setCommentMarkup(CommonUtils.optJsonString(jsonObject, "message"));

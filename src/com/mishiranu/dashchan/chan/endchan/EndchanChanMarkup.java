@@ -24,6 +24,7 @@ public class EndchanChanMarkup extends ChanMarkup {
 		addTag("span", "aa", TAG_ASCII_ART);
 		addTag("pre", TAG_CODE);
 		addBlock("span", "aa", true, false);
+		addColorable("span", "colored", "true");
 	}
 
 	@Override
