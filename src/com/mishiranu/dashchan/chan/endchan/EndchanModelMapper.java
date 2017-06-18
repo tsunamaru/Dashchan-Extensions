@@ -50,6 +50,7 @@ public class EndchanModelMapper {
 
 	private static final Pattern PATTERN_BROKEN_LINK = Pattern.compile("(<a [^>]*?href=\"/[^/]+/res/)" +
 			"(\\d+)(.html#\\2\")");
+	private static final Pattern PATTERN_COLORED_TEXT = Pattern.compile("<span class=\"(\\w+)Text\">");
 
 	public static Post createPost(JSONObject jsonObject, EndchanChanLocator locator, String threadNumber)
 			throws JSONException, ParseException {
@@ -117,9 +118,34 @@ public class EndchanModelMapper {
 			comment = comment.replaceAll("(<a class=\"quoteLink\".*?>)&gt&gt", "$1&gt;&gt;"); // Fix html
 			comment = StringUtils.replaceAll(comment, PATTERN_BROKEN_LINK,
 					m -> m.group(1) + threadNumber + m.group(3));
-			comment = comment.replace("<span class=\"orangeText\">", "<span colored=\"true\" style=\"color: #ffaa00\">")
-					.replace("<span class=\"memeText\">", "<span colored=\"true\" style=\"color: #ff0000\">")
-					.replace("<span class=\"autismText\">", "<span colored=\"true\" style=\"color: #aa44ff\">");
+			comment = StringUtils.replaceAll(comment, PATTERN_COLORED_TEXT, matcher -> {
+				String color = matcher.group(1);
+				switch (color) {
+					case "green":
+					case "red": {
+						// Green text used for quotes, red text used for headers
+						return matcher.group();
+					}
+					case "meme": {
+						return "<span colored=\"true\" style=\"color: #ff0000\">";
+					}
+					case "autism": {
+						return "<span colored=\"true\" style=\"color: #aa44ff\">";
+					}
+					case "orange": {
+						return "<span colored=\"true\" style=\"color: #ffaa00\">";
+					}
+					case "pink": {
+						return "<span colored=\"true\" style=\"color: #ff66bb\">";
+					}
+					case "brown": {
+						return "<span colored=\"true\" style=\"color: #aa6600\">";
+					}
+					default: {
+						return "<span colored=\"true\" style=\"color: " + color + "\">";
+					}
+				}
+			});
 		}
 		post.setComment(comment);
 		post.setCommentMarkup(CommonUtils.optJsonString(jsonObject, "message"));
