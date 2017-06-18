@@ -16,6 +16,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.util.Base64;
 
@@ -188,6 +189,21 @@ public class EndchanChanPerformer extends ChanPerformer {
 			if (image == null || captchaId == null) {
 				throw new InvalidResponseException();
 			}
+
+			int[] pixels = new int[image.getWidth() * image.getHeight()];
+			image.getPixels(pixels, 0, image.getWidth(), 0, 0, image.getWidth(), image.getHeight());
+			for (int i = 0; i < pixels.length; i++) {
+				pixels[i] = (0xff - Math.max(Color.red(pixels[i]), Color.blue(pixels[i]))) << 24;
+			}
+			Bitmap newImage = Bitmap.createBitmap(pixels, image.getWidth(), image.getHeight(), Bitmap.Config.ARGB_8888);
+			image.recycle();
+			image = CommonUtils.trimBitmap(newImage, 0x00000000);
+			if (image == null) {
+				image = newImage;
+			} else if (image != newImage) {
+				newImage.recycle();
+			}
+
 			CaptchaData captchaData = new CaptchaData();
 			captchaData.put(CaptchaData.CHALLENGE, captchaId);
 			return new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData).setImage(image);
