@@ -23,7 +23,7 @@ public class NullchanModelMapper {
 		if (jsonObject != null) {
 			Uri uri = Uri.parse(CommonUtils.getJsonString(jsonObject, "url"));
 			String host = uri.getHost();
-			if (host.startsWith("s01.") || host.startsWith("s02.")) {
+			if (host.matches("s\\d{2}\\..*")) {
 				host = host.substring(0, 4) + "0chan.hk";
 			}
 			return uri.buildUpon().scheme("https").authority(host).build();

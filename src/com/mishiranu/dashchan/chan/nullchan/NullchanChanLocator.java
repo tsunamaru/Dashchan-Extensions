@@ -1,6 +1,7 @@
 package com.mishiranu.dashchan.chan.nullchan;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 import android.net.Uri;
@@ -16,9 +17,17 @@ public class NullchanChanLocator extends ChanLocator {
 		addChanHost("0chan.hk");
 		addChanHost("nullchan7msxi257.onion");
 		addConvertableChanHost("www.0chan.hk");
-		addSpecialChanHost("s01.0chan.hk");
-		addSpecialChanHost("s02.0chan.hk");
+		for (int i = 0; i < 100; i++) {
+			addSpecialChanHost(String.format(Locale.US, "s%02d.0chan.hk", i));
+		}
 		setHttpsMode(HttpsMode.CONFIGURABLE);
+	}
+
+	public String getHostTransition(String chanHost, String requiredHost) {
+		if (requiredHost.startsWith("s01.") || requiredHost.startsWith("s02.")) {
+			return requiredHost.substring(0, 4) + chanHost;
+		}
+		return null;
 	}
 
 	@Override
