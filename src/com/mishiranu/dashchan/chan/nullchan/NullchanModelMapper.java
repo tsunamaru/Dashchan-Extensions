@@ -21,11 +21,12 @@ public class NullchanModelMapper {
 
 	private static Uri obtainAttachmentUri(JSONObject jsonObject) throws JSONException {
 		if (jsonObject != null) {
-			String uriString = CommonUtils.getJsonString(jsonObject, "url");
-			if (uriString.startsWith("//")) {
-				uriString = "https:" + uriString;
+			Uri uri = Uri.parse(CommonUtils.getJsonString(jsonObject, "url"));
+			String host = uri.getHost();
+			if (host.startsWith("s01.") || host.startsWith("s02.")) {
+				host = host.substring(0, 4) + "0chan.hk";
 			}
-			return Uri.parse(uriString);
+			return uri.buildUpon().scheme("https").authority(host).build();
 		}
 		return null;
 	}

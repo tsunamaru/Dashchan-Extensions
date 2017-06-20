@@ -30,6 +30,7 @@
 				<data android:scheme="https" />
 				<data android:host="0chan.hk" />
 				<data android:host="www.0chan.hk" />
+				<data android:host="nullchan7msxi257.onion" />
 			</intent-filter>
 
 		</activity>

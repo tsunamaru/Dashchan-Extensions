@@ -14,6 +14,7 @@ public class NullchanChanLocator extends ChanLocator {
 
 	public NullchanChanLocator() {
 		addChanHost("0chan.hk");
+		addChanHost("nullchan7msxi257.onion");
 		addConvertableChanHost("www.0chan.hk");
 		addSpecialChanHost("s01.0chan.hk");
 		addSpecialChanHost("s02.0chan.hk");
