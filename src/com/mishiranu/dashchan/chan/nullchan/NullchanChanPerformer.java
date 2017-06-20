@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -218,6 +219,14 @@ public class NullchanChanPerformer extends ChanPerformer {
 	}
 
 	private static final Pattern PATTERN_REPLY = Pattern.compile("^>>(\\d+)(?:$|\n(.*))");
+	private static final Pattern PATTERN_APP_JS = Pattern.compile("src=(?:\"|'|)(/static/js/app.\\w+.js)");
+	private static final Pattern PATTERN_EMBED_URLS = Pattern.compile("importEmbedUrls:.*?(\\[(?:/(\\\\/|[^/])*/" +
+			"\\w+[,\\]])*)");
+	private static final Pattern PATTERN_EMBED_URL = Pattern.compile("/((?:\\\\/|[^/])*)/\\w+");
+
+	private interface AddAttachment {
+		public void add(JSONObject jsonObject) throws InvalidResponseException;
+	}
 
 	@Override
 	public SendPostResult onSendPost(SendPostData data) throws HttpException, ApiException, InvalidResponseException {
@@ -273,8 +282,21 @@ public class NullchanChanPerformer extends ChanPerformer {
 			throw new RuntimeException(e);
 		}
 
+		JSONArray imagesArray = new JSONArray();
+
+		AddAttachment addAttachment = attachmentObject -> {
+			attachmentObject = attachmentObject.optJSONObject("attachment");
+			if (attachmentObject == null) {
+				throw new InvalidResponseException();
+			}
+			String token = CommonUtils.optJsonString(attachmentObject, "token");
+			if (token == null) {
+				throw new InvalidResponseException();
+			}
+			imagesArray.put(token);
+		};
+
 		if (data.attachments != null) {
-			JSONArray imagesArray = new JSONArray();
 			for (SendPostData.Attachment attachment : data.attachments) {
 				Uri uri = locator.buildPath("api", "attachment", "upload");
 				MultipartEntity entity = new MultipartEntity();
@@ -286,27 +308,59 @@ public class NullchanChanPerformer extends ChanPerformer {
 					throw new InvalidResponseException();
 				}
 				if (attachmentObject.optBoolean("ok")) {
-					attachmentObject = attachmentObject.optJSONObject("attachment");
-					if (attachmentObject == null) {
-						throw new InvalidResponseException();
-					}
-					String token = CommonUtils.optJsonString(attachmentObject, "token");
-					if (token == null) {
-						throw new InvalidResponseException();
-					}
-					imagesArray.put(token);
+					addAttachment.add(attachmentObject);
 				} else {
 					String message = CommonUtils.optJsonString(attachmentObject, "message");
 					CommonUtils.writeLog("Nullchan send message", message);
 					throw new ApiException(message);
 				}
 			}
-			if (imagesArray.length() > 0) {
-				try {
-					jsonObject.put("images", imagesArray);
-				} catch (JSONException e) {
-					throw new RuntimeException(e);
+		}
+
+		Uri uri = locator.buildPath();
+		String responseString = new HttpRequest(uri, data.holder).read().getString();
+		Matcher matcher = PATTERN_APP_JS.matcher(responseString);
+		if (matcher.find()) {
+			uri = locator.buildPath(matcher.group(1));
+			responseString = new HttpRequest(uri, data.holder).read().getString();
+			matcher = PATTERN_EMBED_URLS.matcher(responseString);
+			if (matcher.find()) {
+				responseString = matcher.group(1);
+				matcher = PATTERN_EMBED_URL.matcher(responseString);
+				StringBuilder builder = new StringBuilder();
+				while (matcher.find()) {
+					if (builder.length() > 0) {
+						builder.append('|');
+					}
+					builder.append("(?:").append(matcher.group(1)).append(')');
 				}
+				if (builder.length() > 0) {
+					try {
+						matcher = Pattern.compile(builder.toString(), Pattern.CASE_INSENSITIVE).matcher(comment);
+						while (matcher.find()) {
+							String embedUrl = matcher.group();
+							uri = locator.buildQuery("api/attachment/embed", "url", embedUrl);
+							SimpleEntity entity = new SimpleEntity();
+							entity.setContentType("application/json");
+							entity.setData("{}");
+							JSONObject attachmentObject = new HttpRequest(uri, data).setPostMethod(entity)
+									.setSuccessOnly(false).read().getJsonObject();
+							if (attachmentObject != null && attachmentObject.optBoolean("ok")) {
+								addAttachment.add(attachmentObject);
+							}
+						}
+					} catch (PatternSyntaxException e) {
+						// Ignore exception
+					}
+				}
+			}
+		}
+
+		if (imagesArray.length() > 0) {
+			try {
+				jsonObject.put("images", imagesArray);
+			} catch (JSONException e) {
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -327,7 +381,6 @@ public class NullchanChanPerformer extends ChanPerformer {
 			entity.setContentType("application/json");
 			entity.setData(jsonObject.toString());
 
-			Uri uri;
 			if (replyPostNumber == null) {
 				uri = locator.buildQuery("api/thread/create", "board", data.boardName);
 			} else {

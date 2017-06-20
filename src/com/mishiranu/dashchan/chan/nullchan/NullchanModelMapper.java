@@ -42,6 +42,9 @@ public class NullchanModelMapper {
 				// Ignore exception
 			}
 		}
+		if (jsonObject.optJSONObject("embed") != null) {
+			return null;
+		}
 		try {
 			jsonObject = jsonObject.getJSONObject("images").getJSONObject("original");
 			int width = jsonObject.getInt("width");
