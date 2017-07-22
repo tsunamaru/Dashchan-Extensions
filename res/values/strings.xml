@@ -3,7 +3,4 @@
 	<string name="text_app_name">Dashchan for 2ch.hk</string>
 	<string name="text_activity_name">Dashchan</string>
 
-	<string name="preference_captcha_bypass">Captcha bypass</string>
-	<string name="preference_captcha_bypass_summary">Bypass captcha on replying</string>
-
 </resources>

@@ -1,6 +1,0 @@
-<resources>
-
-	<string name="preference_captcha_bypass">Обход капчи</string>
-	<string name="preference_captcha_bypass_summary">Обходить ввод капчи при ответе</string>
-
-</resources>
