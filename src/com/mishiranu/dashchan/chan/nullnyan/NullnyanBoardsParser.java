@@ -28,7 +28,7 @@ public class NullnyanBoardsParser {
 		return new BoardCategory(null, boards);
 	}
 
-	private static final TemplateParser<NullnyanBoardsParser> PARSER = new TemplateParser<NullnyanBoardsParser>()
+	private static final TemplateParser<NullnyanBoardsParser> PARSER = TemplateParser.<NullnyanBoardsParser>builder()
 			.name("a").open((instance, holder, tagName, attributes) -> {
 		String href = attributes.get("href");
 		Matcher matcher = PATTERN_BOARD.matcher(href);

@@ -101,7 +101,7 @@ public class NullnyanPostsParser {
 		return !posts.isEmpty() ? posts.get(0) : null;
 	}
 
-	private static final TemplateParser<NullnyanPostsParser> PARSER = new TemplateParser<NullnyanPostsParser>()
+	private static final TemplateParser<NullnyanPostsParser> PARSER = TemplateParser.<NullnyanPostsParser>builder()
 			.starts("div", "id", "p").open((instance, holder, tagName, attributes) -> {
 		holder.closePost();
 		String number = attributes.get("id").substring(1);
