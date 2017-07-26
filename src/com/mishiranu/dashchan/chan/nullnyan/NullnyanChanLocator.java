@@ -13,7 +13,9 @@ public class NullnyanChanLocator extends ChanLocator {
 	private static final Pattern ATTACHMENT_PATH = Pattern.compile("/\\w+/src/\\d+\\.\\w+");
 
 	public NullnyanChanLocator() {
-		addChanHost("0nyan.ml");
+		addConvertableChanHost("nullnyan.net");
+		addChanHost("www.nullnyan.net");
+		addConvertableChanHost("0nyan.ml");
 		addConvertableChanHost("www.0nyan.ml");
 		setHttpsMode(HttpsMode.CONFIGURABLE);
 	}
