@@ -15,6 +15,7 @@ public class NullnyanChanLocator extends ChanLocator {
 	public NullnyanChanLocator() {
 		addChanHost("0nyan.ml");
 		addConvertableChanHost("www.0nyan.ml");
+		setHttpsMode(HttpsMode.CONFIGURABLE);
 	}
 
 	@Override
