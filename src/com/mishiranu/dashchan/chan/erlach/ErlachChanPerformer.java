@@ -1,18 +1,14 @@
 package com.mishiranu.dashchan.chan.erlach;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.util.Pair;
 
@@ -89,14 +85,14 @@ public class ErlachChanPerformer extends ChanPerformer {
 				connection.await("next");
 				String binData = connection.get("bin-data");
 				if (binData != null) {
-					ByteArrayOutputStream stream = new ByteArrayOutputStream();
-					N2OUtils.writeBytes(stream, 0x83);
-					N2OUtils.writeInt(stream, 0x68, 0x04);
-					N2OUtils.writeString(stream, 0x64, "pickle");
-					N2OUtils.writeString(stream, 0x6d, "lambda");
-					N2OUtils.writeString(stream, 0x6d, binData);
-					N2OUtils.writeBytes(stream, 0x6a);
-					connection.sendBinary(stream.toByteArray());
+					connection.sendComplexBinary()
+							.bytes(0x83)
+							.wrap(N2OUtils.fromInt(0x68, 0x04))
+							.wrap(N2OUtils.fromString(0x64, "pickle"))
+							.wrap(N2OUtils.fromString(0x6d, "lambda"))
+							.wrap(N2OUtils.fromString(0x6d, binData))
+							.bytes(0x6a)
+							.send();
 				} else {
 					break;
 				}
@@ -243,7 +239,7 @@ public class ErlachChanPerformer extends ChanPerformer {
 					} else {
 						if ("image".equals(event.get("task"))) {
 							if (strings.get(1).startsWith("imgLoad(")) {
-								event.complete("ftp-send");
+								event.complete("ftp-complete");
 							}
 						} else {
 							if (strings.size() >= 3 && "ok".equals(strings.get(2))) {
@@ -267,13 +263,14 @@ public class ErlachChanPerformer extends ChanPerformer {
 					event.store("ftp-id", strings.get(3));
 					event.store("ftp-item-block", ints.get(6));
 					event.complete("ftp-init");
+				} else if ("send".equals(strings.get(7)) || "end".equals(strings.get(7))) {
+					event.complete("ftp-send");
 				}
 			}
 		}).sendText("N2O,");
 
 		WebSocket.Result result;
 		try {
-			ByteArrayOutputStream stream = new ByteArrayOutputStream();
 			if (data.threadNumber == null) {
 				connection.await("thread");
 				String autoId = connection.get("auto-id");
@@ -282,19 +279,19 @@ public class ErlachChanPerformer extends ChanPerformer {
 				if (binData == null) {
 					throw new InvalidResponseException();
 				}
-				stream.reset();
-				N2OUtils.writeBytes(stream, 0x83);
-				N2OUtils.writeInt(stream, 0x68, 0x04);
-				N2OUtils.writeString(stream, 0x64, "pickle");
-				N2OUtils.writeString(stream, 0x6d, autoId);
-				N2OUtils.writeString(stream, 0x6d, binData);
-				N2OUtils.writeInt(stream, 0x6c, 0x01);
-				N2OUtils.writeInt(stream, 0x68, 0x02);
-				N2OUtils.writeInt(stream, 0x68, 0x02);
-				N2OUtils.writeString(stream, 0x6b, autoId);
-				N2OUtils.writeString(stream, 0x6d, "detail");
-				N2OUtils.writeBytes(stream, 0x6a, 0x6a);
-				connection.sendBinary(stream.toByteArray());
+				connection.sendComplexBinary()
+						.bytes(0x83)
+						.wrap(N2OUtils.fromInt(0x68, 0x04))
+						.wrap(N2OUtils.fromString(0x64, "pickle"))
+						.wrap(N2OUtils.fromString(0x6d, autoId))
+						.wrap(N2OUtils.fromString(0x6d, binData))
+						.wrap(N2OUtils.fromInt(0x6c, 0x01))
+						.wrap(N2OUtils.fromInt(0x68, 0x02))
+						.wrap(N2OUtils.fromInt(0x68, 0x02))
+						.wrap(N2OUtils.fromString(0x6b, autoId))
+						.wrap(N2OUtils.fromString(0x6d, "detail"))
+						.bytes(0x6a, 0x6a)
+						.send();
 			}
 			connection.await("send");
 
@@ -309,69 +306,68 @@ public class ErlachChanPerformer extends ChanPerformer {
 			if (postImage != null && data.attachments != null) {
 				connection.store("task", "image");
 				SendPostData.Attachment attachment = data.attachments[0];
-				InputStream inputStream = null;
-				Bitmap bitmap;
-				try {
-					inputStream = attachment.openInputSteam();
-					bitmap = BitmapFactory.decodeStream(inputStream);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				} finally {
-					if (inputStream != null) {
-						try {
-							inputStream.close();
-						} catch (IOException e) {
-							// Ignore exception
-						}
-					}
+				Pair<Integer, Integer> imageSize = attachment.getImageSize();
+				int fileSize = (int) attachment.getSize();
+				if (imageSize == null) {
+					throw new ApiException(ApiException.SEND_ERROR_FILE_NOT_SUPPORTED);
 				}
-				if (bitmap == null) {
-					throw new RuntimeException("Bitmap is null");
-				}
-				stream.reset();
-				N2OUtils.writeBytes(stream, 0x83);
-				N2OUtils.writeInt(stream, 0x68, 0x0a);
-				N2OUtils.writeString(stream, 0x64, "ftp");
-				N2OUtils.writeString(stream, 0x6d, "00000.000");
-				N2OUtils.writeString(stream, 0x6d, pageId);
-				N2OUtils.writeString(stream, 0x6d, "00000.000000000000");
-				N2OUtils.writeInt(stream, 0x68, 0x04);
-				N2OUtils.writeString(stream, 0x64, "meta");
-				N2OUtils.writeString(stream, 0x6d, postImage);
-				N2OUtils.writeInt(stream, 0x62, bitmap.getWidth());
-				N2OUtils.writeInt(stream, 0x62, bitmap.getHeight());
-				N2OUtils.writeInt(stream, 0x62, (int) attachment.getSize());
-				N2OUtils.writeInt(stream, 0x62, 0);
-				N2OUtils.writeInt(stream, 0x62, 1);
-				N2OUtils.writeInt(stream, 0x6d, 0);
-				N2OUtils.writeString(stream, 0x6d, "init");
-				connection.sendBinary(stream.toByteArray());
+
+				connection.sendComplexBinary()
+						.bytes(0x83)
+						.wrap(N2OUtils.fromInt(0x68, 0x0a))
+						.wrap(N2OUtils.fromString(0x64, "ftp"))
+						.wrap(N2OUtils.fromString(0x6d, "00000.000"))
+						.wrap(N2OUtils.fromString(0x6d, pageId))
+						.wrap(N2OUtils.fromString(0x6d, "00000.000000000000"))
+						.wrap(N2OUtils.fromInt(0x68, 0x04))
+						.wrap(N2OUtils.fromString(0x64, "meta"))
+						.wrap(N2OUtils.fromString(0x6d, postImage))
+						.wrap(N2OUtils.fromInt(0x62, imageSize.first))
+						.wrap(N2OUtils.fromInt(0x62, imageSize.second))
+						.wrap(N2OUtils.fromInt(0x62, fileSize))
+						.wrap(N2OUtils.fromInt(0x62, 0))
+						.wrap(N2OUtils.fromInt(0x62, 1))
+						.wrap(N2OUtils.fromInt(0x6d, 0))
+						.wrap(N2OUtils.fromString(0x6d, "init"))
+						.send();
 				connection.await("ftp-init");
 
-				stream.reset();
-				N2OUtils.writeBytes(stream, 0x83);
-				N2OUtils.writeInt(stream, 0x68, 0x0a);
-				N2OUtils.writeString(stream, 0x64, "ftp");
-				N2OUtils.writeString(stream, 0x6d, "00000.000");
-				N2OUtils.writeString(stream, 0x6d, pageId);
-				N2OUtils.writeString(stream, 0x6d, connection.get("ftp-id"));
-				N2OUtils.writeInt(stream, 0x68, 0x04);
-				N2OUtils.writeString(stream, 0x64, "meta");
-				N2OUtils.writeString(stream, 0x6d, postImage);
-				N2OUtils.writeInt(stream, 0x62, bitmap.getWidth());
-				N2OUtils.writeInt(stream, 0x62, bitmap.getHeight());
-				N2OUtils.writeInt(stream, 0x62, (int) attachment.getSize());
-				N2OUtils.writeInt(stream, 0x62, 0);
-				N2OUtils.writeInt(stream, 0x62, connection.get("ftp-item-block"));
-				N2OUtils.writeInt(stream, 0x6d, (int) attachment.getSize());
-				inputStream = null;
+				InputStream inputStream = null;
 				try {
-					inputStream = attachment.openInputSteam();
-					int count;
-					byte[] buffer = new byte[8 * 1024];
-					while ((count = inputStream.read(buffer)) >= 0) {
-						stream.write(buffer, 0, count);
+					String ftpId = connection.get("ftp-id");
+					int maxBlockSize = connection.get("ftp-item-block");
+					int position = 0;
+					inputStream = attachment.openInputSteamForSending();
+
+					while (position < fileSize) {
+						int left = fileSize - position;
+						int blockSize = Math.min(left, maxBlockSize);
+
+						connection.sendComplexBinary()
+								.bytes(0x83)
+								.wrap(N2OUtils.fromInt(0x68, 0x0a))
+								.wrap(N2OUtils.fromString(0x64, "ftp"))
+								.wrap(N2OUtils.fromString(0x6d, "00000.000"))
+								.wrap(N2OUtils.fromString(0x6d, pageId))
+								.wrap(N2OUtils.fromString(0x6d, ftpId))
+								.wrap(N2OUtils.fromInt(0x68, 0x04))
+								.wrap(N2OUtils.fromString(0x64, "meta"))
+								.wrap(N2OUtils.fromString(0x6d, postImage))
+								.wrap(N2OUtils.fromInt(0x62, imageSize.first))
+								.wrap(N2OUtils.fromInt(0x62, imageSize.second))
+								.wrap(N2OUtils.fromInt(0x62, fileSize))
+								.wrap(N2OUtils.fromInt(0x62, position))
+								.wrap(N2OUtils.fromInt(0x62, maxBlockSize))
+								.wrap(N2OUtils.fromInt(0x6d, blockSize))
+								.stream(inputStream, blockSize)
+								.wrap(N2OUtils.fromString(0x6d, "send"))
+								.send();
+
+						position += blockSize;
+						connection.await("ftp-send");
 					}
+
+					connection.await("ftp-complete");
 				} catch (IOException e) {
 					throw new RuntimeException(e);
 				} finally {
@@ -383,39 +379,37 @@ public class ErlachChanPerformer extends ChanPerformer {
 						}
 					}
 				}
-				N2OUtils.writeString(stream, 0x6d, "send");
-				connection.sendBinary(stream.toByteArray());
-				connection.await("ftp-send");
 			}
 
 			connection.store("task", "post");
-			stream.reset();
-			N2OUtils.writeBytes(stream, 0x83);
-			N2OUtils.writeInt(stream, 0x68, 0x04);
-			N2OUtils.writeString(stream, 0x64, "pickle");
-			N2OUtils.writeString(stream, 0x6d, values[0]);
-			N2OUtils.writeString(stream, 0x6d, binData);
-			N2OUtils.writeInt(stream, 0x6c, 0x04);
-			N2OUtils.writeInt(stream, 0x68, 0x02);
-			N2OUtils.writeInt(stream, 0x68, 0x02);
-			N2OUtils.writeString(stream, 0x6b, values[0]);
-			N2OUtils.writeString(stream, 0x6d, "detail");
-			N2OUtils.writeBytes(stream, 0x6a);
-			N2OUtils.writeInt(stream, 0x68, 0x02);
-			N2OUtils.writeString(stream, 0x6b, values[1]);
-			if (data.threadNumber == null) {
-				N2OUtils.writeString(stream, 0x6b, StringUtils.emptyIfNull(data.subject));
-			} else {
-				N2OUtils.writeString(stream, 0x6b, data.optionSage ? "true" : "false");
-			}
-			N2OUtils.writeInt(stream, 0x68, 0x02);
-			N2OUtils.writeString(stream, 0x6b, values[2]);
-			N2OUtils.writeString(stream, 0x6b, StringUtils.emptyIfNull(comment));
-			N2OUtils.writeInt(stream, 0x68, 0x02);
-			N2OUtils.writeString(stream, 0x6b, values[3]);
-			N2OUtils.writeString(stream, 0x6b, "on");
-			N2OUtils.writeBytes(stream, 0x6a);
-			connection.sendBinary(stream.toByteArray());
+			connection.sendComplexBinary()
+					.bytes(0x83)
+					.wrap(N2OUtils.fromInt(0x68, 0x04))
+					.wrap(N2OUtils.fromString(0x64, "pickle"))
+					.wrap(N2OUtils.fromString(0x6d, values[0]))
+					.wrap(N2OUtils.fromString(0x6d, binData))
+					.wrap(N2OUtils.fromInt(0x6c, 0x04))
+					.wrap(N2OUtils.fromInt(0x68, 0x02))
+					.wrap(N2OUtils.fromInt(0x68, 0x02))
+					.wrap(N2OUtils.fromString(0x6b, values[0]))
+					.wrap(N2OUtils.fromString(0x6d, "detail"))
+					.bytes(0x6a)
+					.wrap(N2OUtils.fromInt(0x68, 0x02))
+					.wrap(N2OUtils.fromString(0x6b, values[1]))
+					.wrap(builder -> {
+						if (data.threadNumber == null) {
+							return builder.wrap(N2OUtils.fromString(0x6b, StringUtils.emptyIfNull(data.subject)));
+						} else {
+							return builder.wrap(N2OUtils.fromString(0x6b, data.optionSage ? "true" : "false"));
+						}
+					}).wrap(N2OUtils.fromInt(0x68, 0x02))
+					.wrap(N2OUtils.fromString(0x6b, values[2]))
+					.wrap(N2OUtils.fromString(0x6b, StringUtils.emptyIfNull(comment)))
+					.wrap(N2OUtils.fromInt(0x68, 0x02))
+					.wrap(N2OUtils.fromString(0x6b, values[3]))
+					.wrap(N2OUtils.fromString(0x6b, "on"))
+					.bytes(0x6a)
+					.send();
 			connection.await("result");
 		} finally {
 			result = connection.close();
