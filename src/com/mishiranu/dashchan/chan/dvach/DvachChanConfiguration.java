@@ -1,12 +1,14 @@
 package com.mishiranu.dashchan.chan.dvach;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.res.Resources;
 import android.util.Pair;
 
 import chan.content.ChanConfiguration;
@@ -16,6 +18,18 @@ import chan.util.StringUtils;
 public class DvachChanConfiguration extends ChanConfiguration {
 	public static final String CAPTCHA_TYPE_2CHAPTCHA = "2chaptcha";
 	public static final String CAPTCHA_TYPE_ANIMECAPTCHA = "animecaptcha";
+
+	public static final List<Pair<String, String>> CAPTCHA_TYPES;
+
+	static {
+		ArrayList<Pair<String, String>> captchaTypes = new ArrayList<>();
+		captchaTypes.add(new Pair<>("2chaptcha", CAPTCHA_TYPE_2CHAPTCHA));
+		captchaTypes.add(new Pair<>("animecaptcha", CAPTCHA_TYPE_ANIMECAPTCHA));
+		captchaTypes.add(new Pair<>("recaptchav1", CAPTCHA_TYPE_RECAPTCHA_1));
+		captchaTypes.add(new Pair<>("recaptcha", CAPTCHA_TYPE_RECAPTCHA_2));
+		captchaTypes.add(new Pair<>("mailru", CAPTCHA_TYPE_MAILRU));
+		CAPTCHA_TYPES = Collections.unmodifiableList(captchaTypes);
+	}
 
 	private static final String KEY_ICONS = "icons";
 	private static final String KEY_IMAGES_ENABLED = "images_enabled";
@@ -34,11 +48,9 @@ public class DvachChanConfiguration extends ChanConfiguration {
 		request(OPTION_ALLOW_CAPTCHA_PASS);
 		setDefaultName("Аноним");
 		setBumpLimit(500);
-		addCaptchaType(CAPTCHA_TYPE_2CHAPTCHA);
-		addCaptchaType(CAPTCHA_TYPE_ANIMECAPTCHA);
-		addCaptchaType(CAPTCHA_TYPE_RECAPTCHA_1);
-		addCaptchaType(CAPTCHA_TYPE_RECAPTCHA_2);
-		addCaptchaType(CAPTCHA_TYPE_MAILRU);
+		for (Pair<String, String> pair : CAPTCHA_TYPES) {
+			addCaptchaType(pair.second);
+		}
 	}
 
 	@Override

@@ -6,7 +6,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,6 +17,7 @@ import org.json.JSONObject;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.util.Pair;
 
 import chan.content.ApiException;
 import chan.content.ChanPerformer;
@@ -488,22 +488,35 @@ public class DvachChanPerformer extends ChanPerformer {
 		if (jsonObject.optInt("enabled", 1) == 0) {
 			return new ReadCaptchaResult(CaptchaState.SKIP, null);
 		}
-		LinkedHashSet<String> availableCaptchaTypes = null;
+
+		ArrayList<String> availableCaptchaTypes = null;
 		try {
 			JSONArray jsonArray = jsonObject.getJSONArray("types");
 			for (int i = 0; i < jsonArray.length(); i++) {
-				String captchaType = CommonUtils.getJsonString(jsonArray.getJSONObject(i), "id");
+				String remoteCaptchaType = CommonUtils.getJsonString(jsonArray.getJSONObject(i), "id");
+				String captchaType = null;
+				for (Pair<String, String> pair : DvachChanConfiguration.CAPTCHA_TYPES) {
+					if (pair.first.equals(remoteCaptchaType)) {
+						captchaType = pair.second;
+						break;
+					}
+				}
+				if (captchaType == null) {
+					continue;
+				}
+
 				if (availableCaptchaTypes == null) {
-					availableCaptchaTypes = new LinkedHashSet<>();
+					availableCaptchaTypes = new ArrayList<>();
 				}
 				availableCaptchaTypes.add(captchaType);
 			}
 		} catch (JSONException e) {
 			// Ignore exception
 		}
+
 		String captchaType = data.captchaType;
 		boolean overrideCaptchaType = false;
-		if (availableCaptchaTypes != null && !availableCaptchaTypes.contains(data.captchaType)) {
+		if (availableCaptchaTypes != null && !availableCaptchaTypes.contains(captchaType)) {
 			if (availableCaptchaTypes.contains(DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA)) {
 				captchaType = DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA;
 			} else {
@@ -539,7 +552,19 @@ public class DvachChanPerformer extends ChanPerformer {
 				captchaPassCookie = readCaptchaPass(data, captchaPassData);
 			}
 		}
-		Uri.Builder uriBuilder = locator.buildPath("api", "captcha", captchaType, "id").buildUpon();
+
+		String remoteCaptchaType = null;
+		for (Pair<String, String> pair : DvachChanConfiguration.CAPTCHA_TYPES) {
+			if (pair.second.equals(captchaType)) {
+				remoteCaptchaType = pair.first;
+				break;
+			}
+		}
+		if (remoteCaptchaType == null) {
+			throw new RuntimeException();
+		}
+
+		Uri.Builder uriBuilder = locator.buildPath("api", "captcha", remoteCaptchaType, "id").buildUpon();
 		uriBuilder.appendQueryParameter("board", data.boardName);
 		if (data.threadNumber != null) {
 			uriBuilder.appendQueryParameter("thread", data.threadNumber);
@@ -555,6 +580,7 @@ public class DvachChanPerformer extends ChanPerformer {
 			}
 			exception = e;
 		}
+
 		String apiResult = jsonObject != null ? CommonUtils.optJsonString(jsonObject, "result") : null;
 		if ("3".equals(apiResult)) {
 			configuration.setMaxFilesCountEnabled(false);
@@ -587,7 +613,7 @@ public class DvachChanPerformer extends ChanPerformer {
 					OUTER: if (DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA.equals(captchaType)) {
 						result = new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData);
 						captchaData.put(CaptchaData.CHALLENGE, id);
-						uri = locator.buildPath("api", "captcha", captchaType, "image", id);
+						uri = locator.buildPath("api", "captcha", remoteCaptchaType, "image", id);
 						Bitmap image = new HttpRequest(uri, data).read().getBitmap();
 						if (image == null) {
 							throw new InvalidResponseException();
@@ -666,7 +692,7 @@ public class DvachChanPerformer extends ChanPerformer {
 						} catch (JSONException e) {
 							throw new InvalidResponseException(e);
 						}
-						uri = locator.buildPath("api", "captcha", captchaType, "image", id);
+						uri = locator.buildPath("api", "captcha", remoteCaptchaType, "image", id);
 						Bitmap image = new HttpRequest(uri, data).read().getBitmap();
 						Integer index;
 						while (true) {
@@ -679,7 +705,7 @@ public class DvachChanPerformer extends ChanPerformer {
 								break;
 							}
 						}
-						uri = locator.buildPath("api", "captcha", captchaType, "check", id).buildUpon()
+						uri = locator.buildPath("api", "captcha", remoteCaptchaType, "check", id).buildUpon()
 								.appendQueryParameter("value", ids[index]).build();
 						jsonObject = new HttpRequest(uri, data).addCookie(buildCookies(captchaPassCookie))
 								.read().getJsonObject();
@@ -768,27 +794,31 @@ public class DvachChanPerformer extends ChanPerformer {
 			boolean check = false;
 			String challenge = data.captchaData.get(CaptchaData.CHALLENGE);
 			String input = StringUtils.emptyIfNull(data.captchaData.get(CaptchaData.INPUT));
+
+			for (Pair<String, String> pair : DvachChanConfiguration.CAPTCHA_TYPES) {
+				if (pair.second.equals(data.captchaType)) {
+					entity.add("captcha_type", pair.first);
+					break;
+				}
+			}
+
 			if (DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA.equals(data.captchaType)) {
-				entity.add("captcha_type", "2chaptcha");
 				entity.add("2chaptcha_id", challenge);
 				entity.add("2chaptcha_value", input);
 				check = true;
 			} else if (DvachChanConfiguration.CAPTCHA_TYPE_ANIMECAPTCHA.equals(data.captchaType)) {
-				entity.add("captcha_type", "animecaptcha");
 				entity.add("animecaptcha_id", challenge);
 				entity.add("animecaptcha_value", data.captchaData.get(ANIMECAPTCHA_VALUE));
 			} else if (DvachChanConfiguration.CAPTCHA_TYPE_RECAPTCHA_2.equals(data.captchaType)) {
-				entity.add("captcha_type", "recaptcha");
 				entity.add("g-recaptcha-response", input);
 			} else if (DvachChanConfiguration.CAPTCHA_TYPE_RECAPTCHA_1.equals(data.captchaType)) {
-				entity.add("captcha_type", "recaptchav1");
 				entity.add("recaptcha_challenge_field", challenge);
 				entity.add("recaptcha_response_field", input);
 			} else if (DvachChanConfiguration.CAPTCHA_TYPE_MAILRU.equals(data.captchaType)) {
-				entity.add("captcha_type", "mailru");
 				entity.add("captcha_id", challenge);
 				entity.add("captcha_value", input);
 			}
+
 			captchaPassCookie = data.captchaData.get(CAPTCHA_PASS_COOKIE);
 			if (check && captchaPassCookie == null) {
 				Uri uri = locator.buildPath("api", "captcha", data.captchaType, "check", challenge)
