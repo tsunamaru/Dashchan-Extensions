@@ -85,6 +85,7 @@ public class DvachChanConfiguration extends ChanConfiguration {
 				? maxFilesCountEnabled ? Math.max(4, filesCount) : 4 : 0;
 		posting.attachmentMimeTypes.add("image/*");
 		posting.attachmentMimeTypes.add("video/webm");
+		posting.attachmentMimeTypes.add("video/mp4");
 		try {
 			JSONArray jsonArray = new JSONArray(get(boardName, KEY_ICONS, "[]"));
 			for (int i = 0; i < jsonArray.length(); i++) {
