@@ -609,6 +609,7 @@ public class DvachChanPerformer extends ChanPerformer {
 						|| DvachChanConfiguration.CAPTCHA_TYPE_MAILRU.equals(captchaType)) {
 					result = new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData);
 					captchaData.put(CaptchaData.API_KEY, id);
+					captchaData.put(CaptchaData.REFERER, locator.buildPath().toString());
 				} else {
 					OUTER: if (DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA.equals(captchaType)) {
 						result = new ReadCaptchaResult(CaptchaState.CAPTCHA, captchaData);
