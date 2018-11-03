@@ -480,6 +480,7 @@ public class DvachChanPerformer extends ChanPerformer {
 	@Override
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException {
 		DvachChanLocator locator = DvachChanLocator.get(this);
+		DvachChanConfiguration configuration = DvachChanConfiguration.get(this);
 		Uri uri = locator.buildPath("api", "captcha", "settings", data.boardName);
 		JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookies(null)).read().getJsonObject();
 		if (jsonObject == null) {
@@ -489,41 +490,45 @@ public class DvachChanPerformer extends ChanPerformer {
 			return new ReadCaptchaResult(CaptchaState.SKIP, null);
 		}
 
-		ArrayList<String> availableCaptchaTypes = null;
-		try {
-			JSONArray jsonArray = jsonObject.getJSONArray("types");
-			for (int i = 0; i < jsonArray.length(); i++) {
-				String remoteCaptchaType = CommonUtils.getJsonString(jsonArray.getJSONObject(i), "id");
-				String captchaType = null;
-				for (Pair<String, String> pair : DvachChanConfiguration.CAPTCHA_TYPES) {
-					if (pair.first.equals(remoteCaptchaType)) {
-						captchaType = pair.second;
-						break;
-					}
-				}
-				if (captchaType == null) {
-					continue;
-				}
-
-				if (availableCaptchaTypes == null) {
-					availableCaptchaTypes = new ArrayList<>();
-				}
-				availableCaptchaTypes.add(captchaType);
-			}
-		} catch (JSONException e) {
-			// Ignore exception
-		}
-
 		String captchaType = data.captchaType;
 		boolean overrideCaptchaType = false;
-		if (availableCaptchaTypes != null && !availableCaptchaTypes.contains(captchaType)) {
-			if (availableCaptchaTypes.contains(DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA)) {
-				captchaType = DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA;
-			} else {
-				captchaType = availableCaptchaTypes.iterator().next();
+
+		if (configuration.isCaptchaCheckAvailable()) {
+			ArrayList<String> availableCaptchaTypes = null;
+			try {
+				JSONArray jsonArray = jsonObject.getJSONArray("types");
+				for (int i = 0; i < jsonArray.length(); i++) {
+					String remoteCaptchaType = CommonUtils.getJsonString(jsonArray.getJSONObject(i), "id");
+					String supportedCaptchaType = null;
+					for (Pair<String, String> pair : DvachChanConfiguration.CAPTCHA_TYPES) {
+						if (pair.first.equals(remoteCaptchaType)) {
+							supportedCaptchaType = pair.second;
+							break;
+						}
+					}
+					if (supportedCaptchaType == null) {
+						continue;
+					}
+
+					if (availableCaptchaTypes == null) {
+						availableCaptchaTypes = new ArrayList<>();
+					}
+					availableCaptchaTypes.add(supportedCaptchaType);
+				}
+			} catch (JSONException e) {
+				// Ignore exception
 			}
-			overrideCaptchaType = true;
+
+			if (availableCaptchaTypes != null && !availableCaptchaTypes.contains(captchaType)) {
+				if (availableCaptchaTypes.contains(DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA)) {
+					captchaType = DvachChanConfiguration.CAPTCHA_TYPE_2CHAPTCHA;
+				} else {
+					captchaType = availableCaptchaTypes.iterator().next();
+				}
+				overrideCaptchaType = true;
+			}
 		}
+
 		return onReadCaptcha(data, captchaType, overrideCaptchaType, data.captchaPass != null
 				? data.captchaPass[0] : null, true);
 	}
