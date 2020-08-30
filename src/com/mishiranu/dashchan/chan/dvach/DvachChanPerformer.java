@@ -35,7 +35,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-@SuppressLint("SimpleDateFormat")
 public class DvachChanPerformer extends ChanPerformer {
 	private static final String COOKIE_USERCODE_AUTH = "usercode_auth";
 	private static final String COOKIE_PASSCODE_AUTH = "passcode_auth";
@@ -53,6 +52,31 @@ public class DvachChanPerformer extends ChanPerformer {
 
 	private CookieBuilder buildCookiesWithCaptchaPass() {
 		return buildCookies(DvachChanConfiguration.get(this).getCookie(COOKIE_PASSCODE_AUTH));
+	}
+
+	private static final int[] MOBILE_API_DELAYS = {0, 250, 500, 1000};
+	private final Object mobileApiLock = new Object();
+
+	private HttpResponse readMobileApi(HttpRequest request) throws HttpException {
+		synchronized (mobileApiLock) {
+			HttpException lastException = null;
+			for (int delay : MOBILE_API_DELAYS) {
+				if (delay > 0) {
+					request.setDelay(delay);
+				}
+				try {
+					return request.read();
+				} catch (HttpException e) {
+					if (e.isHttpException() && e.getResponseCode() == HttpURLConnection.HTTP_UNAVAILABLE) {
+						lastException = e;
+						// Retry in loop
+					} else {
+						throw e;
+					}
+				}
+			}
+			throw lastException;
+		}
 	}
 
 	@Override
@@ -118,10 +142,12 @@ public class DvachChanPerformer extends ChanPerformer {
 		Uri uri;
 		HttpRequest.RedirectHandler handler = HttpRequest.RedirectHandler.BROWSER;
 		Uri[] threadUri = null;
+		boolean mobileApi = false;
 		if (usePartialApi) {
 			uri = locator.createFcgiUri("mobile", "task", "get_thread", "board", data.boardName,
 					"thread", data.threadNumber, "num", data.lastPostNumber == null ? data.threadNumber
 					: Integer.toString(Integer.parseInt(data.lastPostNumber) + 1));
+			mobileApi = true;
 		} else if (archive) {
 			uri = locator.buildPath(data.boardName, "arch", "res", data.threadNumber + ".json");
 			Uri[] finalThreadUri = {uri};
@@ -134,8 +160,9 @@ public class DvachChanPerformer extends ChanPerformer {
 		} else {
 			uri = locator.buildPath(data.boardName, "res", data.threadNumber + ".json");
 		}
-		HttpResponse response = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass())
-				.setValidator(data.validator).setRedirectHandler(handler).read();
+		HttpRequest request = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass())
+				.setValidator(data.validator).setRedirectHandler(handler);
+		HttpResponse response = mobileApi ? readMobileApi(request) : request.read();
 		String archiveDate = null;
 		if (archive) {
 			archiveDate = threadUri[0].getPath();
@@ -212,7 +239,7 @@ public class DvachChanPerformer extends ChanPerformer {
 		DvachChanConfiguration configuration = DvachChanConfiguration.get(this);
 		Uri uri = locator.createFcgiUri("mobile", "task", "get_post", "board", data.boardName,
 				"post", data.postNumber);
-		HttpResponse response = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass()).read();
+		HttpResponse response = readMobileApi(new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass()));
 		JSONObject jsonObject = response.getJsonObject();
 		JSONArray jsonArray = response.getJsonArray();
 		if (jsonArray != null) {
@@ -413,8 +440,8 @@ public class DvachChanPerformer extends ChanPerformer {
 		DvachChanLocator locator = DvachChanLocator.get(this);
 		Uri uri = locator.createFcgiUri("mobile", "task", "get_thread_last_info", "board",
 				data.boardName, "thread", data.threadNumber);
-		JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass())
-				.read().getJsonObject();
+		JSONObject jsonObject = readMobileApi(new HttpRequest(uri, data).addCookie(buildCookiesWithCaptchaPass()))
+				.getJsonObject();
 		if (jsonObject != null) {
 			if (jsonObject.has("posts")) {
 				return new ReadPostsCountResult(jsonObject.optInt("posts") + 1);
@@ -449,8 +476,8 @@ public class DvachChanPerformer extends ChanPerformer {
 		DvachChanLocator locator = DvachChanLocator.get(this);
 		Uri uri = locator.createFcgiUri("makaba");
 		UrlEncodedEntity entity = new UrlEncodedEntity("task", "auth", "usercode", captchaPassData, "json", "1");
-		JSONObject jsonObject = new HttpRequest(uri, preset).addCookie(buildCookies(null)).setPostMethod(entity)
-				.setRedirectHandler(HttpRequest.RedirectHandler.STRICT).read().getJsonObject();
+		JSONObject jsonObject = readMobileApi(new HttpRequest(uri, preset).addCookie(buildCookies(null))
+				.setPostMethod(entity).setRedirectHandler(HttpRequest.RedirectHandler.STRICT)).getJsonObject();
 		if (jsonObject == null) {
 			throw new InvalidResponseException();
 		}
@@ -479,7 +506,7 @@ public class DvachChanPerformer extends ChanPerformer {
 	public ReadCaptchaResult onReadCaptcha(ReadCaptchaData data) throws HttpException, InvalidResponseException {
 		DvachChanLocator locator = DvachChanLocator.get(this);
 		Uri uri = locator.buildPath("api", "captcha", "settings", data.boardName);
-		JSONObject jsonObject = new HttpRequest(uri, data).addCookie(buildCookies(null)).read().getJsonObject();
+		JSONObject jsonObject = readMobileApi(new HttpRequest(uri, data).addCookie(buildCookies(null))).getJsonObject();
 		if (jsonObject == null) {
 			throw new InvalidResponseException();
 		}
@@ -525,7 +552,8 @@ public class DvachChanPerformer extends ChanPerformer {
 		JSONObject jsonObject = null;
 		HttpException exception = null;
 		try {
-			jsonObject = new HttpRequest(uri, data).addCookie(buildCookies(captchaPassCookie)).read().getJsonObject();
+			jsonObject = readMobileApi(new HttpRequest(uri, data)
+					.addCookie(buildCookies(captchaPassCookie))).getJsonObject();
 		} catch (HttpException e) {
 			if (!e.isHttpException()) {
 				throw e;
@@ -647,7 +675,9 @@ public class DvachChanPerformer extends ChanPerformer {
 		DateFormatSymbols symbols = new DateFormatSymbols();
 		symbols.setShortMonths(new String[] {"Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг",
 				"Сен", "Окт", "Ноя", "Дек"});
-		DATE_FORMAT_BAN = new SimpleDateFormat("MMM dd HH:mm:ss yyyy", symbols);
+		@SuppressLint("SimpleDateFormat")
+		SimpleDateFormat dateFormatBan = new SimpleDateFormat("MMM dd HH:mm:ss yyyy", symbols);
+		DATE_FORMAT_BAN = dateFormatBan;
 		DATE_FORMAT_BAN.setTimeZone(TimeZone.getTimeZone("GMT+3"));
 	}
 
