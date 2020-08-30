@@ -1,38 +1,29 @@
 package com.mishiranu.dashchan.chan.dvach;
 
-import java.util.ArrayList;
+import android.util.Pair;
+import chan.content.ChanConfiguration;
+import chan.util.CommonUtils;
+import chan.util.StringUtils;
 import java.util.Collections;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Locale;
-
+import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.res.Resources;
-import android.util.Pair;
-
-import chan.content.ChanConfiguration;
-import chan.util.CommonUtils;
-import chan.util.StringUtils;
-
 public class DvachChanConfiguration extends ChanConfiguration {
 	public static final String CAPTCHA_TYPE_2CHAPTCHA = "2chaptcha";
-	public static final String CAPTCHA_TYPE_ANIMECAPTCHA = "animecaptcha";
 
-	public static final List<Pair<String, String>> CAPTCHA_TYPES;
+	public static final Map<String, String> CAPTCHA_TYPES;
 
 	static {
-		ArrayList<Pair<String, String>> captchaTypes = new ArrayList<>();
-		captchaTypes.add(new Pair<>("2chaptcha", CAPTCHA_TYPE_2CHAPTCHA));
-		captchaTypes.add(new Pair<>("animecaptcha", CAPTCHA_TYPE_ANIMECAPTCHA));
-		captchaTypes.add(new Pair<>("recaptchav1", CAPTCHA_TYPE_RECAPTCHA_1));
-		captchaTypes.add(new Pair<>("recaptcha", CAPTCHA_TYPE_RECAPTCHA_2));
-		captchaTypes.add(new Pair<>("mailru", CAPTCHA_TYPE_MAILRU));
-		CAPTCHA_TYPES = Collections.unmodifiableList(captchaTypes);
+		Map<String, String> captchaTypes = new LinkedHashMap<>();
+		captchaTypes.put(CAPTCHA_TYPE_RECAPTCHA_2, "recaptcha");
+		captchaTypes.put(CAPTCHA_TYPE_RECAPTCHA_2_INVISIBLE, "invisible_recaptcha");
+		captchaTypes.put(CAPTCHA_TYPE_2CHAPTCHA, "2chaptcha");
+		CAPTCHA_TYPES = Collections.unmodifiableMap(captchaTypes);
 	}
-
-	private static final String KEY_CAPTCHA_CHECK_AVAILABLE = "captcha_check_available";
 
 	private static final String KEY_ICONS = "icons";
 	private static final String KEY_IMAGES_ENABLED = "images_enabled";
@@ -51,10 +42,9 @@ public class DvachChanConfiguration extends ChanConfiguration {
 		request(OPTION_ALLOW_CAPTCHA_PASS);
 		setDefaultName("Аноним");
 		setBumpLimit(500);
-		for (Pair<String, String> pair : CAPTCHA_TYPES) {
-			addCaptchaType(pair.second);
+		for (String captchaType : CAPTCHA_TYPES.keySet()) {
+			addCaptchaType(captchaType);
 		}
-		addCustomPreference(KEY_CAPTCHA_CHECK_AVAILABLE, false);
 	}
 
 	@Override
@@ -75,12 +65,6 @@ public class DvachChanConfiguration extends ChanConfiguration {
 			captcha.title = "2chaptcha";
 			captcha.input = Captcha.Input.NUMERIC;
 			captcha.validity = Captcha.Validity.IN_BOARD_SEPARATELY;
-			return captcha;
-		} else if (CAPTCHA_TYPE_ANIMECAPTCHA.equals(captchaType)) {
-			Captcha captcha = new Captcha();
-			captcha.title = "Animecaptcha";
-			captcha.input = Captcha.Input.ALL;
-			captcha.validity = Captcha.Validity.SHORT_LIFETIME;
 			return captcha;
 		}
 		return null;
@@ -123,22 +107,6 @@ public class DvachChanConfiguration extends ChanConfiguration {
 		reporting.comment = true;
 		reporting.multiplePosts = true;
 		return reporting;
-	}
-
-	@Override
-	public CustomPreference obtainCustomPreferenceConfiguration(String key) {
-		if (KEY_CAPTCHA_CHECK_AVAILABLE.equals(key)) {
-			Resources resources = getResources();
-			CustomPreference customPreference = new CustomPreference();
-			customPreference.title = resources.getString(R.string.pref_captcha_check_available);
-			customPreference.summary = resources.getString(R.string.pref_captcha_check_available_summary);
-			return customPreference;
-		}
-		return null;
-	}
-
-	public boolean isCaptchaCheckAvailable() {
-		return get(null, KEY_CAPTCHA_CHECK_AVAILABLE, false);
 	}
 
 	private volatile int filesCount = -1;
