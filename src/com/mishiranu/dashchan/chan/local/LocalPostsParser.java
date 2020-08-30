@@ -9,14 +9,12 @@ import chan.content.model.Posts;
 import chan.text.GroupParser;
 import chan.text.ParseException;
 import chan.util.StringUtils;
-import java.io.File;
 import java.util.ArrayList;
 
 public class LocalPostsParser implements GroupParser.Callback {
 	private final String source;
 	private final LocalChanLocator locator;
 	private final String threadNumber;
-	private final String localPath;
 
 	private boolean onlyOriginalPost;
 	private String parent;
@@ -38,11 +36,10 @@ public class LocalPostsParser implements GroupParser.Callback {
 
 	private static class OriginalPostParsedException extends ParseException {}
 
-	public LocalPostsParser(String source, Object linked, String threadNumber, File localDownloadDirectory) {
+	public LocalPostsParser(String source, Object linked, String threadNumber) {
 		this.source = source;
 		this.locator = ChanLocator.get(linked);
 		this.threadNumber = threadNumber;
-		this.localPath = localDownloadDirectory.getPath();
 	}
 
 	public Posts convertPosts() throws ParseException {
@@ -205,10 +202,7 @@ public class LocalPostsParser implements GroupParser.Callback {
 		Uri uri = Uri.parse(uriString);
 		if (uri.isRelative()) {
 			String path = uri.getPath();
-			if (path != null && !path.startsWith("/")) {
-				path = localPath + "/" + path;
-				uri = new Uri.Builder().scheme("http").authority("localhost").path(path).build();
-			}
+			uri = new Uri.Builder().scheme("http").authority("localhost").path(path).build();
 		}
 		return uri;
 	}

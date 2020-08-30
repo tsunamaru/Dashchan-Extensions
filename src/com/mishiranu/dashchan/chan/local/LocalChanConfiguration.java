@@ -1,7 +1,7 @@
 package com.mishiranu.dashchan.chan.local;
 
 import chan.content.ChanConfiguration;
-import java.io.File;
+import chan.content.model.ChanFile;
 
 public class LocalChanConfiguration extends ChanConfiguration {
 	public LocalChanConfiguration() {
@@ -34,7 +34,7 @@ public class LocalChanConfiguration extends ChanConfiguration {
 		return statistics;
 	}
 
-	public File getLocalDownloadDirectory() {
-		return new File(getDownloadDirectory(), "Archive");
+	public ChanFile getLocalDownloadDirectory() {
+		return getDownloadDirectory().getChild("Archive");
 	}
 }
