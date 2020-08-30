@@ -1,16 +1,12 @@
 package com.mishiranu.dashchan.chan.local;
 
+import android.util.Pair;
+import chan.content.ChanMarkup;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import android.util.Pair;
-
-import chan.content.ChanMarkup;
-
-public class LocalChanMarkup extends ChanMarkup
-{
-	public LocalChanMarkup()
-	{
+public class LocalChanMarkup extends ChanMarkup {
+	public LocalChanMarkup() {
 		addTag("b", TAG_BOLD);
 		addTag("i", TAG_ITALIC);
 		addTag("u", TAG_UNDERLINE);
@@ -26,14 +22,15 @@ public class LocalChanMarkup extends ChanMarkup
 		addPreformatted("span", "code", true);
 		addColorable("span");
 	}
-	
+
 	private static final Pattern THREAD_LINK = Pattern.compile("#(\\d+)$");
-	
+
 	@Override
-	public Pair<String, String> obtainPostLinkThreadPostNumbers(String uriString)
-	{
+	public Pair<String, String> obtainPostLinkThreadPostNumbers(String uriString) {
 		Matcher matcher = THREAD_LINK.matcher(uriString);
-		if (matcher.matches()) return new Pair<>(null, matcher.group(1));
+		if (matcher.matches()) {
+			return new Pair<>(null, matcher.group(1));
+		}
 		return null;
 	}
 }

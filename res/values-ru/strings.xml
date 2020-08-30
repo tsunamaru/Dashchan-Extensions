@@ -1,6 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-	
+
 	<string name="text_local_archive">Локальный архив</string>
-	<string name="text_save_thumbnails">Сохранить миниатюры</string>
-	
+
 </resources>
