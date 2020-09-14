@@ -19,7 +19,7 @@ allprojects {
 apply plugin: 'com.android.application'
 
 dependencies {
-	compileOnly 'com.github.mishiranu:dashchan.library:1.6'
+	compileOnly 'com.github.mishiranu:dashchan.library:1.7'
 }
 
 android {

@@ -1,14 +1,12 @@
 package com.mishiranu.dashchan.chan.local;
 
 import chan.content.ChanConfiguration;
-import chan.content.model.ChanFile;
+import chan.util.DataFile;
 
 public class LocalChanConfiguration extends ChanConfiguration {
 	public LocalChanConfiguration() {
 		request(OPTION_SINGLE_BOARD_MODE);
-		request("disallow_proxy");
-		request("disallow_archivation");
-		request("disable_serialization");
+		request(OPTION_LOCAL_MODE);
 		setBoardTitle(null, getResources().getString(R.string.text_local_archive));
 		obtainStatisticsConfiguration();
 	}
@@ -34,7 +32,7 @@ public class LocalChanConfiguration extends ChanConfiguration {
 		return statistics;
 	}
 
-	public ChanFile getLocalDownloadDirectory() {
+	public DataFile getLocalDownloadDirectory() {
 		return getDownloadDirectory().getChild("Archive");
 	}
 }
