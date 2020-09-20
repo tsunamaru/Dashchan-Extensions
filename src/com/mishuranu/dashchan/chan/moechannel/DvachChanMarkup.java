@@ -1,4 +1,4 @@
-package com.mishiranu.dashchan.chan.dvach;
+package com.mishuranu.dashchan.chan.moechannel;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,13 +13,14 @@ public class DvachChanMarkup extends ChanMarkup {
 			| TAG_SUBSCRIPT | TAG_SUPERSCRIPT | TAG_SPOILER;
 
 	public DvachChanMarkup() {
-		addTag("strong", TAG_BOLD);
-		addTag("em", TAG_ITALIC);
+		addTag("b", TAG_BOLD);
+		addTag("i", TAG_ITALIC);
 		addTag("sub", TAG_SUBSCRIPT);
 		addTag("sup", TAG_SUPERSCRIPT);
-		addTag("fakecode", TAG_CODE);
+		addTag("code", TAG_CODE);
 		addTag("span", "unkfunc", TAG_QUOTE);
 		addTag("span", "spoiler", TAG_SPOILER);
+		addTag("div", "textwall", TAG_SPOILER);
 		addTag("span", "s", TAG_STRIKE);
 		addTag("span", "u", TAG_UNDERLINE);
 		addTag("span", "o", TAG_OVERLINE);

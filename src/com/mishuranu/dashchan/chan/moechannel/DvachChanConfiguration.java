@@ -1,4 +1,4 @@
-package com.mishiranu.dashchan.chan.dvach;
+package com.mishuranu.dashchan.chan.moechannel;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,23 +17,16 @@ import chan.util.CommonUtils;
 import chan.util.StringUtils;
 
 public class DvachChanConfiguration extends ChanConfiguration {
-	public static final String CAPTCHA_TYPE_2CHAPTCHA = "2chaptcha";
-	public static final String CAPTCHA_TYPE_ANIMECAPTCHA = "animecaptcha";
 
 	public static final List<Pair<String, String>> CAPTCHA_TYPES;
 
 	static {
 		ArrayList<Pair<String, String>> captchaTypes = new ArrayList<>();
-		captchaTypes.add(new Pair<>("2chaptcha", CAPTCHA_TYPE_2CHAPTCHA));
-		captchaTypes.add(new Pair<>("animecaptcha", CAPTCHA_TYPE_ANIMECAPTCHA));
-		captchaTypes.add(new Pair<>("recaptchav1", CAPTCHA_TYPE_RECAPTCHA_1));
-		captchaTypes.add(new Pair<>("recaptcha", CAPTCHA_TYPE_RECAPTCHA_2));
-		captchaTypes.add(new Pair<>("mailru", CAPTCHA_TYPE_MAILRU));
+		captchaTypes.add(new Pair<>("captcha", "captcha"));
 		CAPTCHA_TYPES = Collections.unmodifiableList(captchaTypes);
 	}
 
 	private static final String KEY_CAPTCHA_CHECK_AVAILABLE = "captcha_check_available";
-
 	private static final String KEY_ICONS = "icons";
 	private static final String KEY_IMAGES_ENABLED = "images_enabled";
 	private static final String KEY_NAMES_ENABLED = "names_enabled";
@@ -49,7 +42,7 @@ public class DvachChanConfiguration extends ChanConfiguration {
 		request(OPTION_READ_POSTS_COUNT);
 		request(OPTION_READ_USER_BOARDS);
 		request(OPTION_ALLOW_CAPTCHA_PASS);
-		setDefaultName("Аноним");
+		setDefaultName("Anonymous");
 		setBumpLimit(500);
 		for (Pair<String, String> pair : CAPTCHA_TYPES) {
 			addCaptchaType(pair.second);
@@ -70,19 +63,6 @@ public class DvachChanConfiguration extends ChanConfiguration {
 
 	@Override
 	public Captcha obtainCustomCaptchaConfiguration(String captchaType) {
-		if (CAPTCHA_TYPE_2CHAPTCHA.equals(captchaType)) {
-			Captcha captcha = new Captcha();
-			captcha.title = "2chaptcha";
-			captcha.input = Captcha.Input.NUMERIC;
-			captcha.validity = Captcha.Validity.IN_BOARD_SEPARATELY;
-			return captcha;
-		} else if (CAPTCHA_TYPE_ANIMECAPTCHA.equals(captchaType)) {
-			Captcha captcha = new Captcha();
-			captcha.title = "Animecaptcha";
-			captcha.input = Captcha.Input.ALL;
-			captcha.validity = Captcha.Validity.SHORT_LIFETIME;
-			return captcha;
-		}
 		return null;
 	}
 
@@ -164,7 +144,7 @@ public class DvachChanConfiguration extends ChanConfiguration {
 		try {
 			for (int i = 0; i < jsonArray.length(); i++) {
 				JSONObject jsonObject = jsonArray.getJSONObject(i);
-				String boardName = CommonUtils.getJsonString(jsonObject, "id");
+				String boardName = CommonUtils.getJsonString(jsonObject, "board");
 				String defaultName = CommonUtils.optJsonString(jsonObject, "default_name");
 				int bumpLimit = jsonObject.optInt("bump_limit");
 				if (!StringUtils.isEmpty(defaultName)) {

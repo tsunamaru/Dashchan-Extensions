@@ -1,4 +1,4 @@
-package com.mishiranu.dashchan.chan.dvach;
+package com.mishuranu.dashchan.chan.moechannel;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -9,6 +9,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.net.Uri;
+import android.util.Log;
 
 import chan.content.model.Attachment;
 import chan.content.model.EmbeddedAttachment;
@@ -26,18 +27,6 @@ public class DvachModelMapper {
 	private static final Pattern PATTERN_HASHLINK = Pattern.compile("<a [^<>]*class=\"hashlink\"[^<>]*>");
 	private static final Pattern PATTERN_HASHLINK_TITLE = Pattern.compile("title=\"(.*?)\"");
 
-	private static final Uri URI_ICON_OS = Uri.parse("chan:///res/raw/raw_os");
-	private static final Uri URI_ICON_ANDROID = Uri.parse("chan:///res/raw/raw_os_android");
-	private static final Uri URI_ICON_APPLE = Uri.parse("chan:///res/raw/raw_os_apple");
-	private static final Uri URI_ICON_LINUX = Uri.parse("chan:///res/raw/raw_os_linux");
-	private static final Uri URI_ICON_WINDOWS = Uri.parse("chan:///res/raw/raw_os_windows");
-
-	private static final Uri URI_ICON_BROWSER = Uri.parse("chan:///res/raw/raw_browser");
-	private static final Uri URI_ICON_CHROME = Uri.parse("chan:///res/raw/raw_browser_chrome");
-	private static final Uri URI_ICON_EDGE = Uri.parse("chan:///res/raw/raw_browser_edge");
-	private static final Uri URI_ICON_FIREFOX = Uri.parse("chan:///res/raw/raw_browser_firefox");
-	private static final Uri URI_ICON_OPERA = Uri.parse("chan:///res/raw/raw_browser_opera");
-	private static final Uri URI_ICON_SAFARI = Uri.parse("chan:///res/raw/raw_browser_safari");
 
 	private static String fixAttachmentPath(String boardName, String path) {
 		if (!StringUtils.isEmpty(path)) {
@@ -121,7 +110,7 @@ public class DvachModelMapper {
 			}
 		});
 		if ("pr".equals(boardName) && comment != null) {
-			comment = PATTERN_CODE.matcher(comment).replaceAll("<fakecode>$1</fakecode>");
+			comment = PATTERN_CODE.matcher(comment).replaceAll("<code>$1</code>");
 		}
 		post.setComment(comment);
 		// TODO Remove this after server side fix of subjects
@@ -150,7 +139,7 @@ public class DvachModelMapper {
 		String name = CommonUtils.optJsonString(jsonObject, "name");
 		String tripcode = CommonUtils.optJsonString(jsonObject, "trip");
 		String email = CommonUtils.optJsonString(jsonObject, "email");
-		boolean sage = sageEnabled && !StringUtils.isEmpty(email) && email.equals("mailto:sage");
+		boolean sage = email.equals("sage");
 		String userAgentData = null;
 		if (sage) {
 			email = null;
@@ -177,7 +166,7 @@ public class DvachModelMapper {
 		String capcode = null;
 		if (!StringUtils.isEmpty(tripcode)) {
 			if ("!!%adm%!!".equals(tripcode)) {
-				capcode = "Abu";
+				capcode = "Admin";
 			} else if ("!!%mod%!!".equals(tripcode)) {
 				capcode = "Mod";
 			}
@@ -192,77 +181,6 @@ public class DvachModelMapper {
 		post.setTripcode(tripcode);
 		post.setCapcode(capcode);
 		post.setEmail(email);
-
-		String icon = CommonUtils.optJsonString(jsonObject, "icon");
-		ArrayList<Icon> icons = null;
-		if (!StringUtils.isEmpty(icon)) {
-			Matcher matcher = PATTERN_BADGE.matcher(icon);
-			while (matcher.find()) {
-				String path = matcher.group(1);
-				String title = matcher.group(2);
-				Uri uri = locator.buildPath(path);
-				if (StringUtils.isEmpty(title)) {
-					title = uri.getLastPathSegment();
-					title = title.substring(0, title.lastIndexOf('.'));
-				}
-				if (icons == null) {
-					icons = new ArrayList<>();
-				}
-				title = StringUtils.clearHtml(title);
-				icons.add(new Icon(locator, uri, title));
-			}
-		}
-		if (userAgentData != null) {
-			int index1 = userAgentData.indexOf('(');
-			int index2 = userAgentData.indexOf(')');
-			if (index2 > index1 && index1 >= 0) {
-				userAgentData = userAgentData.substring(index1 + 1, index2);
-				int index = userAgentData.indexOf(':');
-				if (index >= 0) {
-					String os = StringUtils.clearHtml(userAgentData.substring(0, index));
-					String browser = StringUtils.clearHtml(userAgentData.substring(index + 2));
-					if (!"Неизвестно".equals(os)) {
-						Uri osIconUri = URI_ICON_OS;
-						if (os.contains("Windows")) {
-							osIconUri = URI_ICON_WINDOWS;
-						} else if (os.contains("Linux")) {
-							osIconUri = URI_ICON_LINUX;
-						} else if (os.contains("Apple")) {
-							osIconUri = URI_ICON_APPLE;
-						} else if (os.contains("Android")) {
-							osIconUri = URI_ICON_ANDROID;
-						}
-						if (icons == null) {
-							icons = new ArrayList<>();
-						}
-						icons.add(new Icon(locator, osIconUri, os));
-					}
-					if (!"Неизвестно".equals(browser)) {
-						Uri browserIconUri = URI_ICON_BROWSER;
-						if (browser.contains("Chrom")) {
-							browserIconUri = URI_ICON_CHROME;
-						} else if (browser.contains("Microsoft Edge")) {
-							browserIconUri = URI_ICON_EDGE;
-						} else if (browser.contains("Internet Explorer")) {
-							browserIconUri = URI_ICON_EDGE;
-						} else if (browser.contains("Firefox")) {
-							browserIconUri = URI_ICON_FIREFOX;
-						} else if (browser.contains("Iceweasel")) {
-							browserIconUri = URI_ICON_FIREFOX;
-						} else if (browser.contains("Opera")) {
-							browserIconUri = URI_ICON_OPERA;
-						} else if (browser.contains("Safari")) {
-							browserIconUri = URI_ICON_SAFARI;
-						}
-						if (icons == null) {
-							icons = new ArrayList<>();
-						}
-						icons.add(new Icon(locator, browserIconUri, browser));
-					}
-				}
-			}
-		}
-		post.setIcons(icons);
 		return post;
 	}
 
