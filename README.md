@@ -1,6 +1,6 @@
-# Dashchan Extension: dvach
+# Dashchan Extension: moechannel
 
-Extension for 2ch.hk.
+Extension for 2channel.moe.
 
 ## License
 
